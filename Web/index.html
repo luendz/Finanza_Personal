@@ -504,7 +504,7 @@
 <script>
 const MS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const MSH = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-let curM = new Date().getMonth(), editId = null, editMode = 'gasto', editingNoteId = null, movingNoteId = null, editingPrestamoId = null, abonoPrestamoId = null, nid = 50;
+let curM = new Date().getMonth(), editId = null, editMode = 'gasto', editingNoteId = null, movingNoteId = null, editingPrestamoId = null, abonoPrestamoId = null, editingAbonoRef = null, nid = 50;
 
 const CSTYLE = {
   'Maria Elena':{ bg:'#f3eaf8', tx:'#7a3fa0', bar:'#b07fd4' },
@@ -793,7 +793,16 @@ function renderGastos(){
 }
 
 function delG(id){
+  const gasto = state.gastos.find(g=>g.id===id);
+  if(!gasto) return;
   if(!confirm('¿Eliminar este gasto?'))return;
+
+  if(gasto.prestamoId && gasto.abonoPrestamoId){
+    removePrestamoHistoryLink(gasto.prestamoId, gasto.abonoPrestamoId);
+  } else if(gasto.abonoPrestamoId){
+    revertPrestamoAbonoByLinkedRecord('gasto', id);
+  }
+
   state.gastos=state.gastos.filter(g=>g.id!==id);
   save();updateAll();toast('Gasto eliminado');
 }
@@ -1246,6 +1255,7 @@ function delPrestamo(id){
 function openAbonoModal(id){
   const p=(state.prestamos||[]).find(x=>x.id===id);
   if(!p) return;
+  editingAbonoRef = null;
   abonoPrestamoId = id;
   document.getElementById('abono-title').textContent=`${p.persona} · saldo ${fmt(prestamoSaldo(p))}`;
   document.getElementById('abono-monto').value='';
@@ -1261,11 +1271,16 @@ function closeAbonoModal(){
   const overlay=document.getElementById('overlay-abono');
   overlay.classList.add('hidden');
   overlay.classList.remove('flex');
+  editingAbonoRef = null;
 }
 
 function maybeCloseAbono(e){ if(e.target===document.getElementById('overlay-abono')) closeAbonoModal(); }
 
 function saveAbono(){
+  if(editingAbonoRef){
+    saveAbonoEdit();
+    return;
+  }
   const p=(state.prestamos||[]).find(x=>x.id===abonoPrestamoId);
   if(!p) return;
   const monto=parseFloat(document.getElementById('abono-monto').value);
@@ -1276,21 +1291,132 @@ function saveAbono(){
   if(!monto || monto<=0){ alert('Ingresa un monto válido.'); return; }
   if(monto > saldo){ alert('El abono supera el saldo pendiente.'); return; }
 
+  const historialId = (p.historial || []).reduce((max,h)=>Math.max(max,h.id||0),0) + 1;
+  const hist = { id: historialId, fecha: new Date().toISOString(), monto, mes, impacto, nota, linkedType: null, linkedId: null };
+
   p.montoPagado = (p.montoPagado || 0) + monto;
   p.historial = p.historial || [];
-  p.historial.push({ fecha: new Date().toISOString(), monto, mes, impacto, nota });
+  p.historial.push(hist);
 
   if(impacto === 'mes'){
     if(p.tipo === 'por_pagar'){
-      state.gastos.push({ id:nid++, desc:`Abono préstamo - ${p.persona}`, monto, cat:'Personal', dia:15, tipo:'unico', cuotas:0, cuotaAct:1, mes, origenMes:mes });
+      const nuevoGasto = { id:nid++, desc:`Abono préstamo - ${p.persona}`, monto, cat:'Personal', dia:15, tipo:'unico', cuotas:0, cuotaAct:1, mes, origenMes:mes, abonoPrestamoId: historialId, prestamoId: p.id };
+      state.gastos.push(nuevoGasto);
+      hist.linkedType = 'gasto';
+      hist.linkedId = nuevoGasto.id;
     } else {
       state.ingresosExtra = state.ingresosExtra || [];
       const nextId=(state.ingresosExtra.reduce((max,x)=>Math.max(max,x.id||0),0))+1;
-      state.ingresosExtra.push({ id: nextId, desc:`Devolución préstamo - ${p.persona}`, monto, mes });
+      const nuevoIngreso = { id: nextId, desc:`Devolución préstamo - ${p.persona}`, monto, mes, abonoPrestamoId: historialId, prestamoId: p.id };
+      state.ingresosExtra.push(nuevoIngreso);
+      hist.linkedType = 'ingreso';
+      hist.linkedId = nextId;
     }
   }
 
   save(); updateAll(); closeAbonoModal(); toast('Abono registrado ✓');
+}
+
+function revertPrestamoAbonoByLinkedRecord(linkedType, linkedId){
+  for(const p of (state.prestamos || [])){
+    const hist = (p.historial || []).find(h => h.linkedType === linkedType && h.linkedId === linkedId);
+    if(hist){
+      p.montoPagado = Math.max((p.montoPagado || 0) - (hist.monto || 0), 0);
+      p.historial = (p.historial || []).filter(h => h.id !== hist.id);
+      return true;
+    }
+  }
+  return false;
+}
+
+function removePrestamoHistoryLink(prestamoId, historialId){
+  const p = (state.prestamos || []).find(x => x.id === prestamoId);
+  if(!p) return false;
+  const hist = (p.historial || []).find(h => h.id === historialId);
+  if(!hist) return false;
+  p.montoPagado = Math.max((p.montoPagado || 0) - (hist.monto || 0), 0);
+  p.historial = (p.historial || []).filter(h => h.id !== historialId);
+  return true;
+}
+
+function openEditAbono(prestamoId, historialId){
+  const p=(state.prestamos||[]).find(x=>x.id===prestamoId);
+  const hist=(p?.historial||[]).find(h=>h.id===historialId);
+  if(!p || !hist) return;
+  editingAbonoRef = { prestamoId, historialId };
+  abonoPrestamoId = prestamoId;
+  document.getElementById('abono-title').textContent=`Editar abono · ${p.persona}`;
+  document.getElementById('abono-monto').value=hist.monto;
+  fillMonthsSelect('abono-month', hist.mes ?? curM);
+  document.getElementById('abono-impacto').value=hist.impacto || 'ninguno';
+  document.getElementById('abono-nota').value=hist.nota || '';
+  const overlay=document.getElementById('overlay-abono');
+  overlay.classList.remove('hidden');
+  overlay.classList.add('flex');
+}
+
+function removeAbono(prestamoId, historialId){
+  const p=(state.prestamos||[]).find(x=>x.id===prestamoId);
+  const hist=(p?.historial||[]).find(h=>h.id===historialId);
+  if(!p || !hist) return;
+  if(!confirm('¿Eliminar este abono?')) return;
+  if(hist.linkedType === 'gasto' && hist.linkedId){
+    state.gastos = state.gastos.filter(g => g.id !== hist.linkedId);
+  }
+  if(hist.linkedType === 'ingreso' && hist.linkedId){
+    state.ingresosExtra = (state.ingresosExtra || []).filter(x => x.id !== hist.linkedId);
+  }
+  p.montoPagado = Math.max((p.montoPagado || 0) - (hist.monto || 0), 0);
+  p.historial = (p.historial || []).filter(h => h.id !== historialId);
+  save(); updateAll(); toast('Abono eliminado');
+}
+
+function saveAbonoEdit(){
+  if(!editingAbonoRef) return;
+  const p=(state.prestamos||[]).find(x=>x.id===editingAbonoRef.prestamoId);
+  const hist=(p?.historial||[]).find(h=>h.id===editingAbonoRef.historialId);
+  if(!p || !hist) return;
+  const monto=parseFloat(document.getElementById('abono-monto').value);
+  const mes=parseInt(document.getElementById('abono-month').value,10);
+  const impacto=document.getElementById('abono-impacto').value;
+  const nota=document.getElementById('abono-nota').value.trim();
+  const saldoSinEste = Math.max((p.montoTotal || 0) - ((p.montoPagado || 0) - (hist.monto || 0)), 0);
+  if(!monto || monto<=0){ alert('Ingresa un monto válido.'); return; }
+  if(monto > saldoSinEste){ alert('El abono supera el saldo disponible.'); return; }
+
+  if(hist.linkedType === 'gasto' && hist.linkedId){
+    state.gastos = state.gastos.filter(g => g.id !== hist.linkedId);
+  }
+  if(hist.linkedType === 'ingreso' && hist.linkedId){
+    state.ingresosExtra = (state.ingresosExtra || []).filter(x => x.id !== hist.linkedId);
+  }
+
+  p.montoPagado = Math.max((p.montoPagado || 0) - (hist.monto || 0), 0);
+  hist.monto = monto;
+  hist.mes = mes;
+  hist.impacto = impacto;
+  hist.nota = nota;
+  hist.linkedType = null;
+  hist.linkedId = null;
+  p.montoPagado = (p.montoPagado || 0) + monto;
+
+  if(impacto === 'mes'){
+    if(p.tipo === 'por_pagar'){
+      const nuevoGasto = { id:nid++, desc:`Abono préstamo - ${p.persona}`, monto, cat:'Personal', dia:15, tipo:'unico', cuotas:0, cuotaAct:1, mes, origenMes:mes, abonoPrestamoId: hist.id, prestamoId: p.id };
+      state.gastos.push(nuevoGasto);
+      hist.linkedType = 'gasto';
+      hist.linkedId = nuevoGasto.id;
+    } else {
+      state.ingresosExtra = state.ingresosExtra || [];
+      const nextId=(state.ingresosExtra.reduce((max,x)=>Math.max(max,x.id||0),0))+1;
+      const nuevoIngreso = { id: nextId, desc:`Devolución préstamo - ${p.persona}`, monto, mes, abonoPrestamoId: hist.id, prestamoId: p.id };
+      state.ingresosExtra.push(nuevoIngreso);
+      hist.linkedType = 'ingreso';
+      hist.linkedId = nextId;
+    }
+  }
+
+  save(); updateAll(); closeAbonoModal(); toast('Abono actualizado ✓');
 }
 
 function renderPrestamos(){
@@ -1324,7 +1450,7 @@ function renderPrestamos(){
       const badge=estado==='pagado' ? 'bg-greenbg text-greentx' : estado==='parcial' ? 'bg-bluebg text-bluetx' : 'bg-appbg text-text2';
       const historial=(p.historial||[]).slice().reverse().slice(0,5);
       const historialHtml=historial.length
-        ? `<div class="mt-3 rounded-smapp border border-borderc bg-appbg/60 p-3"><div class="mb-2 text-[11px] font-bold uppercase tracking-[0.06em] text-text3">Últimos abonos</div><div class="space-y-2">${historial.map(h=>`<div class="flex items-center justify-between gap-3 text-[12px]"><div class="min-w-0"><div class="font-semibold text-text1">${new Date(h.fecha).toLocaleDateString('es-PE')}</div><div class="text-text3">${MS[h.mes]||'-'} · ${h.impacto==='mes' ? 'impacta mes' : 'solo control'}${h.nota ? ' · ' + h.nota : ''}</div></div><div class="whitespace-nowrap font-heading font-bold ${p.tipo==='por_cobrar'?'text-greentx':'text-red1'}">${fmt(h.monto)}</div></div>`).join('')}</div></div>`
+        ? `<div class="mt-3 rounded-smapp border border-borderc bg-appbg/60 p-3"><div class="mb-2 text-[11px] font-bold uppercase tracking-[0.06em] text-text3">Últimos abonos</div><div class="space-y-2">${historial.map(h=>`<div class="flex items-start justify-between gap-3 text-[12px]"><div class="min-w-0 flex-1"><div class="font-semibold text-text1">${new Date(h.fecha).toLocaleDateString('es-PE')}</div><div class="text-text3">${MS[h.mes]||'-'} · ${h.impacto==='mes' ? 'impacta mes' : 'solo control'}${h.nota ? ' · ' + h.nota : ''}</div></div><div class="flex items-center gap-2"><div class="whitespace-nowrap font-heading font-bold ${p.tipo==='por_cobrar'?'text-greentx':'text-red1'}">${fmt(h.monto)}</div><button class="rounded-md border-0 bg-transparent px-1 py-0.5 text-[14px] leading-none text-text3 transition hover:bg-bluebg hover:text-accent" onclick="openEditAbono(${p.id},${h.id})">✎</button><button class="rounded-md border-0 bg-transparent px-1 py-0.5 text-[16px] leading-none text-text3 transition hover:bg-redbg hover:text-red1" onclick="removeAbono(${p.id},${h.id})">×</button></div></div>`).join('')}</div></div>`
         : `<div class="mt-3 rounded-smapp border border-dashed border-borderc bg-appbg/40 px-3 py-2 text-[12px] text-text3">Aún no hay abonos registrados.</div>`;
       return `<div class="border-b border-appbg2 px-5 py-4 last:border-b-0"><div class="mb-2 flex items-start justify-between gap-3"><div class="min-w-0"><div class="truncate font-heading text-[15px] font-bold text-text1">${p.persona}</div><div class="text-[13px] text-text2">${p.desc}</div></div><div class="shrink-0 text-right"><div class="font-heading text-[15px] font-bold ${p.tipo==='por_cobrar'?'text-bluetx':'text-red1'}">${fmt(saldo)}</div><div class="mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${badge}">${estado}</div></div></div><div class="mb-3 grid grid-cols-2 gap-2 text-[12px] text-text2"><div>Total: <strong class="text-text1">${fmt(p.montoTotal)}</strong></div><div>Abonado: <strong class="text-text1">${fmt(p.montoPagado||0)}</strong></div><div>Fecha: <strong class="text-text1">${p.fecha||'-'}</strong></div><div>Vence: <strong class="text-text1">${p.vencimiento||'-'}</strong></div></div><div class="flex flex-wrap items-center justify-between gap-2"><div class="text-[12px] text-text3 truncate">${p.notas||'Sin notas'}</div><div class="flex flex-wrap items-center gap-2"><button class="rounded-smapp border border-borderc bg-white px-3 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="openAbonoModal(${p.id})">Abono</button><button class="rounded-smapp border border-borderc bg-white px-3 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="editPrestamo(${p.id})">Editar</button><button class="rounded-smapp border border-borderc bg-white px-3 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-red1 hover:text-red1" onclick="delPrestamo(${p.id})">Eliminar</button></div></div>${historialHtml}</div>`;
     }).join('');
@@ -1371,7 +1497,7 @@ function renderExtraList(){
     el.innerHTML='<div class="text-center text-[12px] text-text3">No tienes ingresos adicionales registrados para este mes.</div>';
     return;
   }
-  el.innerHTML=list.map(x => `<div class="flex items-center justify-between gap-3 border-b border-borderc py-2 last:border-b-0"><div class="min-w-0"><div class="truncate text-[13px] font-semibold text-text1">${x.desc}</div><div class="text-[11px] text-text3">${MS[x.mes]}</div></div><div class="flex items-center gap-3"><div class="text-[12px] font-bold text-greentx">${fmt(x.monto)}</div><button class="rounded-md border-0 bg-transparent px-1 py-0.5 text-[18px] leading-none text-text3 transition hover:bg-redbg hover:text-red1" onclick="delExtra(${x.id})">×</button></div></div>`).join('');
+  el.innerHTML=list.map(x => `<div class="flex items-center justify-between gap-3 border-b border-borderc py-2 last:border-b-0"><div class="min-w-0"><div class="truncate text-[13px] font-semibold text-text1">${x.desc}</div><div class="text-[11px] text-text3">${MS[x.mes]}</div></div><div class="flex items-center gap-3"><div class="text-[12px] font-bold text-greentx">${fmt(x.monto)}</div><button class="rounded-md border-0 bg-transparent px-1 py-0.5 text-[14px] leading-none text-text3 transition hover:bg-bluebg hover:text-accent" onclick="editExtra(${x.id})">✎</button><button class="rounded-md border-0 bg-transparent px-1 py-0.5 text-[18px] leading-none text-text3 transition hover:bg-redbg hover:text-red1" onclick="delExtra(${x.id})">×</button></div></div>`).join('');
 }
 
 function fillExtraMonths(){
@@ -1381,10 +1507,28 @@ function fillExtraMonths(){
 }
 
 function openExtraModal(){
+  editId = null;
+  editMode = 'extra';
   fillExtraMonths();
   document.getElementById('extra-desc').value='';
   document.getElementById('extra-monto').value='';
   document.getElementById('extra-mes').value=String(curM);
+  renderExtraList();
+  const overlay=document.getElementById('overlay-extra');
+  overlay.classList.remove('hidden');
+  overlay.classList.add('flex');
+  setTimeout(()=>document.getElementById('extra-desc').focus(),50);
+}
+
+function editExtra(id){
+  const extra = (state.ingresosExtra || []).find(x => x.id === id);
+  if(!extra) return;
+  editId = id;
+  editMode = 'extra';
+  fillExtraMonths();
+  document.getElementById('extra-desc').value=extra.desc;
+  document.getElementById('extra-monto').value=extra.monto;
+  document.getElementById('extra-mes').value=String(extra.mes ?? curM);
   renderExtraList();
   const overlay=document.getElementById('overlay-extra');
   overlay.classList.remove('hidden');
@@ -1406,6 +1550,27 @@ function saveExtra(){
   const mes=parseInt(document.getElementById('extra-mes').value,10);
   if(!desc){ alert('Escribe una descripción.'); return; }
   if(!monto || monto<=0){ alert('Ingresa un monto válido.'); return; }
+
+  if(editId !== null && editMode === 'extra'){
+    const extra = (state.ingresosExtra || []).find(x => x.id === editId);
+    if(!extra) return;
+    if(extra.prestamoId && extra.abonoPrestamoId){
+      const okSync = syncPrestamoFromLinkedIncomeEdit(extra, { desc, monto, mes });
+      if(!okSync) return;
+    }
+    extra.desc = desc;
+    extra.monto = monto;
+    extra.mes = mes;
+    save();
+    renderExtraList();
+    updateAll();
+    document.getElementById('extra-desc').value='';
+    document.getElementById('extra-monto').value='';
+    closeExtraModal();
+    toast('Ingreso adicional actualizado ✓');
+    return;
+  }
+
   state.ingresosExtra = state.ingresosExtra || [];
   const nextId = (state.ingresosExtra.reduce((max,x)=>Math.max(max,x.id||0),0)) + 1;
   state.ingresosExtra.push({ id: nextId, desc, monto, mes });
@@ -1417,7 +1582,39 @@ function saveExtra(){
   toast('Ingreso adicional agregado ✓');
 }
 
+function syncPrestamoFromLinkedIncomeEdit(extraActual, nuevo){
+  const p = (state.prestamos || []).find(x => x.id === extraActual.prestamoId);
+  if(!p) return true;
+  const hist = (p.historial || []).find(h => h.id === extraActual.abonoPrestamoId);
+  if(!hist) return true;
+
+  const montoAnterior = Number(hist.monto || 0);
+  const nuevoMonto = Number(nuevo.monto || 0);
+  const saldoSinEste = Math.max((p.montoTotal || 0) - ((p.montoPagado || 0) - montoAnterior), 0);
+  if(nuevoMonto > saldoSinEste){
+    alert('El nuevo monto del ingreso supera el saldo disponible del préstamo.');
+    return false;
+  }
+
+  p.montoPagado = Math.max((p.montoPagado || 0) - montoAnterior, 0) + nuevoMonto;
+  hist.monto = nuevoMonto;
+  hist.mes = typeof nuevo.mes === 'number' ? nuevo.mes : hist.mes;
+  if(!hist.nota){
+    hist.nota = nuevo.desc || hist.nota;
+  }
+  if(hist.linkedType === 'ingreso' && hist.linkedId === extraActual.id){
+    hist.linkedId = extraActual.id;
+  }
+  return true;
+}
+
 function delExtra(id){
+  const extra = (state.ingresosExtra || []).find(x => x.id === id);
+  if(extra?.prestamoId && extra?.abonoPrestamoId){
+    removePrestamoHistoryLink(extra.prestamoId, extra.abonoPrestamoId);
+  } else if(extra?.abonoPrestamoId){
+    revertPrestamoAbonoByLinkedRecord('ingreso', id);
+  }
   state.ingresosExtra = (state.ingresosExtra || []).filter(x => x.id !== id);
   save();
   renderExtraList();
@@ -1496,6 +1693,12 @@ function saveG(){
   if(editId !== null && editMode === 'gasto'){
     const g = state.gastos.find(x => x.id === editId);
     if(!g) return;
+
+    if(g.prestamoId && g.abonoPrestamoId){
+      const okSync = syncPrestamoFromLinkedExpenseEdit(g, { desc, monto: m, cat, dia, tipo, cuotas, cuotaAct });
+      if(!okSync) return;
+    }
+
     g.desc = desc;
     g.monto = m;
     g.cat = cat;
@@ -1514,6 +1717,33 @@ function saveG(){
   state.gastos.push({id:nid++,desc,monto:m,cat,dia,tipo,cuotas,cuotaAct,mes:curM,origenMes:curM});
   closeModal();save();updateAll();toast('Gasto agregado ✓');
 }
+
+function syncPrestamoFromLinkedExpenseEdit(gastoActual, nuevo){
+  const p = (state.prestamos || []).find(x => x.id === gastoActual.prestamoId);
+  if(!p) return true;
+  const hist = (p.historial || []).find(h => h.id === gastoActual.abonoPrestamoId);
+  if(!hist) return true;
+
+  const montoAnterior = Number(hist.monto || 0);
+  const nuevoMonto = Number(nuevo.monto || 0);
+  const saldoSinEste = Math.max((p.montoTotal || 0) - ((p.montoPagado || 0) - montoAnterior), 0);
+  if(nuevoMonto > saldoSinEste){
+    alert('El nuevo monto del gasto supera el saldo disponible del préstamo.');
+    return false;
+  }
+
+  p.montoPagado = Math.max((p.montoPagado || 0) - montoAnterior, 0) + nuevoMonto;
+  hist.monto = nuevoMonto;
+  hist.mes = typeof gastoActual.mes === 'number' ? gastoActual.mes : hist.mes;
+  if(!hist.nota){
+    hist.nota = nuevo.desc || hist.nota;
+  }
+  if(hist.linkedType === 'gasto' && hist.linkedId === gastoActual.id){
+    hist.linkedId = gastoActual.id;
+  }
+  return true;
+}
+
 
 let tt;
 function toast(msg){
