@@ -85,7 +85,13 @@
     </div>
 
     <div class="mt-5 flex flex-wrap items-center gap-2">
-      <span class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Mes:</span>
+      <span class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Año:</span>
+      <div class="flex items-center gap-2">
+        <button class="rounded-full border border-borderc bg-white px-3 py-1 font-heading text-xs font-bold text-text2 transition hover:border-text1 hover:text-text1" onclick="changeYear(-1)">−</button>
+        <input id="year-input-main" type="number" min="2000" max="2100" class="w-[92px] rounded-full border border-borderc bg-white px-3 py-1 text-center font-heading text-xs font-bold text-text1 outline-none transition focus:border-accent" value="2026" onchange="applyYearInput(this.value)" onkeydown="if(event.key==='Enter'){applyYearInput(this.value)}">
+        <button class="rounded-full border border-borderc bg-white px-3 py-1 font-heading text-xs font-bold text-text2 transition hover:border-text1 hover:text-text1" onclick="changeYear(1)">+</button>
+      </div>
+      <span class="ml-2 text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Mes:</span>
       <div id="mbtns1" class="flex flex-wrap gap-1.5"></div>
     </div>
   </div>
@@ -302,7 +308,13 @@
   <div class="mb-1 font-heading text-[22px] font-bold">Categorías 🏷️</div>
   <div class="mb-3 text-[13px] text-text2">Grupos para organizar tus gastos del mes seleccionado</div>
   <div class="mb-6 flex flex-wrap items-center gap-2">
-    <span class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Mes:</span>
+    <span class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Año:</span>
+    <div class="flex items-center gap-2">
+      <button class="rounded-full border border-borderc bg-white px-3 py-1 font-heading text-xs font-bold text-text2 transition hover:border-text1 hover:text-text1" onclick="changeYear(-1)">−</button>
+      <input id="year-input-cats" type="number" min="2000" max="2100" class="w-[92px] rounded-full border border-borderc bg-white px-3 py-1 text-center font-heading text-xs font-bold text-text1 outline-none transition focus:border-accent" value="2026" onchange="applyYearInput(this.value)" onkeydown="if(event.key==='Enter'){applyYearInput(this.value)}">
+      <button class="rounded-full border border-borderc bg-white px-3 py-1 font-heading text-xs font-bold text-text2 transition hover:border-text1 hover:text-text1" onclick="changeYear(1)">+</button>
+    </div>
+    <span class="ml-2 text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Mes:</span>
     <div id="mbtns-cats" class="flex flex-wrap gap-1.5"></div>
   </div>
   <div class="mb-4 flex justify-end">
@@ -543,7 +555,7 @@
 <script>
 const MS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const MSH = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-let curM = new Date().getMonth(), editId = null, editMode = 'gasto', editingNoteId = null, movingNoteId = null, editingPrestamoId = null, abonoPrestamoId = null, editingAbonoRef = null, nid = 50;
+let curM = new Date().getMonth(), curY = new Date().getFullYear(), editId = null, editMode = 'gasto', editingNoteId = null, movingNoteId = null, editingPrestamoId = null, abonoPrestamoId = null, editingAbonoRef = null, nid = 50;
 
 const CSTYLE = {
   'Maria Elena':{ bg:'#f3eaf8', tx:'#7a3fa0', bar:'#b07fd4' },
@@ -560,19 +572,19 @@ let state = {
   anotaciones: [],
   prestamos: [],
   gastos:[
-    {id:1, desc:'Internet Maria Elena', monto:25, cat:'Maria Elena',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, origenMes: curM},
-    {id:2, desc:'Google Drive', monto:40, cat:'Personal',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, origenMes: curM},
-    {id:3, desc:'Luz y Agua Maria Elena', monto:40, cat:'Maria Elena',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, origenMes: curM},
-    {id:4, desc:'Limpieza (propina)', monto:100, cat:'Maria Elena',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, origenMes: curM},
-    {id:5, desc:'Postpago', monto:35, cat:'Personal',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, origenMes: curM},
-    {id:6, desc:'ChatGPT', monto:90, cat:'Personal',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, origenMes: curM},
-    {id:7, desc:'Seguro Changan Cs15', monto:73, cat:'Carro',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, origenMes: curM},
-    {id:8, desc:'Comida Maria Elena', monto:185, cat:'Maria Elena',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, origenMes: curM},
-    {id:9, desc:'Internet viejo', monto:500, cat:'Viejo',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, origenMes: curM},
-    {id:10,desc:'Préstamo Changan Cs15', monto:500, cat:'Carro',dia:15,tipo:'cuotas', cuotas:36,cuotaAct:12, mes: curM, origenMes: curM},
-    {id:11,desc:'Tarjeta Crédito Interbank', monto:2000, cat:'Vane',dia:15,tipo:'cuotas', cuotas:12,cuotaAct:3, mes: curM, origenMes: curM},
-    {id:12,desc:'Pago clínica bebé', monto:1000, cat:'Personal',dia:15,tipo:'cuotas', cuotas:6, cuotaAct:2, mes: curM, origenMes: curM},
-    {id:13,desc:'Internet nuevo', monto:50, cat:'Personal',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, origenMes: curM},
+    {id:1, desc:'Internet Maria Elena', monto:25, cat:'Maria Elena',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, anio: curY, origenMes: curM, origenAnio: curY},
+    {id:2, desc:'Google Drive', monto:40, cat:'Personal',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, anio: curY, origenMes: curM, origenAnio: curY},
+    {id:3, desc:'Luz y Agua Maria Elena', monto:40, cat:'Maria Elena',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, anio: curY, origenMes: curM, origenAnio: curY},
+    {id:4, desc:'Limpieza (propina)', monto:100, cat:'Maria Elena',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, anio: curY, origenMes: curM, origenAnio: curY},
+    {id:5, desc:'Postpago', monto:35, cat:'Personal',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, anio: curY, origenMes: curM, origenAnio: curY},
+    {id:6, desc:'ChatGPT', monto:90, cat:'Personal',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, anio: curY, origenMes: curM, origenAnio: curY},
+    {id:7, desc:'Seguro Changan Cs15', monto:73, cat:'Carro',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, anio: curY, origenMes: curM, origenAnio: curY},
+    {id:8, desc:'Comida Maria Elena', monto:185, cat:'Maria Elena',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, anio: curY, origenMes: curM, origenAnio: curY},
+    {id:9, desc:'Internet viejo', monto:500, cat:'Viejo',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, anio: curY, origenMes: curM, origenAnio: curY},
+    {id:10,desc:'Préstamo Changan Cs15', monto:500, cat:'Carro',dia:15,tipo:'cuotas', cuotas:36,cuotaAct:12, mes: curM, anio: curY, origenMes: curM, origenAnio: curY},
+    {id:11,desc:'Tarjeta Crédito Interbank', monto:2000, cat:'Vane',dia:15,tipo:'cuotas', cuotas:12,cuotaAct:3, mes: curM, anio: curY, origenMes: curM, origenAnio: curY},
+    {id:12,desc:'Pago clínica bebé', monto:1000, cat:'Personal',dia:15,tipo:'cuotas', cuotas:6, cuotaAct:2, mes: curM, anio: curY, origenMes: curM, origenAnio: curY},
+    {id:13,desc:'Internet nuevo', monto:50, cat:'Personal',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, anio: curY, origenMes: curM, origenAnio: curY},
   ]
 };
 
@@ -588,8 +600,12 @@ function load(){
       state.gastos = (state.gastos || []).map(g => ({
         ...g,
         mes: typeof g.mes === 'number' ? g.mes : curM,
-        origenMes: typeof g.origenMes === 'number' ? g.origenMes : (typeof g.mes === 'number' ? g.mes : curM)
+        anio: typeof g.anio === 'number' ? g.anio : curY,
+        origenMes: typeof g.origenMes === 'number' ? g.origenMes : (typeof g.mes === 'number' ? g.mes : curM),
+        origenAnio: typeof g.origenAnio === 'number' ? g.origenAnio : (typeof g.anio === 'number' ? g.anio : curY)
       }));
+      state.ingresosExtra = (state.ingresosExtra || []).map(x => ({ ...x, mes: typeof x.mes === 'number' ? x.mes : curM, anio: typeof x.anio === 'number' ? x.anio : curY }));
+      state.anotaciones = (state.anotaciones || []).map(x => ({ ...x, creadoMes: typeof x.creadoMes === 'number' ? x.creadoMes : curM, creadoAnio: typeof x.creadoAnio === 'number' ? x.creadoAnio : curY }));
       nid=Math.max(...state.gastos.map(g=>g.id),49)+1;
     }
     const sv=localStorage.getItem('mf3_sueldo');
@@ -598,17 +614,52 @@ function load(){
 }
 
 function fmt(n){ return 'S/ '+Math.abs(n).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-function monthYearLabel(){ return `${MS[curM]} ${new Date().getFullYear()}`; }
+function monthYearLabel(){ return `${MS[curM]} ${curY}`; }
+function yearBtnClass(active){
+  return 'rounded-full border px-3 py-1 font-heading text-xs font-bold transition ' +
+    (active ? 'border-text1 bg-text1 text-white' : 'border-borderc bg-white text-text2 hover:border-text1 hover:text-text1');
+}
+function syncYearInputs(){
+  const a=document.getElementById('year-input-main');
+  const b=document.getElementById('year-input-cats');
+  if(a) a.value=String(curY);
+  if(b) b.value=String(curY);
+}
+function normalizeYear(value){
+  const y=parseInt(value,10);
+  if(Number.isNaN(y)) return curY;
+  return Math.min(2100, Math.max(2000, y));
+}
+function applyYearInput(value){
+  curY = normalizeYear(value);
+  updateAll();
+}
+function changeYear(delta){
+  curY = normalizeYear(curY + delta);
+  updateAll();
+}
+function availableYears(){
+  const years = new Set([curY, new Date().getFullYear()]);
+  (state.gastos||[]).forEach(g => years.add(g.anio ?? curY));
+  (state.ingresosExtra||[]).forEach(x => years.add(x.anio ?? curY));
+  (state.anotaciones||[]).forEach(x => years.add(x.creadoAnio ?? curY));
+  return Array.from(years).sort((a,b)=>a-b);
+}
+function rYears(id){
+  syncYearInputs();
+}
+function setY(y){ curY = normalizeYear(y); updateAll(); }
 function active(){
   return state.gastos.filter(g => {
+    const gy = typeof g.anio === 'number' ? g.anio : curY;
     if(g.tipo === 'cuotas'){
-      return g.cuotaAct <= g.cuotas && g.mes <= curM;
+      return g.cuotaAct <= g.cuotas && (gy < curY || (gy === curY && g.mes <= curM));
     }
-    return g.mes === curM;
+    return gy === curY && g.mes === curM;
   });
 }
 function total(){ return active().reduce((s,g)=>s+g.monto,0); }
-function extrasDelMes(){ return (state.ingresosExtra||[]).filter(x => x.mes === curM); }
+function extrasDelMes(){ return (state.ingresosExtra||[]).filter(x => x.mes === curM && (typeof x.anio === 'number' ? x.anio : curY) === curY); }
 function totalExtras(){ return extrasDelMes().reduce((s,x)=>s + x.monto,0); }
 function totalIngresos(){
   const sueldoBase=parseFloat(document.getElementById('sueldo').value)||0;
@@ -654,7 +705,7 @@ function updateInicio(){
   const resta=ingresos-gastos;
   const pct=ingresos>0?(gastos/ingresos)*100:0;
 
-  document.getElementById('inicio-sub').textContent=`Tu resumen de ${MS[curM]} ${new Date().getFullYear()}`;
+  document.getElementById('inicio-sub').textContent=`Tu resumen de ${MS[curM]} ${curY}`;
   document.getElementById('cextra').textContent=fmt(extras);
   document.getElementById('cextrasub').textContent=extrasDelMes().length + ' ingreso' + (extrasDelMes().length !== 1 ? 's' : '') + ' extra este mes';
   document.getElementById('cing').textContent=fmt(ingresos);
@@ -955,16 +1006,17 @@ function closeCarryModal(){
 function maybeCloseCarry(e){ if(e.target===document.getElementById('overlay-carry')) closeCarryModal(); }
 
 function getCarryCandidates(){
-  return state.gastos.filter(g => g.mes === curM && (g.tipo === 'recurrente' || g.tipo === 'cuotas' || g.tipo === 'unico'));
+  return state.gastos.filter(g => (g.anio ?? curY) === curY && g.mes === curM && (g.tipo === 'recurrente' || g.tipo === 'cuotas' || g.tipo === 'unico'));
 }
 
 function renderCarryList(){
   const nextM = nextMonthIndex(curM);
+  const nextY = curM === 11 ? curY + 1 : curY;
   const candidates = getCarryCandidates();
   const listEl = document.getElementById('carry-list');
   const summaryEl = document.getElementById('carry-summary');
   if(summaryEl){
-    summaryEl.textContent = `Mes actual: ${monthName(curM)} · Mes destino: ${monthName(nextM)}.`;
+    summaryEl.textContent = `Periodo actual: ${monthName(curM)} ${curY} · Destino: ${monthName(nextM)} ${nextY}.`;
   }
   if(!listEl) return;
   if(!candidates.length){
@@ -995,6 +1047,7 @@ function clearCarrySelection(){
 
 function carrySelectedExpenses(){
   const nextM = nextMonthIndex(curM);
+  const nextY = curM === 11 ? curY + 1 : curY;
   const selectedIds = Array.from(document.querySelectorAll('.carry-item:checked')).map(x => Number(x.dataset.id));
   if(!selectedIds.length){ alert('Selecciona al menos un gasto.'); return; }
 
@@ -1003,14 +1056,16 @@ function carrySelectedExpenses(){
     const g = state.gastos.find(x => x.id === id);
     if(!g) return;
 
-    const exists = state.gastos.some(x => x.mes === nextM && x.desc === g.desc && x.cat === g.cat && x.tipo === g.tipo && x.monto === g.monto);
+    const exists = state.gastos.some(x => (x.anio ?? curY) === nextY && x.mes === nextM && x.desc === g.desc && x.cat === g.cat && x.tipo === g.tipo && x.monto === g.monto);
     if(exists) return;
 
     state.gastos.push({
       ...g,
       id: nid++,
       mes: nextM,
-      origenMes: g.mes
+      anio: nextY,
+      origenMes: g.mes,
+      origenAnio: g.anio ?? curY
     });
     created++;
   });
@@ -1018,7 +1073,7 @@ function carrySelectedExpenses(){
   save();
   updateAll();
   closeCarryModal();
-  toast(created ? `Se copiaron ${created} gasto(s) a ${monthName(nextM)}` : 'No hubo nuevos gastos para copiar');
+  toast(created ? `Se copiaron ${created} gasto(s) a ${monthName(nextM)} ${nextY}` : 'No hubo nuevos gastos para copiar');
 }
 
 function fillMonthsSelect(selectId, selected = curM){
@@ -1108,7 +1163,7 @@ function saveNote(){
   }
   state.anotaciones = state.anotaciones || [];
   const nextId=(state.anotaciones.reduce((max,x)=>Math.max(max,x.id||0),0))+1;
-  state.anotaciones.push({ id: nextId, desc, monto, cat, dia, tipo, cuotas, cuotaAct, creadoMes: curM });
+  state.anotaciones.push({ id: nextId, desc, monto, cat, dia, tipo, cuotas, cuotaAct, creadoMes: curM, creadoAnio: curY });
   save(); renderNotes(); closeNoteModal(); toast('Anotación agregada ✓');
 }
 
@@ -1138,7 +1193,7 @@ function delNote(id){
 }
 
 function noteToExpense(note, mesDestino){
-  return { id: nid++, desc: note.desc, monto: note.monto, cat: note.cat, dia: note.dia, tipo: note.tipo, cuotas: note.tipo==='cuotas' ? note.cuotas : 0, cuotaAct: note.tipo==='cuotas' ? note.cuotaAct : 1, mes: mesDestino, origenMes: mesDestino };
+  return { id: nid++, desc: note.desc, monto: note.monto, cat: note.cat, dia: note.dia, tipo: note.tipo, cuotas: note.tipo==='cuotas' ? note.cuotas : 0, cuotaAct: note.tipo==='cuotas' ? note.cuotaAct : 1, mes: mesDestino, anio: curY, origenMes: mesDestino, origenAnio: curY };
 }
 
 function openMoveNoteModal(id){
@@ -1504,10 +1559,11 @@ function renderPrestamos(){
 function renderCats(){
   const el=document.getElementById('catgrid');
   if(!el)return;
+  rYears('ybtns-cats');
   rMonths('mbtns-cats');
   el.innerHTML=state.categorias.map(cat=>{
     const s=cs(cat);
-    const gs=state.gastos.filter(g=>g.cat===cat && g.mes===curM);
+    const gs=state.gastos.filter(g=>g.cat===cat && g.mes===curM && (g.anio ?? curY)===curY);
     const tot=gs.reduce((s,g)=>s+g.monto,0);
     return `<div class="rounded-app border px-4 py-4 shadow-soft" style="background:#fff;border-color:${s.bar}40"><div class="mb-2 flex items-center justify-between"><div class="h-[26px] w-[26px] rounded-full" style="background:${s.bar}"></div><button class="rounded-md border-0 bg-transparent px-1.5 py-0.5 text-lg leading-none text-text3 transition hover:bg-redbg hover:text-red1" onclick="delCat('${cat}')">×</button></div><div class="font-heading text-sm font-bold">${cat}</div><div class="text-xs text-text3">${gs.length} gasto${gs.length!==1?'s':''} en ${MS[curM]}</div><div class="mt-1 font-heading text-[15px] font-bold text-red1">${fmt(tot)}</div></div>`;
   }).join('');
@@ -2211,6 +2267,7 @@ async function handleExcelImport(event){
 }
 
 function updateAll(){
+  rYears('ybtns1');
   rMonths('mbtns1');
   updateInicio();
   renderGastos();
