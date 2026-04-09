@@ -16,23 +16,23 @@
             heading: ['Nunito', 'sans-serif']
           },
           colors: {
-            appbg: '#f4f6f9',
-            appbg2: '#eef0f4',
+            appbg: '#f6f7fb',
+            appbg2: '#eef2f7',
             card: '#ffffff',
-            borderc: '#e2e6ed',
-            text1: '#1a1f2e',
-            text2: '#5a6275',
-            text3: '#9aa0b0',
-            green1: '#2ecc8a',
-            greenbg: '#edfaf3',
-            greentx: '#1a7a52',
-            red1: '#e05555',
-            redbg: '#fdf0f0',
-            redtx: '#9b2222',
-            blue1: '#4a90d9',
-            bluebg: '#eef5fd',
-            bluetx: '#1d5899',
-            accent: '#4a90d9'
+            borderc: '#e4e8f0',
+            text1: '#182033',
+            text2: '#5f6b85',
+            text3: '#98a2b3',
+            green1: '#2f9e6f',
+            greenbg: '#eefaf4',
+            greentx: '#1f6f50',
+            red1: '#dc5a5a',
+            redbg: '#fff3f3',
+            redtx: '#9b2c2c',
+            blue1: '#3f6fd8',
+            bluebg: '#eef3ff',
+            bluetx: '#244caa',
+            accent: '#3f6fd8'
           },
           boxShadow: {
             soft: '0 1px 4px rgba(0,0,0,0.06)',
@@ -71,60 +71,84 @@
 </header>
 
 <section id="page-inicio" class="page active mx-auto block max-w-[1280px] animate-up px-6 py-7 max-md:px-4">
-  <div class="mb-1 font-heading text-[22px] font-bold">¡Hola! 👋</div>
-  <div class="mb-6 text-[13px] text-text2" id="inicio-sub">Tu resumen del mes</div>
-  <div class="mb-6 flex flex-wrap items-center gap-2 justify-between">
-    <div class="flex flex-wrap items-center gap-2">
+  <div class="mb-7 overflow-hidden rounded-[24px] border border-[#dbe5f3] bg-gradient-to-r from-white via-white to-bluebg/80 px-6 py-6 shadow-soft max-md:px-4">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <div class="mb-1 font-heading text-[26px] font-bold tracking-[-0.02em] text-text1">Panel mensual</div>
+        <div class="text-[13px] text-text2" id="inicio-sub">Tu resumen del mes</div>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <input type="file" id="excel-import" accept=".xlsx,.xls" class="hidden" onchange="handleExcelImport(event)">
+        <button class="rounded-full border border-accent/15 bg-white px-4 py-2 font-heading text-[12px] font-bold text-accent shadow-soft transition hover:-translate-y-0.5 hover:border-accent hover:bg-bluebg" onclick="triggerExcelImport()">Subir Excel</button>
+        <button class="rounded-full border border-accent bg-accent px-4 py-2 font-heading text-[12px] font-bold text-white shadow-soft transition hover:-translate-y-0.5 hover:brightness-95" onclick="exportExcel()">Descargar Excel</button>
+      </div>
+    </div>
+
+    <div class="mt-5 flex flex-wrap items-center gap-2">
       <span class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Mes:</span>
       <div id="mbtns1" class="flex flex-wrap gap-1.5"></div>
     </div>
-    <div class="flex flex-wrap items-center gap-2">
-      <input type="file" id="excel-import" accept=".xlsx,.xls" class="hidden" onchange="handleExcelImport(event)">
-      <button class="rounded-smapp border border-borderc bg-white px-4 py-2 font-heading text-[12px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="triggerExcelImport()">Subir Excel</button>
-      <button class="rounded-smapp border border-accent bg-accent px-4 py-2 font-heading text-[12px] font-bold text-white transition hover:brightness-95" onclick="exportExcel()">Descargar Excel</button>
+  </div>
+
+  <div class="mb-7 grid grid-cols-1 gap-4 xl:grid-cols-2">
+    <div class="rounded-[18px] border border-borderc bg-white px-5 py-4 shadow-soft">
+      <div class="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <div class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Sueldo base</div>
+          <div class="mt-1 text-[12px] text-text2">Tu ingreso fijo del mes</div>
+        </div>
+        <div class="rounded-full bg-greenbg px-2.5 py-1 text-[10px] font-bold text-greentx">Editable</div>
+      </div>
+      <div class="flex items-baseline gap-1">
+        <span class="font-heading text-lg font-bold text-greentx">S/</span>
+        <input class="w-[160px] border-0 border-b-2 border-[#d7e8de] bg-transparent p-0 font-heading text-[30px] font-bold leading-none text-text1 outline-none focus:border-green1" id="sueldo" type="number" value="5000" oninput="updateAll()">
+      </div>
+    </div>
+
+    <div class="rounded-[18px] border border-borderc bg-white px-5 py-4 shadow-soft">
+      <div class="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <div class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Adicionales</div>
+          <div class="mt-1 text-[12px] text-text2" id="cextrasub">0 ingresos extra este mes</div>
+        </div>
+        <button class="rounded-full border border-accent bg-accent px-4 py-1.5 font-heading text-[12px] font-bold text-white shadow-soft transition hover:-translate-y-0.5 hover:brightness-95" onclick="openExtraModal()">Ingresar</button>
+      </div>
+      <div class="font-heading text-[28px] font-bold leading-none text-text1" id="cextra">S/ 0</div>
     </div>
   </div>
 
-  <div class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
-    <div class="rounded-app border border-[#c0e8d4] bg-greenbg px-5 py-4 shadow-soft">
-      <div class="mb-2 text-xl">💵</div>
-      <div class="mb-1 flex items-center gap-1.5 font-heading text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Sueldo base <span class="text-[10px] font-semibold normal-case tracking-normal text-greentx/60">✏️ editable</span></div>
-      <div class="flex items-baseline gap-1">
-        <span class="font-heading text-lg font-bold text-greentx">S/</span>
-        <input class="w-[130px] border-0 border-b-2 border-green1 bg-transparent p-0 font-heading text-[26px] font-bold leading-none text-greentx outline-none focus:border-greentx" id="sueldo" type="number" value="5000" oninput="updateAll()">
+  <div class="mb-4 grid grid-cols-1 gap-4 xl:grid-cols-3">
+    <div class="rounded-[22px] border border-[#d8ebdf] bg-gradient-to-br from-greenbg via-white to-white px-6 py-5 shadow-soft ring-1 ring-[#dfeee5]">
+      <div class="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <div class="text-[11px] font-bold uppercase tracking-[0.07em] text-greentx">Total ingresos</div>
+          <div class="mt-1 text-[12px] text-text2">Sueldo base + adicionales</div>
+        </div>
+        <div class="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-greentx shadow-soft">Principal</div>
       </div>
-      <div class="mt-1 text-xs text-text3">tu ingreso fijo del mes</div>
+      <div class="font-heading text-[34px] font-bold leading-none text-greentx" id="cing">S/ 0</div>
     </div>
 
-    <div class="rounded-app border border-[#cfe3fb] bg-bluebg px-5 py-4 shadow-soft">
-      <div class="mb-2 text-xl">➕</div>
-      <div class="mb-1 font-heading text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Adicionales</div>
-      <div class="font-heading text-[26px] font-bold leading-none text-bluetx" id="cextra">S/ 0</div>
-      <div class="mt-1 text-xs text-text3" id="cextrasub">0 ingresos extra este mes</div>
-      <div class="mt-3 flex gap-2">
-        <button class="rounded-smapp border border-accent bg-accent px-3 py-1 font-heading text-[12px] font-bold text-white transition hover:brightness-95" onclick="openExtraModal()">Ingresar</button>
+    <div class="rounded-[22px] border border-[#f4d6d6] bg-gradient-to-br from-redbg via-white to-white px-6 py-5 shadow-soft ring-1 ring-[#f8e1e1]">
+      <div class="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <div class="text-[11px] font-bold uppercase tracking-[0.07em] text-redtx">Total gastos</div>
+          <div class="mt-1 text-[12px] text-text2" id="cgsub">este mes</div>
+        </div>
+        <div class="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-redtx shadow-soft">Principal</div>
       </div>
+      <div class="font-heading text-[34px] font-bold leading-none text-red1" id="cg">S/ 0</div>
     </div>
 
-    <div class="rounded-app border border-[#c9e7d6] bg-[#f3fcf7] px-5 py-4 shadow-soft">
-      <div class="mb-2 text-xl">📥</div>
-      <div class="mb-1 font-heading text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Total ingresos</div>
-      <div class="font-heading text-[26px] font-bold leading-none text-greentx" id="cing">S/ 0</div>
-      <div class="mt-1 text-xs text-text3">sueldo base + adicionales</div>
-    </div>
-
-    <div class="rounded-app border border-[#f0c8c8] bg-redbg px-5 py-4 shadow-soft">
-      <div class="mb-2 text-xl">💸</div>
-      <div class="mb-1 font-heading text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Total gastos</div>
-      <div class="font-heading text-[26px] font-bold leading-none text-red1" id="cg">S/ 0</div>
-      <div class="mt-1 text-xs text-text3" id="cgsub">este mes</div>
-    </div>
-
-    <div class="rounded-app border border-[#c0d8f0] bg-bluebg px-5 py-4 shadow-soft" id="rcard">
-      <div class="mb-2 text-xl" id="ricon">✅</div>
-      <div class="mb-1 font-heading text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Te queda</div>
-      <div class="font-heading text-[26px] font-bold leading-none text-bluetx" id="cr">S/ 0</div>
-      <div class="mt-1 text-xs text-text3" id="crsub">disponible</div>
+    <div class="rounded-[22px] border border-[#d8e4fb] bg-gradient-to-br from-bluebg via-white to-white px-6 py-5 shadow-soft ring-1 ring-[#dde8fb]" id="rcard">
+      <div class="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <div class="text-[11px] font-bold uppercase tracking-[0.07em] text-bluetx">Te queda</div>
+          <div class="mt-1 text-[12px] text-text2" id="crsub">disponible</div>
+        </div>
+        <div class="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-bluetx shadow-soft" id="ricon-wrap">Disponible</div>
+      </div>
+      <div class="font-heading text-[34px] font-bold leading-none text-bluetx" id="cr">S/ 0</div>
     </div>
   </div>
 
@@ -183,20 +207,20 @@
 <section id="page-anotaciones" class="page mx-auto hidden max-w-[1100px] px-6 py-7 max-md:px-4">
   <div class="mb-1 font-heading text-[22px] font-bold">Anotaciones 📝</div>
   <div class="mb-6 text-[13px] text-text2">Gastos recordatorio que aún no deben entrar a tus resúmenes ni al total del mes.</div>
-  <div class="overflow-hidden rounded-app border border-borderc bg-card shadow-soft">
-    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-borderc bg-white px-5 py-4">
+  <div class="overflow-hidden rounded-[18px] border border-[#dbe5f3] bg-gradient-to-b from-[#fafcff] to-white shadow-soft">
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[#dbe5f3] bg-bluebg/50 px-5 py-4">
       <div>
         <div class="font-heading text-[17px] font-bold text-text1">Lista de anotaciones</div>
         <div class="text-[13px] text-text2">Pagos futuros o pendientes por considerar</div>
       </div>
       <div class="flex flex-wrap items-center gap-2">
-        <select class="rounded-smapp border border-borderc bg-white px-2.5 py-1.5 font-heading text-xs font-bold text-text2 outline-none focus:border-accent" id="note-cat-filter" onchange="renderNotes()"><option value="">Todas las categorías</option></select>
-        <button class="rounded-smapp border border-borderc bg-white px-3 py-1.5 font-heading text-[12px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="openBulkMoveNotesModal()">Enviar varias</button>
-        <button class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="openNoteModal()">+ Agregar</button>
+        <select class="rounded-full border border-borderc bg-white px-3 py-1.5 font-heading text-xs font-bold text-text2 outline-none focus:border-accent" id="note-cat-filter" onchange="renderNotes()"><option value="">Todas las categorías</option></select>
+        <button class="rounded-full border border-borderc bg-white px-3 py-1.5 font-heading text-[12px] font-bold text-text2 shadow-soft transition hover:border-accent hover:text-accent" onclick="openBulkMoveNotesModal()">Enviar varias</button>
+        <button class="rounded-full border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white shadow-soft transition hover:brightness-95" onclick="openNoteModal()">+ Agregar</button>
       </div>
     </div>
     <div id="notes-list" class="max-h-[720px] overflow-y-auto bg-white"></div>
-    <div class="border-t border-borderc bg-appbg px-5 py-4">
+    <div class="border-t border-[#dbe5f3] bg-appbg px-5 py-4">
       <div class="flex items-center justify-between gap-3">
         <span class="font-heading text-[14px] font-bold uppercase tracking-[0.05em] text-text2">Total anotado</span>
         <span id="notes-total-footer" class="font-heading text-[22px] font-bold text-accent">S/ 0.00</span>
@@ -210,21 +234,21 @@
   <div class="mb-6 text-[13px] text-text2">Aquí se concentran tus cuotas activas y tus préstamos, manteniendo cada flujo separado.</div>
 
   <div class="mb-5 flex flex-wrap justify-end gap-2">
-    <button class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="openModal()">+ Agregar cuota</button>
-    <button class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="openPrestamoModal()">+ Agregar préstamo</button>
+    <button class="rounded-full border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white shadow-soft transition hover:brightness-95" onclick="openModal()">+ Agregar cuota</button>
+    <button class="rounded-full border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white shadow-soft transition hover:brightness-95" onclick="openPrestamoModal()">+ Agregar préstamo</button>
   </div>
 
   <div class="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(340px,0.95fr)_minmax(0,1.35fr)]">
-    <section class="rounded-[18px] border border-[#f3d6d6] bg-gradient-to-b from-[#fff8f8] to-white shadow-soft">
-      <div class="border-b border-[#f3d6d6] px-6 py-5">
+    <section class="rounded-[18px] border border-[#e8e1d2] bg-gradient-to-b from-[#fffdf8] to-white shadow-soft">
+      <div class="border-b border-[#e8e1d2] px-6 py-5">
         <div class="flex items-start justify-between gap-4">
           <div>
             <div class="font-heading text-[18px] font-bold text-text1">Cuotas activas</div>
             <div class="mt-1 text-[13px] text-text2">Tus pagos financiados que siguen vigentes</div>
           </div>
-          <div class="rounded-2xl border border-[#f0c8c8] bg-white px-4 py-3 text-right shadow-soft">
+          <div class="rounded-2xl border border-[#eadfca] bg-white px-4 py-3 text-right shadow-soft">
             <div class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Resumen</div>
-            <div id="compromisos-cuotas-total" class="mt-1 font-heading text-[24px] font-bold leading-none text-red1">S/ 0.00</div>
+            <div id="compromisos-cuotas-total" class="mt-1 font-heading text-[24px] font-bold leading-none text-[#b7791f]">S/ 0.00</div>
             <div class="mt-1 text-[11px] text-text3">mensual</div>
           </div>
         </div>
@@ -234,36 +258,36 @@
       </div>
     </section>
 
-    <section class="rounded-[18px] border border-[#d9e8fb] bg-gradient-to-b from-[#f8fbff] to-white shadow-soft">
-      <div class="border-b border-[#d9e8fb] px-6 py-5">
+    <section class="rounded-[18px] border border-[#dbe5f3] bg-gradient-to-b from-[#fafcff] to-white shadow-soft">
+      <div class="border-b border-[#dbe5f3] px-6 py-5">
         <div class="flex items-start justify-between gap-4 max-md:flex-col max-md:items-start">
           <div>
             <div class="font-heading text-[18px] font-bold text-text1">Préstamos</div>
             <div class="mt-1 text-[13px] text-text2">Control de dinero por cobrar y por pagar</div>
           </div>
           <div class="grid grid-cols-2 gap-3 max-sm:w-full max-sm:grid-cols-1">
-            <div class="rounded-2xl border border-[#cfe3fb] bg-white px-4 py-3 text-right shadow-soft">
+            <div class="rounded-2xl border border-[#dbe5f3] bg-white px-4 py-3 text-right shadow-soft">
               <div class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Me deben</div>
               <div id="prestamos-cobrar" class="mt-1 font-heading text-[22px] font-bold leading-none text-bluetx">S/ 0.00</div>
             </div>
-            <div class="rounded-2xl border border-[#f0c8c8] bg-white px-4 py-3 text-right shadow-soft">
+            <div class="rounded-2xl border border-[#e8e1d2] bg-white px-4 py-3 text-right shadow-soft">
               <div class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Debo</div>
-              <div id="prestamos-pagar" class="mt-1 font-heading text-[22px] font-bold leading-none text-red1">S/ 0.00</div>
+              <div id="prestamos-pagar" class="mt-1 font-heading text-[22px] font-bold leading-none text-[#b7791f]">S/ 0.00</div>
             </div>
           </div>
         </div>
       </div>
       <div class="grid grid-cols-1 gap-4 p-4 xl:grid-cols-2">
-        <div class="rounded-[16px] border border-[#dbe8f8] bg-white shadow-soft">
-          <div class="border-b border-[#dbe8f8] px-5 py-4">
+        <div class="rounded-[16px] border border-[#dbe5f3] bg-white shadow-soft">
+          <div class="border-b border-[#dbe5f3] px-5 py-4 bg-bluebg/30">
             <div class="font-heading text-[16px] font-bold text-text1">Me deben</div>
             <div class="mt-1 text-[12px] text-text2">Préstamos que diste y deben devolverte</div>
           </div>
           <div id="prestamos-lista-cobrar" class="max-h-[900px] overflow-y-auto bg-white"></div>
         </div>
 
-        <div class="rounded-[16px] border border-[#f3d6d6] bg-white shadow-soft">
-          <div class="border-b border-[#f3d6d6] px-5 py-4">
+        <div class="rounded-[16px] border border-[#e8e1d2] bg-white shadow-soft">
+          <div class="border-b border-[#e8e1d2] px-5 py-4 bg-[#fffaf1]">
             <div class="font-heading text-[16px] font-bold text-text1">Debo</div>
             <div class="mt-1 text-[12px] text-text2">Préstamos recibidos que aún debes pagar</div>
           </div>
@@ -282,9 +306,9 @@
     <div id="mbtns-cats" class="flex flex-wrap gap-1.5"></div>
   </div>
   <div class="mb-4 flex justify-end">
-    <button class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="addCat()">+ Nueva categoría</button>
+    <button class="rounded-full border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white shadow-soft transition hover:brightness-95" onclick="addCat()">+ Nueva categoría</button>
   </div>
-  <div class="mb-6 grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3" id="catgrid"></div>
+  <div class="mb-6 grid grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-3" id="catgrid"></div>
 </section>
 
 <div class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/35 p-4" id="overlay" onclick="maybeClose(event)">
@@ -639,19 +663,19 @@ function updateInicio(){
   document.getElementById('cr').textContent=fmt(Math.abs(resta));
 
   const rcard=document.getElementById('rcard');
-  const ricon=document.getElementById('ricon');
   const crsub=document.getElementById('crsub');
   const crv=document.getElementById('cr');
+  const riconWrap=document.getElementById('ricon-wrap');
   if(resta>=0){
-    crv.className='font-heading text-[26px] font-bold leading-none text-bluetx';
-    ricon.textContent='✅';
+    crv.className='font-heading text-[34px] font-bold leading-none text-bluetx';
+    if(riconWrap) riconWrap.textContent='Disponible';
     crsub.textContent='disponible';
-    rcard.className='rounded-app border border-[#c0d8f0] bg-bluebg px-5 py-4 shadow-soft';
+    rcard.className='rounded-[20px] border border-[#d9e4fb] bg-gradient-to-br from-bluebg to-white px-5 py-5 shadow-soft ring-1 ring-[#d9e4fb]';
   } else {
-    crv.className='font-heading text-[26px] font-bold leading-none text-red1';
-    ricon.textContent='⚠️';
+    crv.className='font-heading text-[34px] font-bold leading-none text-red1';
+    if(riconWrap) riconWrap.textContent='Alerta';
     crsub.textContent='te pasaste';
-    rcard.className='rounded-app border border-[#f0c8c8] bg-redbg px-5 py-4 shadow-soft';
+    rcard.className='rounded-[20px] border border-[#f4d3d3] bg-gradient-to-br from-redbg to-white px-5 py-5 shadow-soft ring-1 ring-[#f4d3d3]';
   }
 
   const clamp=Math.min(pct,100);
@@ -849,14 +873,14 @@ function renderCuotas(){
     const comp=g.cuotaAct>g.cuotas;
     const cuotaMostrada=comp ? g.cuotas : g.cuotaAct;
 
-    return `<div class="mb-3 rounded-[16px] border border-[#f0d7d7] bg-white px-5 py-4 shadow-soft ${comp?'opacity-75':''}">
+    return `<div class="mb-3 rounded-[16px] border border-[#eadfca] bg-white px-5 py-4 shadow-soft ${comp?'opacity-75':''}">
       <div class="mb-2.5 flex items-start justify-between gap-3">
         <div>
           <div class="font-heading text-[15px] font-bold">${g.desc} ${comp?'<span class="rounded-full bg-greenbg px-2 py-0.5 text-[11px] text-greentx">✓ Completado</span>':''}</div>
           <div class="mt-1.5"><span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold" style="background:${s.bg};color:${s.tx}"><span class="h-1.5 w-1.5 rounded-full" style="background:${s.bar}"></span>${g.cat}</span></div>
         </div>
         <div class="shrink-0 text-right">
-          <div class="font-heading text-[17px] font-bold text-red1">${fmt(g.monto)}<span class="text-xs font-normal text-text3">/mes</span></div>
+          <div class="font-heading text-[17px] font-bold text-[#b7791f]">${fmt(g.monto)}<span class="text-xs font-normal text-text3">/mes</span></div>
           <div class="mt-0.5 text-[11px] text-text3">Cuota ${cuotaMostrada} de ${g.cuotas}</div>
         </div>
       </div>
@@ -1029,7 +1053,7 @@ function renderNotes(){
   el.innerHTML=list.map(n=>{
     const s=cs(n.cat);
     const noteTag=n.tipo==='cuotas' ? `<span class="ml-1.5 rounded-full bg-bluebg px-2 py-0.5 text-[10px] font-bold text-bluetx">Cuotas</span>` : n.tipo==='recurrente' ? `<span class="ml-1.5 rounded-full bg-appbg px-2 py-0.5 text-[10px] font-bold text-text2">Recurrente</span>` : `<span class="ml-1.5 rounded-full bg-appbg px-2 py-0.5 text-[10px] font-bold text-text2">Pendiente</span>`;
-    return `<div class="grid grid-cols-[1fr_auto_auto_auto_auto_auto] items-center gap-3 border-b border-appbg2 px-5 py-3 transition hover:bg-appbg"><div class="min-w-0 flex items-center gap-2"><div class="truncate text-[14px] font-semibold text-text1">${n.desc}${noteTag}</div><span class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold leading-none" style="background:${s.bg};color:${s.tx}"><span class="h-1.5 w-1.5 rounded-full" style="background:${s.bar}"></span>${n.cat}</span></div><div class="whitespace-nowrap text-[12px] text-text3">día ${n.dia}</div><div class="whitespace-nowrap font-heading text-[15px] font-bold text-accent">${fmt(n.monto)}</div><button class="rounded-md border-0 bg-transparent px-1.5 py-0.5 text-[12px] leading-none text-text3 transition hover:bg-greenbg hover:text-greentx" onclick="openMoveNoteModal(${n.id})">Mes</button><button class="rounded-md border-0 bg-transparent px-1.5 py-0.5 text-[16px] leading-none text-text3 transition hover:bg-bluebg hover:text-accent" onclick="editNote(${n.id})">✎</button><button class="rounded-md border-0 bg-transparent px-1.5 py-0.5 text-[20px] leading-none text-text3 transition hover:bg-redbg hover:text-red1" onclick="delNote(${n.id})">×</button></div>`;
+    return `<div class="grid grid-cols-[1fr_auto_auto_auto_auto_auto] items-center gap-3 border-b border-appbg2 px-5 py-3 transition hover:bg-appbg/60"><div class="min-w-0 flex items-center gap-2"><div class="truncate text-[14px] font-semibold text-text1">${n.desc}${noteTag}</div><span class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold leading-none" style="background:${s.bg};color:${s.tx}"><span class="h-1.5 w-1.5 rounded-full" style="background:${s.bar}"></span>${n.cat}</span></div><div class="whitespace-nowrap text-[12px] text-text3">día ${n.dia}</div><div class="whitespace-nowrap font-heading text-[15px] font-bold text-accent">${fmt(n.monto)}</div><button class="rounded-full border border-borderc bg-white px-2.5 py-1 text-[11px] leading-none text-text2 shadow-soft transition hover:border-accent hover:text-accent" onclick="openMoveNoteModal(${n.id})">Mes</button><button class="rounded-md border-0 bg-transparent px-1.5 py-0.5 text-[16px] leading-none text-text3 transition hover:bg-bluebg hover:text-accent" onclick="editNote(${n.id})">✎</button><button class="rounded-md border-0 bg-transparent px-1.5 py-0.5 text-[20px] leading-none text-text3 transition hover:bg-redbg hover:text-red1" onclick="delNote(${n.id})">×</button></div>`;
   }).join('');
 }
 
