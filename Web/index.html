@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mis Finanzas</title>
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Nunito Sans', 'sans-serif'],
+            heading: ['Nunito', 'sans-serif']
+          },
+          colors: {
+            appbg: '#f4f6f9',
+            appbg2: '#eef0f4',
+            card: '#ffffff',
+            borderc: '#e2e6ed',
+            text1: '#1a1f2e',
+            text2: '#5a6275',
+            text3: '#9aa0b0',
+            green1: '#2ecc8a',
+            greenbg: '#edfaf3',
+            greentx: '#1a7a52',
+            red1: '#e05555',
+            redbg: '#fdf0f0',
+            redtx: '#9b2222',
+            blue1: '#4a90d9',
+            bluebg: '#eef5fd',
+            bluetx: '#1d5899',
+            accent: '#4a90d9'
+          },
+          boxShadow: {
+            soft: '0 1px 4px rgba(0,0,0,0.06)',
+            modal: '0 8px 40px rgba(0,0,0,0.15)',
+            toast: '0 4px 20px rgba(0,0,0,0.2)'
+          },
+          borderRadius: {
+            app: '14px',
+            smapp: '9px'
+          },
+          keyframes: {
+            up: {
+              '0%': { opacity: '0', transform: 'translateY(5px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' }
+            }
+          },
+          animation: {
+            up: 'up 0.2s ease'
+          }
+        }
+      }
+    };
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&family=Nunito+Sans:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body class="bg-appbg text-text1 font-sans text-sm leading-6">
+
+<header class="sticky top-0 z-50 flex h-[54px] items-center border-b border-borderc bg-white px-6 max-md:px-4">
+  <div class="mr-8 whitespace-nowrap font-heading text-lg font-bold text-accent max-md:mr-4 max-md:text-[15px]">💰 <span class="text-text1">Mis</span>Finanzas</div>
+  <nav class="flex overflow-x-auto" id="main-nav">
+    <button class="nav-tab active flex h-[54px] items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-4 font-heading text-[13px] font-bold text-text3 transition hover:text-text2 max-md:px-2.5 max-md:text-[11px]" onclick="goTo('inicio',this)">🏠 Inicio</button>
+    <button class="nav-tab flex h-[54px] items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-4 font-heading text-[13px] font-bold text-text3 transition hover:text-text2 max-md:px-2.5 max-md:text-[11px]" onclick="goTo('cuotas',this)">📅 Cuotas</button>
+    <button class="nav-tab flex h-[54px] items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-4 font-heading text-[13px] font-bold text-text3 transition hover:text-text2 max-md:px-2.5 max-md:text-[11px]" onclick="goTo('cats',this)">🏷️ Categorías</button>
+  </nav>
+</header>
+
+<section id="page-inicio" class="page active mx-auto block max-w-[1280px] animate-up px-6 py-7 max-md:px-4">
+  <div class="mb-1 font-heading text-[22px] font-bold">¡Hola! 👋</div>
+  <div class="mb-6 text-[13px] text-text2" id="inicio-sub">Tu resumen del mes</div>
+  <div class="mb-6 flex flex-wrap items-center gap-2 justify-between">
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Mes:</span>
+      <div id="mbtns1" class="flex flex-wrap gap-1.5"></div>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <input type="file" id="excel-import" accept=".xlsx,.xls" class="hidden" onchange="handleExcelImport(event)">
+      <button class="rounded-smapp border border-borderc bg-white px-4 py-2 font-heading text-[12px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="triggerExcelImport()">Subir Excel</button>
+      <button class="rounded-smapp border border-accent bg-accent px-4 py-2 font-heading text-[12px] font-bold text-white transition hover:brightness-95" onclick="exportExcel()">Descargar Excel</button>
+    </div>
+  </div>
+
+  <div class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+    <div class="rounded-app border border-[#c0e8d4] bg-greenbg px-5 py-4 shadow-soft">
+      <div class="mb-2 text-xl">💵</div>
+      <div class="mb-1 flex items-center gap-1.5 font-heading text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Sueldo base <span class="text-[10px] font-semibold normal-case tracking-normal text-greentx/60">✏️ editable</span></div>
+      <div class="flex items-baseline gap-1">
+        <span class="font-heading text-lg font-bold text-greentx">S/</span>
+        <input class="w-[130px] border-0 border-b-2 border-green1 bg-transparent p-0 font-heading text-[26px] font-bold leading-none text-greentx outline-none focus:border-greentx" id="sueldo" type="number" value="5000" oninput="updateAll()">
+      </div>
+      <div class="mt-1 text-xs text-text3">tu ingreso fijo del mes</div>
+    </div>
+
+    <div class="rounded-app border border-[#cfe3fb] bg-bluebg px-5 py-4 shadow-soft">
+      <div class="mb-2 text-xl">➕</div>
+      <div class="mb-1 font-heading text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Adicionales</div>
+      <div class="font-heading text-[26px] font-bold leading-none text-bluetx" id="cextra">S/ 0</div>
+      <div class="mt-1 text-xs text-text3" id="cextrasub">0 ingresos extra este mes</div>
+      <div class="mt-3 flex gap-2">
+        <button class="rounded-smapp border border-accent bg-accent px-3 py-1 font-heading text-[12px] font-bold text-white transition hover:brightness-95" onclick="openExtraModal()">+ Agregar</button>
+        <button class="rounded-smapp border border-borderc bg-white px-3 py-1 font-heading text-[12px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="clearExtrasMonth()">Limpiar</button>
+      </div>
+    </div>
+
+    <div class="rounded-app border border-[#c9e7d6] bg-[#f3fcf7] px-5 py-4 shadow-soft">
+      <div class="mb-2 text-xl">📥</div>
+      <div class="mb-1 font-heading text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Total ingresos</div>
+      <div class="font-heading text-[26px] font-bold leading-none text-greentx" id="cing">S/ 0</div>
+      <div class="mt-1 text-xs text-text3">sueldo base + adicionales</div>
+    </div>
+
+    <div class="rounded-app border border-[#f0c8c8] bg-redbg px-5 py-4 shadow-soft">
+      <div class="mb-2 text-xl">💸</div>
+      <div class="mb-1 font-heading text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Total gastos</div>
+      <div class="font-heading text-[26px] font-bold leading-none text-red1" id="cg">S/ 0</div>
+      <div class="mt-1 text-xs text-text3" id="cgsub">este mes</div>
+    </div>
+
+    <div class="rounded-app border border-[#c0d8f0] bg-bluebg px-5 py-4 shadow-soft" id="rcard">
+      <div class="mb-2 text-xl" id="ricon">✅</div>
+      <div class="mb-1 font-heading text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Te queda</div>
+      <div class="font-heading text-[26px] font-bold leading-none text-bluetx" id="cr">S/ 0</div>
+      <div class="mt-1 text-xs text-text3" id="crsub">disponible</div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,0.75fr)_minmax(0,0.25fr)]">
+    <aside class="min-w-0 xl:pr-2">
+      <div class="overflow-hidden rounded-app border border-borderc bg-card shadow-soft xl:sticky xl:top-[74px]">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-borderc bg-white px-5 py-4">
+          <div>
+            <div class="font-heading text-[17px] font-bold text-text1">Lista de gastos</div>
+            <div class="text-[13px] text-text2">Tus pagos activos del mes</div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <select class="rounded-smapp border border-borderc bg-white px-2.5 py-1.5 font-heading text-xs font-bold text-text2 outline-none focus:border-accent" id="fcat" onchange="renderGastos()"><option value="">Todas las categorías</option></select>
+            <button class="rounded-smapp border border-borderc bg-white px-3 py-1.5 font-heading text-[12px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="openCarryModal()">Pasar mes</button>
+            <button class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="openModal()">+ Agregar</button>
+          </div>
+        </div>
+        <div id="glist" class="max-h-[780px] overflow-y-auto bg-white"></div>
+        <div class="border-t border-borderc bg-appbg px-5 py-4">
+          <div class="flex items-center justify-between gap-3">
+            <span class="font-heading text-[14px] font-bold uppercase tracking-[0.05em] text-text2">Total gastos</span>
+            <span id="gastos-total-footer" class="font-heading text-[22px] font-bold text-red1">S/ 0.00</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div>
+      <div class="mb-3 rounded-app border border-borderc bg-card px-6 py-5 shadow-soft">
+        <div class="mb-4 flex items-baseline justify-between gap-3 max-sm:flex-col max-sm:items-start">
+          <span class="font-heading text-sm font-bold">Resumen de mis gastos</span>
+          <span class="font-heading text-[22px] font-bold text-accent" id="ppct">0%</span>
+        </div>
+        <div class="mb-4 h-3.5 overflow-hidden rounded-full bg-appbg2">
+          <div class="h-full w-0 rounded-full bg-green1 transition-all duration-500" id="pfill"></div>
+        </div>
+        <div class="flex justify-between text-xs text-text2">
+          <span id="pleft"></span>
+          <span id="pright"></span>
+        </div>
+      </div>
+
+      <div class="rounded-app border border-borderc bg-card px-6 py-5 shadow-soft">
+        <div class="mb-1 font-heading text-sm font-bold">Distribución por categoría</div>
+        <div class="mb-4 text-xs text-text3">Así se reparten tus gastos del mes por categoría, manteniendo visible lo disponible.</div>
+
+        <div class="flex flex-col items-center gap-4">
+          <canvas id="donut" width="220" height="220" class="h-[220px] w-[220px]"></canvas>
+          <div id="dlegend" class="flex w-full flex-col gap-2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="page-cuotas" class="page mx-auto hidden max-w-[960px] px-6 py-7 max-md:px-4">
+  <div class="mb-1 font-heading text-[22px] font-bold">Cuotas y préstamos 📅</div>
+  <div class="mb-6 text-[13px] text-text2">Lleva el control de tus pagos en cuotas</div>
+  <div class="mb-4 flex justify-end">
+    <button class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="openModal()">+ Agregar cuota</button>
+  </div>
+  <div id="qlist"></div>
+</section>
+
+<section id="page-cats" class="page mx-auto hidden max-w-[960px] px-6 py-7 max-md:px-4">
+  <div class="mb-1 font-heading text-[22px] font-bold">Categorías 🏷️</div>
+  <div class="mb-6 text-[13px] text-text2">Grupos para organizar tus gastos</div>
+  <div class="mb-4 flex justify-end">
+    <button class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="addCat()">+ Nueva categoría</button>
+  </div>
+  <div class="mb-6 grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3" id="catgrid"></div>
+</section>
+
+<div class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/35 p-4" id="overlay" onclick="maybeClose(event)">
+  <div class="w-full max-w-[450px] rounded-app bg-card p-6 shadow-modal animate-up">
+    <h3 id="mh" class="mb-5 font-heading text-lg font-bold">Agregar gasto</h3>
+
+    <div class="mb-3 grid grid-cols-1 gap-3">
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">¿Qué es este gasto?</label>
+        <input id="fdesc" placeholder="Ej: Luz, Internet, Préstamo..." class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+      </div>
+    </div>
+
+    <div class="mb-3 grid grid-cols-2 gap-3">
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Monto mensual (S/)</label>
+        <input id="fmonto" type="number" placeholder="0.00" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Categoría</label>
+        <select id="fcatModal" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white"></select>
+      </div>
+    </div>
+
+    <div class="mb-3 grid grid-cols-2 gap-3">
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Día de pago</label>
+        <input id="fdia" type="number" value="15" min="1" max="31" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Tipo de gasto</label>
+        <select id="ftipo" onchange="toggleQ()" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+          <option value="unico">Solo este mes</option>
+          <option value="recurrente">Recurrente (fijo)</option>
+          <option value="cuotas">En cuotas</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="qfields" class="hidden">
+      <div class="mb-2.5 mt-3 border-t border-borderc pt-3 text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Detalles de las cuotas</div>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Total de cuotas</label>
+          <input id="fcuotas" type="number" placeholder="Ej: 12" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">¿En qué cuota vas?</label>
+          <input id="fcuotaact" type="number" value="1" min="1" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-5 flex justify-end gap-2">
+      <button class="rounded-smapp border border-borderc bg-white px-4 py-1.5 font-heading text-[13px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="closeModal()">Cancelar</button>
+      <button class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="saveG()">Guardar ✓</button>
+    </div>
+  </div>
+</div>
+
+<div class="fixed inset-0 z-[210] hidden items-center justify-center bg-black/35 p-4" id="overlay-extra" onclick="maybeCloseExtra(event)">
+  <div class="w-full max-w-[420px] rounded-app bg-card p-6 shadow-modal animate-up">
+    <h3 class="mb-5 font-heading text-lg font-bold">Agregar ingreso adicional</h3>
+    <div class="mb-3 grid grid-cols-1 gap-3">
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Descripción</label>
+        <input id="extra-desc" placeholder="Ej: Bono, freelance, devolución..." class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+      </div>
+    </div>
+    <div class="mb-3 grid grid-cols-2 gap-3">
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Monto (S/)</label>
+        <input id="extra-monto" type="number" placeholder="0.00" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Mes</label>
+        <select id="extra-mes" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white"></select>
+      </div>
+    </div>
+    <div id="extra-list" class="mb-3 max-h-[180px] overflow-y-auto rounded-smapp border border-borderc bg-appbg/60 p-3"></div>
+    <div class="mt-5 flex justify-end gap-2">
+      <button class="rounded-smapp border border-borderc bg-white px-4 py-1.5 font-heading text-[13px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="closeExtraModal()">Cerrar</button>
+      <button class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="saveExtra()">Guardar ✓</button>
+    </div>
+  </div>
+</div>
+
+<div class="fixed inset-0 z-[220] hidden items-center justify-center bg-black/35 p-4" id="overlay-carry" onclick="maybeCloseCarry(event)">
+  <div class="w-full max-w-[620px] rounded-app bg-card p-6 shadow-modal animate-up">
+    <h3 class="mb-1 font-heading text-lg font-bold">Pasar gastos al siguiente mes</h3>
+    <div class="mb-4 text-[13px] text-text2">Selecciona qué gastos de este mes quieres copiar al siguiente.</div>
+    <div class="mb-3 flex flex-wrap gap-2">
+      <button class="rounded-smapp border border-borderc bg-white px-3 py-1.5 font-heading text-[12px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="markCarryByMode('all')">Todos</button>
+      <button class="rounded-smapp border border-borderc bg-white px-3 py-1.5 font-heading text-[12px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="markCarryByMode('recurrente')">Solo recurrentes</button>
+      <button class="rounded-smapp border border-borderc bg-white px-3 py-1.5 font-heading text-[12px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="markCarryByMode('cuotas')">Solo cuotas</button>
+      <button class="rounded-smapp border border-borderc bg-white px-3 py-1.5 font-heading text-[12px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="clearCarrySelection()">Limpiar selección</button>
+    </div>
+    <div id="carry-summary" class="mb-3 rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[12px] text-text2"></div>
+    <div id="carry-list" class="max-h-[320px] overflow-y-auto rounded-smapp border border-borderc bg-white"></div>
+    <div class="mt-5 flex justify-end gap-2">
+      <button class="rounded-smapp border border-borderc bg-white px-4 py-1.5 font-heading text-[13px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="closeCarryModal()">Cancelar</button>
+      <button class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="carrySelectedExpenses()">Copiar seleccionados</button>
+    </div>
+  </div>
+</div>
+
+<div class="fixed bottom-6 right-6 z-[999] translate-y-[60px] rounded-smapp bg-text1 px-[18px] py-2.5 font-heading text-[13px] font-bold text-white opacity-0 shadow-toast transition-all duration-200" id="toast"></div>
+
+<script>
+const MS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MSH = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+let curM = new Date().getMonth(), editId = null, nid = 50;
+
+const CSTYLE = {
+  'Maria Elena':{ bg:'#f3eaf8', tx:'#7a3fa0', bar:'#b07fd4' },
+  'Personal':   { bg:'#eef5fd', tx:'#1d5899', bar:'#4a90d9' },
+  'Carro':      { bg:'#fef4eb', tx:'#8a4a10', bar:'#f0923a' },
+  'Viejo':      { bg:'#f1f2f4', tx:'#5a6275', bar:'#9aa0b0' },
+  'Vane':       { bg:'#feeef5', tx:'#8a1f55', bar:'#e06090' },
+};
+function cs(cat){ return CSTYLE[cat]||{bg:'#fef9ec',tx:'#7a5c10',bar:'#e8b84b'}; }
+
+let state = {
+  categorias:['Maria Elena','Personal','Carro','Viejo','Vane'],
+  ingresosExtra: [],
+  gastos:[
+    {id:1, desc:'Internet Maria Elena', monto:25, cat:'Maria Elena',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, origenMes: curM},
+    {id:2, desc:'Google Drive', monto:40, cat:'Personal',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, origenMes: curM},
+    {id:3, desc:'Luz y Agua Maria Elena', monto:40, cat:'Maria Elena',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, origenMes: curM},
+    {id:4, desc:'Limpieza (propina)', monto:100, cat:'Maria Elena',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, origenMes: curM},
+    {id:5, desc:'Postpago', monto:35, cat:'Personal',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, origenMes: curM},
+    {id:6, desc:'ChatGPT', monto:90, cat:'Personal',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, origenMes: curM},
+    {id:7, desc:'Seguro Changan Cs15', monto:73, cat:'Carro',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, origenMes: curM},
+    {id:8, desc:'Comida Maria Elena', monto:185, cat:'Maria Elena',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, origenMes: curM},
+    {id:9, desc:'Internet viejo', monto:500, cat:'Viejo',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, origenMes: curM},
+    {id:10,desc:'Préstamo Changan Cs15', monto:500, cat:'Carro',dia:15,tipo:'cuotas', cuotas:36,cuotaAct:12, mes: curM, origenMes: curM},
+    {id:11,desc:'Tarjeta Crédito Interbank', monto:2000, cat:'Vane',dia:15,tipo:'cuotas', cuotas:12,cuotaAct:3, mes: curM, origenMes: curM},
+    {id:12,desc:'Pago clínica bebé', monto:1000, cat:'Personal',dia:15,tipo:'cuotas', cuotas:6, cuotaAct:2, mes: curM, origenMes: curM},
+    {id:13,desc:'Internet nuevo', monto:50, cat:'Personal',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, origenMes: curM},
+  ]
+};
+
+function save(){ try{localStorage.setItem('mf3',JSON.stringify(state));}catch(e){} }
+function load(){
+  try{
+    const d=localStorage.getItem('mf3');
+    if(d){
+      state=JSON.parse(d);
+      state.ingresosExtra = state.ingresosExtra || [];
+      state.gastos = (state.gastos || []).map(g => ({
+        ...g,
+        mes: typeof g.mes === 'number' ? g.mes : curM,
+        origenMes: typeof g.origenMes === 'number' ? g.origenMes : (typeof g.mes === 'number' ? g.mes : curM)
+      }));
+      nid=Math.max(...state.gastos.map(g=>g.id),49)+1;
+    }
+    const sv=localStorage.getItem('mf3_sueldo');
+    if(sv) document.getElementById('sueldo').value=sv;
+  }catch(e){}
+}
+
+function fmt(n){ return 'S/ '+Math.abs(n).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function monthYearLabel(){ return `${MS[curM]} ${new Date().getFullYear()}`; }
+function active(){
+  return state.gastos.filter(g => {
+    if(g.tipo === 'cuotas'){
+      return g.cuotaAct <= g.cuotas && g.mes <= curM;
+    }
+    return g.mes === curM;
+  });
+}
+function total(){ return active().reduce((s,g)=>s+g.monto,0); }
+function extrasDelMes(){ return (state.ingresosExtra||[]).filter(x => x.mes === curM); }
+function totalExtras(){ return extrasDelMes().reduce((s,x)=>s + x.monto,0); }
+function totalIngresos(){
+  const sueldoBase=parseFloat(document.getElementById('sueldo').value)||0;
+  return sueldoBase + totalExtras();
+}
+
+function navTabClass(active){
+  return 'nav-tab flex h-[54px] items-center gap-1.5 whitespace-nowrap border-b-2 px-4 font-heading text-[13px] font-bold transition max-md:px-2.5 max-md:text-[11px] ' +
+    (active ? 'border-accent text-accent' : 'border-transparent text-text3 hover:text-text2');
+}
+function monthBtnClass(active){
+  return 'rounded-full border px-3 py-1 font-heading text-xs font-bold transition ' +
+    (active ? 'border-accent bg-accent text-white' : 'border-borderc bg-white text-text2 hover:border-accent hover:text-accent');
+}
+
+function rMonths(id){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.innerHTML=MSH.map((m,i)=>`<button class="${monthBtnClass(i===curM)}" onclick="setM(${i})">${m}</button>`).join('');
+}
+function setM(m){curM=m;updateAll();}
+
+function goTo(id,btn){
+  document.querySelectorAll('.page').forEach(p=>{
+    p.classList.add('hidden');
+    p.classList.remove('block','animate-up','active');
+  });
+  document.querySelectorAll('.nav-tab').forEach((b)=>b.className=navTabClass(false));
+  const page=document.getElementById('page-'+id);
+  page.classList.remove('hidden');
+  page.classList.add('block','animate-up','active');
+  btn.className=navTabClass(true);
+  updateAll();
+}
+
+function updateInicio(){
+  const sueldoBase=parseFloat(document.getElementById('sueldo').value)||0;
+  try{ localStorage.setItem('mf3_sueldo', sueldoBase); }catch(e){}
+
+  const extras=totalExtras();
+  const ingresos=totalIngresos();
+  const gastos=total();
+  const resta=ingresos-gastos;
+  const pct=ingresos>0?(gastos/ingresos)*100:0;
+
+  document.getElementById('inicio-sub').textContent=`Tu resumen de ${MS[curM]} ${new Date().getFullYear()}`;
+  document.getElementById('cextra').textContent=fmt(extras);
+  document.getElementById('cextrasub').textContent=extrasDelMes().length + ' ingreso' + (extrasDelMes().length !== 1 ? 's' : '') + ' extra este mes';
+  document.getElementById('cing').textContent=fmt(ingresos);
+  document.getElementById('cg').textContent=fmt(gastos);
+  document.getElementById('cgsub').textContent=active().length+' gastos activos';
+  document.getElementById('cr').textContent=fmt(Math.abs(resta));
+
+  const rcard=document.getElementById('rcard');
+  const ricon=document.getElementById('ricon');
+  const crsub=document.getElementById('crsub');
+  const crv=document.getElementById('cr');
+  if(resta>=0){
+    crv.className='font-heading text-[26px] font-bold leading-none text-bluetx';
+    ricon.textContent='✅';
+    crsub.textContent='disponible';
+    rcard.className='rounded-app border border-[#c0d8f0] bg-bluebg px-5 py-4 shadow-soft';
+  } else {
+    crv.className='font-heading text-[26px] font-bold leading-none text-red1';
+    ricon.textContent='⚠️';
+    crsub.textContent='te pasaste';
+    rcard.className='rounded-app border border-[#f0c8c8] bg-redbg px-5 py-4 shadow-soft';
+  }
+
+  const clamp=Math.min(pct,100);
+  const pf=document.getElementById('pfill');
+  pf.style.width=clamp.toFixed(1)+'%';
+  pf.className='h-full rounded-full transition-all duration-500 ' + (pct>=100?'bg-red1':pct>=80?'bg-[#e8b84b]':'bg-green1');
+
+  const pp=document.getElementById('ppct');
+  pp.textContent=pct.toFixed(0)+'%';
+  pp.className='font-heading text-[22px] font-bold ' + (pct>=100?'text-red1':'text-accent');
+
+  document.getElementById('pleft').textContent=fmt(gastos)+' gastado';
+  document.getElementById('pright').textContent=resta>=0?fmt(resta)+' disponible':'⚠️ Te pasaste '+fmt(Math.abs(resta));
+  const bycat={};
+  active().forEach(g=>{bycat[g.cat]=(bycat[g.cat]||0)+g.monto;});
+  const sorted=Object.entries(bycat).sort((a,b)=>b[1]-a[1]);
+
+  drawDonut(sorted,gastos,ingresos);
+  save();
+}
+
+function drawDonut(sorted,tot,sueldo){
+  const c=document.getElementById('donut');
+  const ctx=c.getContext('2d');
+  const size=220;
+  const center=size/2;
+  const outer=88;
+  const inner=54;
+  ctx.clearRect(0,0,size,size);
+
+  const resta=Math.max(sueldo-tot,0);
+
+  const legendItems = sorted.slice(0,5);
+  const otherItems = sorted.slice(5);
+  const otherTotal = otherItems.reduce((acc, [, val]) => acc + val, 0);
+  const chartData = [...legendItems];
+  if(otherTotal > 0){
+    chartData.push(['Otros', otherTotal]);
+  }
+  if(resta > 0 && sueldo > 0){
+    chartData.push(['Disponible', resta]);
+  }
+
+  const chartTotal = chartData.reduce((acc, [, val]) => acc + val, 0);
+  let ang=-Math.PI/2;
+
+  chartData.forEach(([cat,val])=>{
+    let color;
+    if(cat === 'Disponible'){
+      color = '#2ecc8a';
+    } else if(cat === 'Otros'){
+      color = '#cbd5e1';
+    } else {
+      color = cs(cat).bar;
+    }
+
+    const sl=chartTotal>0?(val/chartTotal)*Math.PI*2:0;
+    const startAng=ang;
+    const endAng=ang+sl;
+    const midAng=startAng + (sl / 2);
+
+    ctx.beginPath();
+    ctx.moveTo(center,center);
+    ctx.arc(center,center,outer,startAng,endAng);
+    ctx.closePath();
+    ctx.fillStyle=color;
+    ctx.fill();
+
+    const pct = chartTotal>0 ? (val/chartTotal)*100 : 0;
+    if (pct >= 6) {
+      const labelRadius = (outer + inner) / 2 + 2;
+      const lx = center + Math.cos(midAng) * labelRadius;
+      const ly = center + Math.sin(midAng) * labelRadius;
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '700 10px Nunito, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+      ctx.lineWidth = 3;
+      ctx.strokeText(`${Math.round(pct)}%`, lx, ly);
+      ctx.fillText(`${Math.round(pct)}%`, lx, ly);
+    }
+
+    ang=endAng;
+  });
+
+  ctx.beginPath();
+  ctx.arc(center,center,inner,0,Math.PI*2);
+  ctx.fillStyle='#ffffff';
+  ctx.fill();
+
+  ctx.fillStyle='#9aa0b0';
+  ctx.font='700 11px Nunito, sans-serif';
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  ctx.fillText('Total gastado', center, center-12);
+
+  ctx.fillStyle='#1a1f2e';
+  ctx.font='bold 16px Nunito, sans-serif';
+  ctx.fillText(fmt(tot), center, center+10);
+
+  const catRows=legendItems.map(([cat,val])=>{
+    const s=cs(cat);
+    const pct=tot>0?((val/tot)*100).toFixed(0):0;
+    return `<div class="rounded-app border border-borderc bg-white px-3 py-2"><div class="flex items-center gap-3"><div class="h-8 w-1.5 rounded-full" style="background:${s.bar}"></div><div class="min-w-0 flex-1"><div class="truncate text-[13px] font-semibold text-text1">${cat}</div></div><div class="flex items-center gap-3 text-right"><div class="font-heading text-sm font-bold text-text1">${pct}%</div><div class="text-[11px] text-text2">${fmt(val)}</div></div></div></div>`;
+  }).join('');
+
+  const otrosRow=otherTotal>0
+    ? `<div class="rounded-app border border-borderc bg-white px-3 py-2"><div class="flex items-center gap-3"><div class="h-8 w-1.5 rounded-full bg-slate-300"></div><div class="min-w-0 flex-1"><div class="truncate text-[13px] font-semibold text-text1">Otros</div></div><div class="flex items-center gap-3 text-right"><div class="font-heading text-sm font-bold text-text1">${tot>0?((otherTotal/tot)*100).toFixed(0):0}%</div><div class="text-[11px] text-text2">${fmt(otherTotal)}</div></div></div></div>` : '';
+
+  const libreRow=resta>0&&sueldo>0
+    ? `<div class="rounded-app border border-[#c0e8d4] bg-greenbg px-3 py-2"><div class="flex items-center gap-3"><div class="h-8 w-1.5 rounded-full bg-green1"></div><div class="min-w-0 flex-1"><div class="truncate text-[13px] font-semibold text-greentx">Disponible</div><div class="text-[11px] text-greentx/80">Lo que aún no has gastado</div></div><div class="flex items-center gap-3 text-right"><div class="font-heading text-sm font-bold text-greentx">${sueldo>0?((resta/sueldo)*100).toFixed(0):0}%</div><div class="text-[11px] text-greentx">${fmt(resta)}</div></div></div></div>` : '';
+
+  document.getElementById('dlegend').innerHTML=catRows+otrosRow+libreRow;
+}
+
+function getFilteredActiveExpenses(){
+  const filter=document.getElementById('fcat')?.value||'';
+  let list=active();
+  if(filter) list=list.filter(g=>g.cat===filter);
+  return list;
+}
+
+function renderGastos(){
+  const fcat=document.getElementById('fcat');
+  if(fcat){
+    const cur=fcat.value;
+    fcat.innerHTML='<option value="">Todas las categorías</option>'+state.categorias.map(c=>`<option value="${c}"${c===cur?' selected':''}>${c}</option>`).join('');
+  }
+
+  const list=getFilteredActiveExpenses();
+  const totalFiltrado=list.reduce((s,g)=>s+g.monto,0);
+  const totalFooter=document.getElementById('gastos-total-footer');
+  if(totalFooter){
+    totalFooter.textContent=fmt(totalFiltrado);
+  }
+
+  const el=document.getElementById('glist');
+  if(!el)return;
+  if(!list.length){
+    el.innerHTML='<div class="px-10 py-10 text-center text-text3"><div class="mb-2.5 text-[32px]">📭</div>No hay gastos aquí</div>';
+    return;
+  }
+  el.innerHTML=list.map(g=>{
+    const s=cs(g.cat);
+    const qtag=g.tipo==='cuotas'
+      ? `<span class="ml-1.5 rounded-full bg-bluebg px-2 py-0.5 text-[10px] font-bold text-bluetx">Cuota ${g.cuotaAct}/${g.cuotas}</span>`
+      : g.tipo==='recurrente'
+        ? `<span class="ml-1.5 rounded-full bg-appbg px-2 py-0.5 text-[10px] font-bold text-text2">Recurrente</span>`
+        : '';
+    return `<div class="grid grid-cols-[1fr_auto_auto_auto] items-center gap-3 border-b border-appbg2 px-5 py-3 transition hover:bg-appbg"><div class="min-w-0 flex items-center gap-2"><div class="truncate text-[14px] font-semibold text-text1">${g.desc}${qtag}</div><span class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold leading-none" style="background:${s.bg};color:${s.tx}"><span class="h-1.5 w-1.5 rounded-full" style="background:${s.bar}"></span>${g.cat}</span></div><div class="whitespace-nowrap text-[12px] text-text3">día ${g.dia}</div><div class="whitespace-nowrap font-heading text-[15px] font-bold text-red1">${fmt(g.monto)}</div><button class="rounded-md border-0 bg-transparent px-1.5 py-0.5 text-[20px] leading-none text-text3 transition hover:bg-redbg hover:text-red1" onclick="delG(${g.id})">×</button></div>`;
+  }).join('');
+}
+
+function delG(id){
+  if(!confirm('¿Eliminar este gasto?'))return;
+  state.gastos=state.gastos.filter(g=>g.id!==id);
+  save();updateAll();toast('Gasto eliminado');
+}
+
+function renderCuotas(){
+  const list=state.gastos
+    .filter(g=>g.tipo==='cuotas' && g.mes <= curM)
+    .sort((a,b)=>a.desc.localeCompare(b.desc));
+
+  const el=document.getElementById('qlist');
+  if(!el)return;
+  if(!list.length){
+    el.innerHTML='<div class="px-10 py-10 text-center text-text3"><div class="mb-2.5 text-[32px]">📅</div>No tienes cuotas registradas.<br>¡Agrégalas con el botón de arriba!</div>';
+    return;
+  }
+
+  el.innerHTML=list.map(g=>{
+    const s=cs(g.cat);
+    const done=Math.max(Math.min(g.cuotaAct-1, g.cuotas), 0);
+    const pct=g.cuotas>0?((done/g.cuotas)*100).toFixed(0):0;
+    const faltan=Math.max(g.cuotas-g.cuotaAct+1,0);
+    const comp=g.cuotaAct>g.cuotas;
+    const cuotaMostrada=comp ? g.cuotas : g.cuotaAct;
+
+    return `<div class="mb-3 rounded-app border border-borderc bg-card px-6 py-5 shadow-soft ${comp?'opacity-75':''}">
+      <div class="mb-2.5 flex items-start justify-between gap-3">
+        <div>
+          <div class="font-heading text-[15px] font-bold">${g.desc} ${comp?'<span class="rounded-full bg-greenbg px-2 py-0.5 text-[11px] text-greentx">✓ Completado</span>':''}</div>
+          <div class="mt-1.5"><span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold" style="background:${s.bg};color:${s.tx}"><span class="h-1.5 w-1.5 rounded-full" style="background:${s.bar}"></span>${g.cat}</span></div>
+        </div>
+        <div class="shrink-0 text-right">
+          <div class="font-heading text-[17px] font-bold text-red1">${fmt(g.monto)}<span class="text-xs font-normal text-text3">/mes</span></div>
+          <div class="mt-0.5 text-[11px] text-text3">Cuota ${cuotaMostrada} de ${g.cuotas}</div>
+        </div>
+      </div>
+
+      <div class="my-2 h-2.5 overflow-hidden rounded-full bg-appbg2">
+        <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${s.bar}"></div>
+      </div>
+
+      <div class="mb-2.5 flex justify-between text-[11px] text-text3">
+        <span>Pagado: ${fmt(g.monto*done)}</span>
+        <span>${pct}% completado</span>
+        <span>Falta: ${fmt(g.monto*Math.max(g.cuotas-done,0))}</span>
+      </div>
+
+      <div class="flex items-center justify-between">
+        <div class="text-xs text-text2">${comp ? 'Crédito completado' : `Faltan <strong class="text-text1">${faltan} cuotas</strong> · Día <strong class="text-text1">${g.dia}</strong>`}</div>
+        <div class="flex items-center gap-2">
+          ${!comp ? `<button class="rounded-[7px] border border-borderc bg-white px-2.5 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="markPaid(${g.id})">✓ Registrar pago</button>` : ''}
+          ${g.cuotaAct > 1 ? `<button class="rounded-[7px] border border-borderc bg-white px-2.5 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-red1 hover:text-red1" onclick="undoPaid(${g.id})">Deshacer</button>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function markPaid(id){
+  const g=state.gastos.find(x=>x.id===id);
+  if(!g)return;
+  g.cuotaAct++;
+  save();updateAll();
+  toast(g.cuotaAct>g.cuotas?'🎉 ¡Última cuota pagada!':'Cuota registrada ✓');
+}
+
+function undoPaid(id){
+  const g=state.gastos.find(x=>x.id===id);
+  if(!g)return;
+  if(g.cuotaAct <= 1){
+    toast('No hay pagos para deshacer');
+    return;
+  }
+  g.cuotaAct--;
+  save();updateAll();
+  toast('Pago deshecho');
+}
+
+function nextMonthIndex(m){ return (m + 1) % 12; }
+
+function monthName(index){ return MS[index]; }
+
+function monthlyExpensesBase(){
+  return state.gastos.filter(g => {
+    if(g.tipo === 'cuotas'){
+      return g.mes <= curM && g.cuotaAct <= g.cuotas;
+    }
+    return g.mes === curM;
+  });
+}
+
+function openCarryModal(){
+  renderCarryList();
+  const overlay=document.getElementById('overlay-carry');
+  overlay.classList.remove('hidden');
+  overlay.classList.add('flex');
+}
+
+function closeCarryModal(){
+  const overlay=document.getElementById('overlay-carry');
+  overlay.classList.add('hidden');
+  overlay.classList.remove('flex');
+}
+
+function maybeCloseCarry(e){ if(e.target===document.getElementById('overlay-carry')) closeCarryModal(); }
+
+function getCarryCandidates(){
+  return state.gastos.filter(g => g.mes === curM && (g.tipo === 'recurrente' || g.tipo === 'cuotas' || g.tipo === 'unico'));
+}
+
+function renderCarryList(){
+  const nextM = nextMonthIndex(curM);
+  const candidates = getCarryCandidates();
+  const listEl = document.getElementById('carry-list');
+  const summaryEl = document.getElementById('carry-summary');
+  if(summaryEl){
+    summaryEl.textContent = `Mes actual: ${monthName(curM)} · Mes destino: ${monthName(nextM)}.`;
+  }
+  if(!listEl) return;
+  if(!candidates.length){
+    listEl.innerHTML = '<div class="px-4 py-6 text-center text-[13px] text-text3">No hay gastos de este mes para copiar.</div>';
+    return;
+  }
+  listEl.innerHTML = candidates.map(g => {
+    const checked = g.tipo === 'recurrente' || g.tipo === 'cuotas' ? 'checked' : '';
+    const s = cs(g.cat);
+    const subtitle = g.tipo === 'cuotas' ? `Cuota ${g.cuotaAct}/${g.cuotas}` : (g.tipo === 'recurrente' ? 'Recurrente' : 'Solo este mes');
+    return `<label class="flex cursor-pointer items-center gap-3 border-b border-appbg2 px-4 py-3 last:border-b-0 hover:bg-appbg"><input type="checkbox" class="carry-item h-4 w-4" data-id="${g.id}" ${checked}><div class="min-w-0 flex-1"><div class="flex items-center gap-2"><div class="truncate text-[13px] font-semibold text-text1">${g.desc}</div><span class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold leading-none" style="background:${s.bg};color:${s.tx}"><span class="h-1.5 w-1.5 rounded-full" style="background:${s.bar}"></span>${g.cat}</span></div><div class="text-[11px] text-text3">${subtitle}</div></div><div class="whitespace-nowrap font-heading text-[14px] font-bold text-red1">${fmt(g.monto)}</div></label>`;
+  }).join('');
+}
+
+function markCarryByMode(mode){
+  document.querySelectorAll('.carry-item').forEach(chk => {
+    const id = Number(chk.dataset.id);
+    const g = state.gastos.find(x => x.id === id);
+    if(!g) return;
+    if(mode === 'all') chk.checked = true;
+    else chk.checked = g.tipo === mode;
+  });
+}
+
+function clearCarrySelection(){
+  document.querySelectorAll('.carry-item').forEach(chk => chk.checked = false);
+}
+
+function carrySelectedExpenses(){
+  const nextM = nextMonthIndex(curM);
+  const selectedIds = Array.from(document.querySelectorAll('.carry-item:checked')).map(x => Number(x.dataset.id));
+  if(!selectedIds.length){ alert('Selecciona al menos un gasto.'); return; }
+
+  let created = 0;
+  selectedIds.forEach(id => {
+    const g = state.gastos.find(x => x.id === id);
+    if(!g) return;
+
+    const exists = state.gastos.some(x => x.mes === nextM && x.desc === g.desc && x.cat === g.cat && x.tipo === g.tipo && x.monto === g.monto);
+    if(exists) return;
+
+    state.gastos.push({
+      ...g,
+      id: nid++,
+      mes: nextM,
+      origenMes: g.mes
+    });
+    created++;
+  });
+
+  save();
+  updateAll();
+  closeCarryModal();
+  toast(created ? `Se copiaron ${created} gasto(s) a ${monthName(nextM)}` : 'No hubo nuevos gastos para copiar');
+}
+
+function renderCats(){
+  const el=document.getElementById('catgrid');
+  if(!el)return;
+  el.innerHTML=state.categorias.map(cat=>{
+    const s=cs(cat);
+    const gs=state.gastos.filter(g=>g.cat===cat);
+    const tot=gs.reduce((s,g)=>s+g.monto,0);
+    return `<div class="rounded-app border px-4 py-4 shadow-soft" style="background:#fff;border-color:${s.bar}40"><div class="mb-2 flex items-center justify-between"><div class="h-[26px] w-[26px] rounded-full" style="background:${s.bar}"></div><button class="rounded-md border-0 bg-transparent px-1.5 py-0.5 text-lg leading-none text-text3 transition hover:bg-redbg hover:text-red1" onclick="delCat('${cat}')">×</button></div><div class="font-heading text-sm font-bold">${cat}</div><div class="text-xs text-text3">${gs.length} gasto${gs.length!==1?'s':''}</div><div class="mt-1 font-heading text-[15px] font-bold text-red1">${fmt(tot)}</div></div>`;
+  }).join('');
+}
+
+function addCat(){
+  const n=prompt('Nombre de la nueva categoría:');
+  if(!n||!n.trim())return;
+  if(state.categorias.includes(n.trim())){alert('Esa categoría ya existe.');return;}
+  state.categorias.push(n.trim());
+  save();updateAll();toast('Categoría creada ✓');
+}
+
+function delCat(cat){
+  if(state.gastos.some(g=>g.cat===cat)){alert('Esta categoría tiene gastos. Primero elimínalos.');return;}
+  if(!confirm(`¿Eliminar "${cat}"?`))return;
+  state.categorias=state.categorias.filter(c=>c!==cat);
+  save();updateAll();toast('Categoría eliminada');
+}
+
+function toggleQ(){
+  document.getElementById('qfields').classList.toggle('hidden', document.getElementById('ftipo').value!=='cuotas');
+}
+function renderExtraList(){
+  const el=document.getElementById('extra-list');
+  if(!el)return;
+  const list=extrasDelMes();
+  if(!list.length){
+    el.innerHTML='<div class="text-center text-[12px] text-text3">No tienes ingresos adicionales registrados para este mes.</div>';
+    return;
+  }
+  el.innerHTML=list.map(x => `<div class="flex items-center justify-between gap-3 border-b border-borderc py-2 last:border-b-0"><div class="min-w-0"><div class="truncate text-[13px] font-semibold text-text1">${x.desc}</div><div class="text-[11px] text-text3">${MS[x.mes]}</div></div><div class="flex items-center gap-3"><div class="text-[12px] font-bold text-greentx">${fmt(x.monto)}</div><button class="rounded-md border-0 bg-transparent px-1 py-0.5 text-[18px] leading-none text-text3 transition hover:bg-redbg hover:text-red1" onclick="delExtra(${x.id})">×</button></div></div>`).join('');
+}
+
+function fillExtraMonths(){
+  const sel=document.getElementById('extra-mes');
+  if(!sel)return;
+  sel.innerHTML=MS.map((m,i)=>`<option value="${i}" ${i===curM?'selected':''}>${m}</option>`).join('');
+}
+
+function openExtraModal(){
+  fillExtraMonths();
+  document.getElementById('extra-desc').value='';
+  document.getElementById('extra-monto').value='';
+  document.getElementById('extra-mes').value=String(curM);
+  renderExtraList();
+  const overlay=document.getElementById('overlay-extra');
+  overlay.classList.remove('hidden');
+  overlay.classList.add('flex');
+  setTimeout(()=>document.getElementById('extra-desc').focus(),50);
+}
+
+function closeExtraModal(){
+  const overlay=document.getElementById('overlay-extra');
+  overlay.classList.add('hidden');
+  overlay.classList.remove('flex');
+}
+
+function maybeCloseExtra(e){ if(e.target===document.getElementById('overlay-extra')) closeExtraModal(); }
+
+function saveExtra(){
+  const desc=document.getElementById('extra-desc').value.trim();
+  const monto=parseFloat(document.getElementById('extra-monto').value);
+  const mes=parseInt(document.getElementById('extra-mes').value,10);
+  if(!desc){ alert('Escribe una descripción.'); return; }
+  if(!monto || monto<=0){ alert('Ingresa un monto válido.'); return; }
+  state.ingresosExtra = state.ingresosExtra || [];
+  const nextId = (state.ingresosExtra.reduce((max,x)=>Math.max(max,x.id||0),0)) + 1;
+  state.ingresosExtra.push({ id: nextId, desc, monto, mes });
+  save();
+  renderExtraList();
+  updateAll();
+  document.getElementById('extra-desc').value='';
+  document.getElementById('extra-monto').value='';
+  toast('Ingreso adicional agregado ✓');
+}
+
+function delExtra(id){
+  state.ingresosExtra = (state.ingresosExtra || []).filter(x => x.id !== id);
+  save();
+  renderExtraList();
+  updateAll();
+}
+
+function clearExtrasMonth(){
+  const list=extrasDelMes();
+  if(!list.length){ toast('No hay adicionales para limpiar'); return; }
+  if(!confirm('¿Eliminar todos los ingresos adicionales de este mes?')) return;
+  state.ingresosExtra = (state.ingresosExtra || []).filter(x => x.mes !== curM);
+  save();
+  updateAll();
+  renderExtraList();
+  toast('Adicionales del mes eliminados');
+}
+
+function openModal(){
+  const sel=document.getElementById('fcatModal');
+  sel.innerHTML=state.categorias.map(c=>`<option>${c}</option>`).join('');
+  document.getElementById('fdesc').value='';
+  document.getElementById('fmonto').value='';
+  document.getElementById('fdia').value=15;
+  document.getElementById('ftipo').value='unico';
+  document.getElementById('fcuotas').value='';
+  document.getElementById('fcuotaact').value=1;
+  toggleQ();
+  const overlay=document.getElementById('overlay');
+  overlay.classList.remove('hidden');
+  overlay.classList.add('flex');
+  setTimeout(()=>document.getElementById('fdesc').focus(),50);
+}
+function closeModal(){
+  const overlay=document.getElementById('overlay');
+  overlay.classList.add('hidden');
+  overlay.classList.remove('flex');
+}
+function maybeClose(e){if(e.target===document.getElementById('overlay'))closeModal();}
+
+function saveG(){
+  const desc=document.getElementById('fdesc').value.trim();
+  const m=parseFloat(document.getElementById('fmonto').value);
+  const cat=document.getElementById('fcatModal').value;
+  const dia=parseInt(document.getElementById('fdia').value)||15;
+  const tipo=document.getElementById('ftipo').value;
+  const cuotas=tipo==='cuotas'?(parseInt(document.getElementById('fcuotas').value)||0):0;
+  const cuotaAct=tipo==='cuotas'?(parseInt(document.getElementById('fcuotaact').value)||1):1;
+  if(!desc){alert('Escribe una descripción.');return;}
+  if(!m||m<=0){alert('Ingresa un monto válido.');return;}
+  if(tipo==='cuotas'&&cuotas<1){alert('Ingresa el número total de cuotas.');return;}
+  state.gastos.push({id:nid++,desc,monto:m,cat,dia,tipo,cuotas,cuotaAct,mes:curM,origenMes:curM});
+  closeModal();save();updateAll();toast('Gasto agregado ✓');
+}
+
+let tt;
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;
+  el.classList.remove('translate-y-[60px]','opacity-0');
+  clearTimeout(tt);
+  tt=setTimeout(()=>el.classList.add('translate-y-[60px]','opacity-0'),2500);
+}
+
+async function exportExcel(){
+  if(typeof ExcelJS === 'undefined' || typeof saveAs === 'undefined'){
+    alert('No se pudieron cargar las librerías de Excel.');
+    return;
+  }
+
+  const sueldoBase=parseFloat(document.getElementById('sueldo').value)||0;
+  const extras=extrasDelMes();
+  const totalExtra=totalExtras();
+  const ingresos=totalIngresos();
+  const gastosActivos=active();
+  const gastosVisibles=getFilteredActiveExpenses();
+  const totalGastos=total();
+  const disponible=ingresos-totalGastos;
+  const pct=ingresos>0?(totalGastos/ingresos)*100:0;
+  const cuotasActivas=state.gastos.filter(g=>g.tipo==='cuotas' && g.cuotaAct<=g.cuotas && g.mes<=curM);
+
+  const bycat={};
+  gastosActivos.forEach(g=>{ bycat[g.cat]=(bycat[g.cat]||0)+g.monto; });
+  const categoriasResumen=Object.entries(bycat)
+    .sort((a,b)=>b[1]-a[1])
+    .map(([cat,monto])=>({
+      categoria: cat,
+      monto,
+      porcentaje: totalGastos>0 ? Number(((monto/totalGastos)*100).toFixed(2)) : 0
+    }));
+
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'ChatGPT';
+  workbook.created = new Date();
+  workbook.modified = new Date();
+  workbook.properties.date1904 = true;
+
+  const moneyFmt = '"S/" #,##0.00';
+  const pctFmt = '0.00%';
+
+  function styleHeaderRow(row){
+    row.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4A90D9' } };
+    row.alignment = { vertical: 'middle', horizontal: 'center' };
+  }
+
+  function addJsonSheet(name, rows){
+    const ws = workbook.addWorksheet(name);
+    if(!rows.length){
+      ws.addRow(['Sin datos']);
+      return ws;
+    }
+    const headers = Object.keys(rows[0]);
+    ws.addRow(headers);
+    styleHeaderRow(ws.getRow(1));
+    rows.forEach(r => ws.addRow(headers.map(h => r[h])));
+    headers.forEach((h, i) => {
+      const col = ws.getColumn(i+1);
+      col.width = Math.max(h.length + 4, 14);
+    });
+    ws.views = [{ state: 'frozen', ySplit: 1 }];
+    return ws;
+  }
+
+  const wsDashboard = workbook.addWorksheet('Dashboard');
+  wsDashboard.columns = [
+    { width: 22 }, { width: 18 }, { width: 18 }, { width: 18 }, { width: 18 },
+    { width: 4 },
+    { width: 18 }, { width: 18 }, { width: 18 }, { width: 18 }, { width: 18 }
+  ];
+
+  wsDashboard.mergeCells('A1:E1');
+  wsDashboard.getCell('A1').value = `Mis Finanzas - ${monthYearLabel()}`;
+  wsDashboard.getCell('A1').font = { bold: true, size: 16 };
+  wsDashboard.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF4F6F9' } };
+  wsDashboard.getCell('A1').alignment = { vertical: 'middle', horizontal: 'left' };
+
+  const cards = [
+    ['Sueldo base', sueldoBase, 'FFEDFAF3', 'FF1A7A52'],
+    ['Adicionales', totalExtra, 'FFEEF5FD', 'FF1D5899'],
+    ['Total ingresos', ingresos, 'FFF3FCF7', 'FF1A7A52'],
+    ['Total gastos', totalGastos, 'FFFDF0F0', 'FFE05555'],
+    ['Te queda', disponible, disponible >= 0 ? 'FFEEF5FD' : 'FFFDF0F0', disponible >= 0 ? 'FF1D5899' : 'FFE05555']
+  ];
+
+  cards.forEach((card, idx) => {
+    const colStart = 1 + idx;
+    const titleCell = wsDashboard.getCell(3, colStart);
+    const valueCell = wsDashboard.getCell(4, colStart);
+    titleCell.value = card[0];
+    valueCell.value = card[1];
+    titleCell.font = { bold: true, size: 11, color: { argb: 'FF5A6275' } };
+    valueCell.font = { bold: true, size: 16, color: { argb: card[3] } };
+    titleCell.fill = valueCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: card[2] } };
+    titleCell.alignment = valueCell.alignment = { vertical: 'middle', horizontal: 'center' };
+    valueCell.numFmt = moneyFmt;
+    wsDashboard.getCell(5, colStart).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: card[2] } };
+  });
+
+  wsDashboard.mergeCells('A7:E7');
+  wsDashboard.getCell('A7').value = 'Resumen de mis gastos';
+  wsDashboard.getCell('A7').font = { bold: true, size: 12 };
+
+  wsDashboard.mergeCells('A8:E8');
+  wsDashboard.getCell('A8').value = pct / 100;
+  wsDashboard.getCell('A8').numFmt = pctFmt;
+  wsDashboard.getCell('A8').font = { bold: true, size: 14, color: { argb: pct >= 100 ? 'FFE05555' : 'FF4A90D9' } };
+  wsDashboard.getCell('A8').alignment = { horizontal: 'center' };
+
+  wsDashboard.mergeCells('A9:E9');
+  wsDashboard.getCell('A9').value = `${fmt(totalGastos)} gastado · ${disponible >= 0 ? fmt(disponible)+' disponible' : 'Te pasaste '+fmt(Math.abs(disponible))}`;
+  wsDashboard.getCell('A9').alignment = { horizontal: 'center' };
+  wsDashboard.getCell('A9').font = { size: 11, color: { argb: 'FF5A6275' } };
+
+  function makeProgressBarDataUrl(percent){
+    const width = 520;
+    const height = 28;
+    const c = document.createElement('canvas');
+    c.width = width;
+    c.height = height;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#eef0f4';
+    ctx.beginPath();
+    ctx.roundRect(0, 0, width, height, 14);
+    ctx.fill();
+    const fill = Math.max(0, Math.min(1, percent));
+    ctx.fillStyle = percent >= 1 ? '#e05555' : percent >= 0.8 ? '#e8b84b' : '#2ecc8a';
+    ctx.beginPath();
+    ctx.roundRect(0, 0, width * fill, height, 14);
+    ctx.fill();
+    return c.toDataURL('image/png');
+  }
+
+  const progressImageId = workbook.addImage({ base64: makeProgressBarDataUrl(pct/100), extension: 'png' });
+  wsDashboard.addImage(progressImageId, 'A10:E11');
+
+  const donutCanvas = document.getElementById('donut');
+  if(donutCanvas){
+    const donutImageId = workbook.addImage({ base64: donutCanvas.toDataURL('image/png'), extension: 'png' });
+    wsDashboard.mergeCells('G2:K2');
+    wsDashboard.getCell('G2').value = 'Distribución por categoría';
+    wsDashboard.getCell('G2').font = { bold: true, size: 12 };
+    wsDashboard.addImage(donutImageId, { tl: { col: 6.2, row: 2.6 }, ext: { width: 250, height: 250 } });
+  }
+
+  wsDashboard.getCell('G16').value = 'Categoría';
+  wsDashboard.getCell('H16').value = '%';
+  wsDashboard.getCell('I16').value = 'Monto';
+  styleHeaderRow(wsDashboard.getRow(16));
+  (categoriasResumen.length ? categoriasResumen : [{ categoria:'Sin datos', porcentaje:0, monto:0 }]).forEach((item, idx) => {
+    const row = wsDashboard.getRow(17 + idx);
+    row.getCell(7).value = item.categoria;
+    row.getCell(8).value = item.porcentaje / 100;
+    row.getCell(8).numFmt = pctFmt;
+    row.getCell(9).value = item.monto;
+    row.getCell(9).numFmt = moneyFmt;
+  });
+
+  wsDashboard.getCell('A14').value = 'Lista de gastos visibles';
+  wsDashboard.getCell('A14').font = { bold: true, size: 12 };
+  const gastosHeader = wsDashboard.getRow(15);
+  ['Descripción','Categoría','Día','Tipo','Monto','Mes'].forEach((v,i)=>gastosHeader.getCell(i+1).value=v);
+  styleHeaderRow(gastosHeader);
+  (gastosVisibles.length ? gastosVisibles : [{desc:'Sin datos',cat:'',dia:'',tipo:'',monto:0,mes:curM}]).forEach((g, idx) => {
+    const row = wsDashboard.getRow(16 + idx);
+    row.getCell(1).value = g.desc;
+    row.getCell(2).value = g.cat;
+    row.getCell(3).value = g.dia;
+    row.getCell(4).value = g.tipo;
+    row.getCell(5).value = g.monto;
+    row.getCell(5).numFmt = moneyFmt;
+    row.getCell(6).value = MS[g.mes];
+  });
+
+  const wsResumen = workbook.addWorksheet('Resumen');
+  wsResumen.columns = [{ width: 24 }, { width: 18 }];
+  wsResumen.addRow(['Concepto','Valor']);
+  styleHeaderRow(wsResumen.getRow(1));
+  [
+    ['Vista exportada', monthYearLabel()],
+    ['Sueldo base', sueldoBase],
+    ['Adicionales', totalExtra],
+    ['Total ingresos', ingresos],
+    ['Total gastos', totalGastos],
+    ['Disponible', disponible],
+    ['% gastado', pct/100]
+  ].forEach(([k,v], idx) => {
+    const row = wsResumen.addRow([k,v]);
+    if(idx >= 1 && idx <= 5) row.getCell(2).numFmt = moneyFmt;
+    if(k === '% gastado') row.getCell(2).numFmt = pctFmt;
+  });
+  wsResumen.views = [{ state: 'frozen', ySplit: 1 }];
+
+  addJsonSheet('Gastos visibles',
+    (gastosVisibles.length ? gastosVisibles : [{desc:'',cat:'',dia:'',tipo:'',monto:'',mes:curM,cuotaAct:'',cuotas:''}]).map(g => ({
+      descripcion: g.desc,
+      categoria: g.cat,
+      dia_pago: g.dia,
+      tipo: g.tipo,
+      monto: g.monto,
+      mes: MS[g.mes],
+      cuota_actual: g.tipo==='cuotas' ? g.cuotaAct : '',
+      total_cuotas: g.tipo==='cuotas' ? g.cuotas : ''
+    }))
+  );
+
+  addJsonSheet('Adicionales',
+    (extras.length ? extras : [{desc:'',monto:'',mes:curM}]).map(x => ({
+      descripcion: x.desc,
+      monto: x.monto,
+      mes: MS[x.mes]
+    }))
+  );
+
+  addJsonSheet('Cuotas activas',
+    (cuotasActivas.length ? cuotasActivas : [{desc:'',cat:'',monto:'',cuotaAct:'',cuotas:'',faltan:'',dia:'',mes:''}]).map(g => ({
+      descripcion: g.desc,
+      categoria: g.cat,
+      monto_mensual: g.monto,
+      cuota_actual: g.cuotaAct,
+      total_cuotas: g.cuotas,
+      faltan: Math.max(g.cuotas-g.cuotaAct+1,0),
+      dia_pago: g.dia,
+      mes_origen: MS[g.mes]
+    }))
+  );
+
+  addJsonSheet('Categorias',
+    (categoriasResumen.length ? categoriasResumen : [{categoria:'',monto:'',porcentaje:''}]).map(c => ({
+      categoria: c.categoria,
+      monto: c.monto,
+      porcentaje: c.porcentaje / 100
+    }))
+  );
+
+  const wsTodos = addJsonSheet('Todos los gastos',
+    (state.gastos.length ? state.gastos : [{desc:'',cat:'',dia:'',tipo:'',monto:'',mes:curM,origenMes:curM,cuotaAct:'',cuotas:''}]).map(g => ({
+      descripcion: g.desc,
+      categoria: g.cat,
+      dia_pago: g.dia,
+      tipo: g.tipo,
+      monto: g.monto,
+      mes: MS[g.mes],
+      origen_mes: MS[g.origenMes],
+      cuota_actual: g.tipo==='cuotas' ? g.cuotaAct : '',
+      total_cuotas: g.tipo==='cuotas' ? g.cuotas : ''
+    }))
+  );
+
+  addJsonSheet('Importar gastos',
+    [{
+      descripcion: 'Ejemplo internet',
+      categoria: 'Personal',
+      dia_pago: 15,
+      tipo: 'recurrente',
+      monto: 120,
+      mes: MS[curM],
+      cuota_actual: '',
+      total_cuotas: ''
+    }]
+  );
+
+  ['Resumen','Gastos visibles','Adicionales','Cuotas activas','Categorias','Todos los gastos','Importar gastos'].forEach(name => {
+    const ws = workbook.getWorksheet(name);
+    if(!ws) return;
+    ws.eachRow((row, rowNum) => {
+      if(rowNum === 1) return;
+      row.eachCell((cell, colNum) => {
+        const header = ws.getRow(1).getCell(colNum).value;
+        if(typeof header === 'string'){
+          if(header.toLowerCase().includes('monto') || header === 'Valor' && rowNum >= 3 && rowNum <= 6){
+            if(typeof cell.value === 'number') cell.numFmt = moneyFmt;
+          }
+          if(header.toLowerCase().includes('porcentaje') || header === 'Valor' && rowNum === 8){
+            if(typeof cell.value === 'number') cell.numFmt = pctFmt;
+          }
+        }
+      });
+    });
+  });
+
+  const wsImport = workbook.getWorksheet('Importar gastos');
+  if(wsImport){
+    wsImport.getCell('A1').note = 'Usa esta hoja para volver a importar gastos a la web. Columnas esperadas: descripcion, categoria, dia_pago, tipo, monto, mes, cuota_actual, total_cuotas.';
+  }
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  saveAs(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `mis_finanzas_${MSH[curM].toLowerCase()}_${new Date().getFullYear()}.xlsx`);
+}
+
+function triggerExcelImport(){
+  const input = document.getElementById('excel-import');
+  if(!input) return;
+  input.value = '';
+  input.click();
+}
+
+function parseMonthValue(value){
+  if(typeof value === 'number' && value >= 0 && value <= 11) return value;
+  const txt = String(value || '').trim().toLowerCase();
+  if(!txt) return curM;
+  const idxLong = MS.findIndex(m => m.toLowerCase() === txt);
+  if(idxLong >= 0) return idxLong;
+  const idxShort = MSH.findIndex(m => m.toLowerCase() === txt);
+  if(idxShort >= 0) return idxShort;
+  return curM;
+}
+
+function normalizeExpenseType(value){
+  const txt = String(value || '').trim().toLowerCase();
+  if(txt === 'cuotas' || txt === 'cuota') return 'cuotas';
+  if(txt === 'recurrente' || txt === 'fijo') return 'recurrente';
+  return 'unico';
+}
+
+function ensureCategory(cat){
+  const value = String(cat || '').trim();
+  if(!value) return 'General';
+  if(!state.categorias.includes(value)) state.categorias.push(value);
+  return value;
+}
+
+async function handleExcelImport(event){
+  const file = event.target.files?.[0];
+  if(!file) return;
+  if(typeof ExcelJS === 'undefined'){
+    alert('No se pudo cargar la librería de Excel.');
+    return;
+  }
+
+  try{
+    const buffer = await file.arrayBuffer();
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(buffer);
+
+    const sheet = workbook.getWorksheet('Importar gastos') || workbook.getWorksheet('Gastos visibles') || workbook.worksheets[0];
+    if(!sheet){
+      alert('El archivo no contiene hojas válidas.');
+      return;
+    }
+
+    const headerRow = sheet.getRow(1);
+    const headers = [];
+    headerRow.eachCell((cell, colNumber) => {
+      headers[colNumber] = String(cell.value || '').trim().toLowerCase();
+    });
+
+    const required = ['descripcion','categoria','dia_pago','tipo','monto'];
+    const missing = required.filter(h => !headers.includes(h));
+    if(missing.length){
+      alert('Faltan columnas requeridas: ' + missing.join(', '));
+      return;
+    }
+
+    const imported = [];
+    for(let rowNumber = 2; rowNumber <= sheet.rowCount; rowNumber++){
+      const row = sheet.getRow(rowNumber);
+      const record = {};
+      headers.forEach((header, idx) => {
+        if(!header) return;
+        record[header] = row.getCell(idx).value?.result ?? row.getCell(idx).value ?? '';
+      });
+
+      const descripcion = String(record.descripcion || '').trim();
+      const categoria = ensureCategory(record.categoria);
+      const dia = parseInt(record.dia_pago, 10) || 1;
+      const tipo = normalizeExpenseType(record.tipo);
+      const monto = Number(record.monto || 0);
+      const mes = parseMonthValue(record.mes);
+      const cuotaAct = tipo === 'cuotas' ? (parseInt(record.cuota_actual, 10) || 1) : 1;
+      const cuotas = tipo === 'cuotas' ? (parseInt(record.total_cuotas, 10) || 1) : 0;
+
+      if(!descripcion || !monto || monto <= 0) continue;
+
+      imported.push({
+        id: nid++,
+        desc: descripcion,
+        cat: categoria,
+        dia,
+        tipo,
+        monto,
+        mes,
+        origenMes: mes,
+        cuotaAct,
+        cuotas
+      });
+    }
+
+    if(!imported.length){
+      alert('No se encontraron filas válidas para importar.');
+      return;
+    }
+
+    let nuevos = 0;
+    imported.forEach(item => {
+      const exists = state.gastos.some(g =>
+        g.desc === item.desc &&
+        g.cat === item.cat &&
+        g.dia === item.dia &&
+        g.tipo === item.tipo &&
+        g.monto === item.monto &&
+        g.mes === item.mes
+      );
+      if(!exists){
+        state.gastos.push(item);
+        nuevos++;
+      }
+    });
+
+    save();
+    updateAll();
+    toast(nuevos ? `Se importaron ${nuevos} gasto(s)` : 'No hubo gastos nuevos para importar');
+  } catch (error) {
+    console.error(error);
+    alert('No se pudo importar el Excel. Revisa que sea un archivo válido y con el formato esperado.');
+  }
+}
+
+function updateAll(){
+  rMonths('mbtns1');
+  updateInicio();
+  renderGastos();
+  renderCuotas();
+  renderCats();
+}
+
+load();
+updateAll();
+</script>
+</body>
+</html>
