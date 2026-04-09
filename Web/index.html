@@ -65,6 +65,7 @@
   <nav class="flex overflow-x-auto" id="main-nav">
     <button class="nav-tab active flex h-[54px] items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-4 font-heading text-[13px] font-bold text-text3 transition hover:text-text2 max-md:px-2.5 max-md:text-[11px]" onclick="goTo('inicio',this)">🏠 Inicio</button>
     <button class="nav-tab flex h-[54px] items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-4 font-heading text-[13px] font-bold text-text3 transition hover:text-text2 max-md:px-2.5 max-md:text-[11px]" onclick="goTo('anotaciones',this)">📝 Anotaciones</button>
+    <button class="nav-tab flex h-[54px] items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-4 font-heading text-[13px] font-bold text-text3 transition hover:text-text2 max-md:px-2.5 max-md:text-[11px]" onclick="goTo('prestamos',this)">🤝 Préstamos</button>
     <button class="nav-tab flex h-[54px] items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-4 font-heading text-[13px] font-bold text-text3 transition hover:text-text2 max-md:px-2.5 max-md:text-[11px]" onclick="goTo('cuotas',this)">📅 Cuotas</button>
     <button class="nav-tab flex h-[54px] items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-4 font-heading text-[13px] font-bold text-text3 transition hover:text-text2 max-md:px-2.5 max-md:text-[11px]" onclick="goTo('cats',this)">🏷️ Categorías</button>
   </nav>
@@ -202,6 +203,54 @@
         <span class="font-heading text-[14px] font-bold uppercase tracking-[0.05em] text-text2">Total anotado</span>
         <span id="notes-total-footer" class="font-heading text-[22px] font-bold text-accent">S/ 0.00</span>
       </div>
+    </div>
+  </div>
+</section>
+
+<section id="page-prestamos" class="page mx-auto hidden max-w-[1180px] px-6 py-7 max-md:px-4">
+  <div class="mb-1 font-heading text-[22px] font-bold">Préstamos 🤝</div>
+  <div class="mb-6 text-[13px] text-text2">Controla dinero prestado y dinero recibido sin mezclarlo con tus gastos normales.</div>
+
+  <div class="mb-6 grid grid-cols-1 gap-3 md:grid-cols-3">
+    <div class="rounded-app border border-[#cfe3fb] bg-bluebg px-5 py-4 shadow-soft">
+      <div class="mb-2 text-xl">⬅️</div>
+      <div class="mb-1 font-heading text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Me deben</div>
+      <div id="prestamos-cobrar" class="font-heading text-[26px] font-bold leading-none text-bluetx">S/ 0.00</div>
+      <div class="mt-1 text-xs text-text3">saldo por recuperar</div>
+    </div>
+    <div class="rounded-app border border-[#f0c8c8] bg-redbg px-5 py-4 shadow-soft">
+      <div class="mb-2 text-xl">➡️</div>
+      <div class="mb-1 font-heading text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Debo</div>
+      <div id="prestamos-pagar" class="font-heading text-[26px] font-bold leading-none text-red1">S/ 0.00</div>
+      <div class="mt-1 text-xs text-text3">saldo pendiente por pagar</div>
+    </div>
+    <div class="rounded-app border border-borderc bg-card px-5 py-4 shadow-soft">
+      <div class="mb-2 text-xl">📊</div>
+      <div class="mb-1 font-heading text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Saldo neto</div>
+      <div id="prestamos-neto" class="font-heading text-[26px] font-bold leading-none text-text1">S/ 0.00</div>
+      <div class="mt-1 text-xs text-text3">me deben menos lo que debo</div>
+    </div>
+  </div>
+
+  <div class="mb-4 flex justify-end gap-2">
+    <button class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="openPrestamoModal()">+ Agregar préstamo</button>
+  </div>
+
+  <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+    <div class="overflow-hidden rounded-app border border-borderc bg-card shadow-soft">
+      <div class="border-b border-borderc bg-white px-5 py-4">
+        <div class="font-heading text-[17px] font-bold text-text1">Me deben</div>
+        <div class="text-[13px] text-text2">Préstamos que diste y deben devolverte</div>
+      </div>
+      <div id="prestamos-lista-cobrar" class="max-h-[720px] overflow-y-auto bg-white"></div>
+    </div>
+
+    <div class="overflow-hidden rounded-app border border-borderc bg-card shadow-soft">
+      <div class="border-b border-borderc bg-white px-5 py-4">
+        <div class="font-heading text-[17px] font-bold text-text1">Debo</div>
+        <div class="text-[13px] text-text2">Préstamos recibidos que aún debes pagar</div>
+      </div>
+      <div id="prestamos-lista-pagar" class="max-h-[720px] overflow-y-auto bg-white"></div>
     </div>
   </div>
 </section>
@@ -358,12 +407,97 @@
   </div>
 </div>
 
+<div class="fixed inset-0 z-[250] hidden items-center justify-center bg-black/35 p-4" id="overlay-prestamo" onclick="maybeClosePrestamo(event)">
+  <div class="w-full max-w-[480px] rounded-app bg-card p-6 shadow-modal animate-up">
+    <h3 id="prestamo-mh" class="mb-5 font-heading text-lg font-bold">Agregar préstamo</h3>
+    <div class="mb-3 grid grid-cols-2 gap-3">
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Tipo</label>
+        <select id="prestamo-tipo" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+          <option value="por_cobrar">Me deben</option>
+          <option value="por_pagar">Debo</option>
+        </select>
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Persona</label>
+        <input id="prestamo-persona" placeholder="Ej: Juan" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+      </div>
+    </div>
+    <div class="mb-3 grid grid-cols-1 gap-3">
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Descripción</label>
+        <input id="prestamo-desc" placeholder="Ej: préstamo para emergencia" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+      </div>
+    </div>
+    <div class="mb-3 grid grid-cols-2 gap-3">
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Monto total</label>
+        <input id="prestamo-monto" type="number" placeholder="0.00" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Abonado inicial</label>
+        <input id="prestamo-abonado" type="number" value="0" placeholder="0.00" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+      </div>
+    </div>
+    <div class="mb-3 grid grid-cols-2 gap-3">
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Fecha</label>
+        <input id="prestamo-fecha" type="date" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Vencimiento</label>
+        <input id="prestamo-vencimiento" type="date" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+      </div>
+    </div>
+    <div class="mb-3 grid grid-cols-1 gap-3">
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Notas</label>
+        <input id="prestamo-notas" placeholder="Opcional" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+      </div>
+    </div>
+    <div class="mt-5 flex justify-end gap-2">
+      <button class="rounded-smapp border border-borderc bg-white px-4 py-1.5 font-heading text-[13px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="closePrestamoModal()">Cancelar</button>
+      <button class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="savePrestamo()">Guardar ✓</button>
+    </div>
+  </div>
+</div>
+
+<div class="fixed inset-0 z-[255] hidden items-center justify-center bg-black/35 p-4" id="overlay-abono" onclick="maybeCloseAbono(event)">
+  <div class="w-full max-w-[430px] rounded-app bg-card p-6 shadow-modal animate-up">
+    <h3 class="mb-4 font-heading text-lg font-bold">Registrar abono</h3>
+    <div id="abono-title" class="mb-4 text-[13px] text-text2"></div>
+    <div class="mb-3 grid grid-cols-1 gap-3">
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Monto del abono</label>
+        <input id="abono-monto" type="number" placeholder="0.00" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+      </div>
+    </div>
+    <div class="mb-3 grid grid-cols-2 gap-3">
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Mes destino</label>
+        <select id="abono-month" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white"></select>
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Impacto</label>
+        <select id="abono-impacto" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+          <option value="ninguno">Solo registrar abono</option>
+          <option value="mes">Registrar también en el mes</option>
+        </select>
+      </div>
+    </div>
+    <div class="mt-5 flex justify-end gap-2">
+      <button class="rounded-smapp border border-borderc bg-white px-4 py-1.5 font-heading text-[13px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="closeAbonoModal()">Cancelar</button>
+      <button class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="saveAbono()">Registrar ✓</button>
+    </div>
+  </div>
+</div>
+
 <div class="fixed bottom-6 right-6 z-[999] translate-y-[60px] rounded-smapp bg-text1 px-[18px] py-2.5 font-heading text-[13px] font-bold text-white opacity-0 shadow-toast transition-all duration-200" id="toast"></div>
 
 <script>
 const MS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const MSH = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-let curM = new Date().getMonth(), editId = null, editMode = 'gasto', editingNoteId = null, movingNoteId = null, nid = 50;
+let curM = new Date().getMonth(), editId = null, editMode = 'gasto', editingNoteId = null, movingNoteId = null, editingPrestamoId = null, abonoPrestamoId = null, nid = 50;
 
 const CSTYLE = {
   'Maria Elena':{ bg:'#f3eaf8', tx:'#7a3fa0', bar:'#b07fd4' },
@@ -378,6 +512,7 @@ let state = {
   categorias:['Maria Elena','Personal','Carro','Viejo','Vane'],
   ingresosExtra: [],
   anotaciones: [],
+  prestamos: [],
   gastos:[
     {id:1, desc:'Internet Maria Elena', monto:25, cat:'Maria Elena',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, origenMes: curM},
     {id:2, desc:'Google Drive', monto:40, cat:'Personal',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, origenMes: curM},
@@ -403,6 +538,7 @@ function load(){
       state=JSON.parse(d);
       state.ingresosExtra = state.ingresosExtra || [];
       state.anotaciones = state.anotaciones || [];
+      state.prestamos = state.prestamos || [];
       state.gastos = (state.gastos || []).map(g => ({
         ...g,
         mes: typeof g.mes === 'number' ? g.mes : curM,
@@ -1009,6 +1145,180 @@ function confirmBulkMoveNotes(){
   });
   if(action==='move') state.anotaciones=(state.anotaciones||[]).filter(n => !ids.includes(n.id));
   save(); updateAll(); renderNotes(); closeBulkMoveNotesModal(); toast(created ? `${created} anotación(es) enviadas a ${MS[mesDestino]}` : 'No hubo nuevas anotaciones para enviar');
+}
+
+function prestamoSaldo(p){
+  return Math.max((p.montoTotal || 0) - (p.montoPagado || 0), 0);
+}
+
+function prestamoEstado(p){
+  const saldo = prestamoSaldo(p);
+  if(saldo <= 0) return 'pagado';
+  if((p.montoPagado || 0) > 0) return 'parcial';
+  return 'pendiente';
+}
+
+function openPrestamoModal(){
+  editingPrestamoId = null;
+  document.getElementById('prestamo-mh').textContent='Agregar préstamo';
+  document.getElementById('prestamo-tipo').value='por_cobrar';
+  document.getElementById('prestamo-persona').value='';
+  document.getElementById('prestamo-desc').value='';
+  document.getElementById('prestamo-monto').value='';
+  document.getElementById('prestamo-abonado').value='0';
+  document.getElementById('prestamo-fecha').value='';
+  document.getElementById('prestamo-vencimiento').value='';
+  document.getElementById('prestamo-notas').value='';
+  const overlay=document.getElementById('overlay-prestamo');
+  overlay.classList.remove('hidden');
+  overlay.classList.add('flex');
+}
+
+function closePrestamoModal(){
+  const overlay=document.getElementById('overlay-prestamo');
+  overlay.classList.add('hidden');
+  overlay.classList.remove('flex');
+}
+
+function maybeClosePrestamo(e){ if(e.target===document.getElementById('overlay-prestamo')) closePrestamoModal(); }
+
+function savePrestamo(){
+  const tipo=document.getElementById('prestamo-tipo').value;
+  const persona=document.getElementById('prestamo-persona').value.trim();
+  const desc=document.getElementById('prestamo-desc').value.trim();
+  const montoTotal=parseFloat(document.getElementById('prestamo-monto').value);
+  const montoPagado=parseFloat(document.getElementById('prestamo-abonado').value)||0;
+  const fecha=document.getElementById('prestamo-fecha').value;
+  const vencimiento=document.getElementById('prestamo-vencimiento').value;
+  const notas=document.getElementById('prestamo-notas').value.trim();
+  if(!persona){ alert('Escribe la persona.'); return; }
+  if(!desc){ alert('Escribe una descripción.'); return; }
+  if(!montoTotal || montoTotal <= 0){ alert('Ingresa un monto válido.'); return; }
+  if(montoPagado < 0 || montoPagado > montoTotal){ alert('El abonado inicial no es válido.'); return; }
+
+  const payload = { tipo, persona, desc, montoTotal, montoPagado, fecha, vencimiento, notas };
+  if(editingPrestamoId !== null){
+    const p=(state.prestamos||[]).find(x=>x.id===editingPrestamoId);
+    if(!p) return;
+    Object.assign(p, payload);
+    p.historial = p.historial || [];
+    save(); updateAll(); closePrestamoModal(); toast('Préstamo actualizado ✓');
+    return;
+  }
+
+  state.prestamos = state.prestamos || [];
+  const nextId=(state.prestamos.reduce((max,x)=>Math.max(max,x.id||0),0))+1;
+  state.prestamos.push({ id: nextId, ...payload, historial: [] });
+  save(); updateAll(); closePrestamoModal(); toast('Préstamo agregado ✓');
+}
+
+function editPrestamo(id){
+  const p=(state.prestamos||[]).find(x=>x.id===id);
+  if(!p) return;
+  editingPrestamoId = id;
+  document.getElementById('prestamo-mh').textContent='Editar préstamo';
+  document.getElementById('prestamo-tipo').value=p.tipo;
+  document.getElementById('prestamo-persona').value=p.persona;
+  document.getElementById('prestamo-desc').value=p.desc;
+  document.getElementById('prestamo-monto').value=p.montoTotal;
+  document.getElementById('prestamo-abonado').value=p.montoPagado || 0;
+  document.getElementById('prestamo-fecha').value=p.fecha || '';
+  document.getElementById('prestamo-vencimiento').value=p.vencimiento || '';
+  document.getElementById('prestamo-notas').value=p.notas || '';
+  const overlay=document.getElementById('overlay-prestamo');
+  overlay.classList.remove('hidden');
+  overlay.classList.add('flex');
+}
+
+function delPrestamo(id){
+  if(!confirm('¿Eliminar este préstamo?')) return;
+  state.prestamos=(state.prestamos||[]).filter(x=>x.id!==id);
+  save(); updateAll(); toast('Préstamo eliminado');
+}
+
+function openAbonoModal(id){
+  const p=(state.prestamos||[]).find(x=>x.id===id);
+  if(!p) return;
+  abonoPrestamoId = id;
+  document.getElementById('abono-title').textContent=`${p.persona} · saldo ${fmt(prestamoSaldo(p))}`;
+  document.getElementById('abono-monto').value='';
+  fillMonthsSelect('abono-month', curM);
+  document.getElementById('abono-impacto').value='ninguno';
+  const overlay=document.getElementById('overlay-abono');
+  overlay.classList.remove('hidden');
+  overlay.classList.add('flex');
+}
+
+function closeAbonoModal(){
+  const overlay=document.getElementById('overlay-abono');
+  overlay.classList.add('hidden');
+  overlay.classList.remove('flex');
+}
+
+function maybeCloseAbono(e){ if(e.target===document.getElementById('overlay-abono')) closeAbonoModal(); }
+
+function saveAbono(){
+  const p=(state.prestamos||[]).find(x=>x.id===abonoPrestamoId);
+  if(!p) return;
+  const monto=parseFloat(document.getElementById('abono-monto').value);
+  const mes=parseInt(document.getElementById('abono-month').value,10);
+  const impacto=document.getElementById('abono-impacto').value;
+  const saldo=prestamoSaldo(p);
+  if(!monto || monto<=0){ alert('Ingresa un monto válido.'); return; }
+  if(monto > saldo){ alert('El abono supera el saldo pendiente.'); return; }
+
+  p.montoPagado = (p.montoPagado || 0) + monto;
+  p.historial = p.historial || [];
+  p.historial.push({ fecha: new Date().toISOString(), monto, mes, impacto });
+
+  if(impacto === 'mes'){
+    if(p.tipo === 'por_pagar'){
+      state.gastos.push({ id:nid++, desc:`Abono préstamo - ${p.persona}`, monto, cat:'Personal', dia:15, tipo:'unico', cuotas:0, cuotaAct:1, mes, origenMes:mes });
+    } else {
+      state.ingresosExtra = state.ingresosExtra || [];
+      const nextId=(state.ingresosExtra.reduce((max,x)=>Math.max(max,x.id||0),0))+1;
+      state.ingresosExtra.push({ id: nextId, desc:`Devolución préstamo - ${p.persona}`, monto, mes });
+    }
+  }
+
+  save(); updateAll(); closeAbonoModal(); toast('Abono registrado ✓');
+}
+
+function renderPrestamos(){
+  const list=(state.prestamos||[]);
+  const cobrar=list.filter(p=>p.tipo==='por_cobrar');
+  const pagar=list.filter(p=>p.tipo==='por_pagar');
+  const totalCobrar=cobrar.reduce((s,p)=>s+prestamoSaldo(p),0);
+  const totalPagar=pagar.reduce((s,p)=>s+prestamoSaldo(p),0);
+  const neto=totalCobrar-totalPagar;
+
+  const elCobrar=document.getElementById('prestamos-cobrar');
+  const elPagar=document.getElementById('prestamos-pagar');
+  const elNeto=document.getElementById('prestamos-neto');
+  if(elCobrar) elCobrar.textContent=fmt(totalCobrar);
+  if(elPagar) elPagar.textContent=fmt(totalPagar);
+  if(elNeto){
+    elNeto.textContent=fmt(neto);
+    elNeto.className='font-heading text-[26px] font-bold leading-none ' + (neto>=0 ? 'text-greentx' : 'text-red1');
+  }
+
+  function renderList(items, targetId, emptyText){
+    const el=document.getElementById(targetId);
+    if(!el) return;
+    if(!items.length){
+      el.innerHTML=`<div class="px-8 py-10 text-center text-text3">${emptyText}</div>`;
+      return;
+    }
+    el.innerHTML=items.map(p=>{
+      const saldo=prestamoSaldo(p);
+      const estado=prestamoEstado(p);
+      const badge=estado==='pagado' ? 'bg-greenbg text-greentx' : estado==='parcial' ? 'bg-bluebg text-bluetx' : 'bg-appbg text-text2';
+      return `<div class="border-b border-appbg2 px-5 py-4 last:border-b-0"><div class="mb-2 flex items-start justify-between gap-3"><div class="min-w-0"><div class="truncate font-heading text-[15px] font-bold text-text1">${p.persona}</div><div class="text-[13px] text-text2">${p.desc}</div></div><div class="shrink-0 text-right"><div class="font-heading text-[15px] font-bold ${p.tipo==='por_cobrar'?'text-bluetx':'text-red1'}">${fmt(saldo)}</div><div class="mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${badge}">${estado}</div></div></div><div class="mb-3 grid grid-cols-2 gap-2 text-[12px] text-text2"><div>Total: <strong class="text-text1">${fmt(p.montoTotal)}</strong></div><div>Abonado: <strong class="text-text1">${fmt(p.montoPagado||0)}</strong></div><div>Fecha: <strong class="text-text1">${p.fecha||'-'}</strong></div><div>Vence: <strong class="text-text1">${p.vencimiento||'-'}</strong></div></div><div class="flex flex-wrap items-center justify-between gap-2"><div class="text-[12px] text-text3 truncate">${p.notas||'Sin notas'}</div><div class="flex flex-wrap items-center gap-2"><button class="rounded-smapp border border-borderc bg-white px-3 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="openAbonoModal(${p.id})">Abono</button><button class="rounded-smapp border border-borderc bg-white px-3 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="editPrestamo(${p.id})">Editar</button><button class="rounded-smapp border border-borderc bg-white px-3 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-red1 hover:text-red1" onclick="delPrestamo(${p.id})">Eliminar</button></div></div></div>`;
+    }).join('');
+  }
+
+  renderList(cobrar, 'prestamos-lista-cobrar', 'No tienes préstamos por cobrar');
+  renderList(pagar, 'prestamos-lista-pagar', 'No tienes préstamos por pagar');
 }
 
 function renderCats(){
@@ -1620,6 +1930,7 @@ function updateAll(){
   updateInicio();
   renderGastos();
   renderNotes();
+  renderPrestamos();
   renderCuotas();
   renderCats();
 }
