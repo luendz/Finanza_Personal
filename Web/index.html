@@ -898,7 +898,7 @@ function delG(id){
 }
 
 function renderCompromisosResumen(){
-  const cuotasActivas = state.gastos.filter(g => g.tipo==='cuotas' && g.mes <= curM && g.cuotaAct <= g.cuotas);
+  const cuotasActivas = state.gastos.filter(g => g.tipo==='cuotas' && (g.anio ?? curY) === curY && g.mes <= curM && g.cuotaAct <= g.cuotas);
   const totalCuotas = cuotasActivas.reduce((s,g)=>s + g.monto, 0);
   const el = document.getElementById('compromisos-cuotas-total');
   if(el) el.textContent = fmt(totalCuotas);
@@ -906,7 +906,7 @@ function renderCompromisosResumen(){
 
 function renderCuotas(){
   const list=state.gastos
-    .filter(g=>g.tipo==='cuotas' && g.mes <= curM)
+    .filter(g=>g.tipo==='cuotas' && (g.anio ?? curY) === curY && g.mes <= curM)
     .sort((a,b)=>a.desc.localeCompare(b.desc));
 
   const el=document.getElementById('qlist');
@@ -983,10 +983,11 @@ function monthName(index){ return MS[index]; }
 
 function monthlyExpensesBase(){
   return state.gastos.filter(g => {
+    const gy = g.anio ?? curY;
     if(g.tipo === 'cuotas'){
-      return g.mes <= curM && g.cuotaAct <= g.cuotas;
+      return gy === curY && g.mes <= curM && g.cuotaAct <= g.cuotas;
     }
-    return g.mes === curM;
+    return gy === curY && g.mes === curM;
   });
 }
 
@@ -1221,7 +1222,7 @@ function confirmMoveNote(){
   if(!note) return;
   const mesDestino=parseInt(document.getElementById('note-move-month').value,10);
   const action=document.getElementById('note-move-action').value;
-  const exists=state.gastos.some(g => g.desc===note.desc && g.cat===note.cat && g.dia===note.dia && g.tipo===note.tipo && g.monto===note.monto && g.mes===mesDestino);
+  const exists=state.gastos.some(g => g.desc===note.desc && g.cat===note.cat && g.dia===note.dia && g.tipo===note.tipo && g.monto===note.monto && g.mes===mesDestino && (g.anio ?? curY)===curY);
   if(!exists) state.gastos.push(noteToExpense(note, mesDestino));
   if(action==='move') state.anotaciones=(state.anotaciones||[]).filter(x=>x.id!==movingNoteId);
   save(); updateAll(); renderNotes(); closeNoteMoveModal(); toast(action==='move' ? `Anotación enviada a ${MS[mesDestino]}` : `Anotación copiada a ${MS[mesDestino]}`);
@@ -1257,7 +1258,7 @@ function confirmBulkMoveNotes(){
   ids.forEach(id => {
     const note=(state.anotaciones||[]).find(x=>x.id===id);
     if(!note) return;
-    const exists=state.gastos.some(g => g.desc===note.desc && g.cat===note.cat && g.dia===note.dia && g.tipo===note.tipo && g.monto===note.monto && g.mes===mesDestino);
+    const exists=state.gastos.some(g => g.desc===note.desc && g.cat===note.cat && g.dia===note.dia && g.tipo===note.tipo && g.monto===note.monto && g.mes===mesDestino && (g.anio ?? curY)===curY);
     if(!exists){ state.gastos.push(noteToExpense(note, mesDestino)); created++; }
   });
   if(action==='move') state.anotaciones=(state.anotaciones||[]).filter(n => !ids.includes(n.id));
@@ -1723,7 +1724,7 @@ function clearExtrasMonth(){
   const list=extrasDelMes();
   if(!list.length){ toast('No hay adicionales para limpiar'); return; }
   if(!confirm('¿Eliminar todos los ingresos adicionales de este mes?')) return;
-  state.ingresosExtra = (state.ingresosExtra || []).filter(x => x.mes !== curM);
+  state.ingresosExtra = (state.ingresosExtra || []).filter(x => !(x.mes === curM && (x.anio ?? curY) === curY));
   save();
   updateAll();
   renderExtraList();
@@ -2180,7 +2181,7 @@ async function exportExcel(){
   }
 
   const buffer = await workbook.xlsx.writeBuffer();
-  saveAs(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `mis_finanzas_${MSH[curM].toLowerCase()}_${new Date().getFullYear()}.xlsx`);
+  saveAs(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `mis_finanzas_${MSH[curM].toLowerCase()}_${curY}.xlsx`);
 }
 
 function triggerExcelImport(){
