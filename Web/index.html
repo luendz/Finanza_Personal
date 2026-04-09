@@ -2063,7 +2063,7 @@ async function exportExcel(){
   );
 
   addJsonSheet('Cuotas activas',
-    (cuotasActivas.length ? cuotasActivas : [{desc:'',cat:'',monto:'',cuotaAct:'',cuotas:'',faltan:'',dia:'',mes:''}]).map(g => ({
+    (cuotasActivas.length ? cuotasActivas : [{desc:'',cat:'',monto:'',cuotaAct:'',cuotas:'',faltan:'',dia:'',mes:'',anio:''}]).map(g => ({
       descripcion: g.desc,
       categoria: g.cat,
       monto_mensual: g.monto,
@@ -2071,7 +2071,8 @@ async function exportExcel(){
       total_cuotas: g.cuotas,
       faltan: Math.max(g.cuotas-g.cuotaAct+1,0),
       dia_pago: g.dia,
-      mes_origen: MS[g.mes]
+      mes_origen: MS[g.mes],
+      anio: g.anio ?? curY
     }))
   );
 
@@ -2084,14 +2085,16 @@ async function exportExcel(){
   );
 
   const wsTodos = addJsonSheet('Todos los gastos',
-    (state.gastos.length ? state.gastos : [{desc:'',cat:'',dia:'',tipo:'',monto:'',mes:curM,origenMes:curM,cuotaAct:'',cuotas:''}]).map(g => ({
+    (state.gastos.length ? state.gastos : [{desc:'',cat:'',dia:'',tipo:'',monto:'',mes:curM,anio:curY,origenMes:curM,origenAnio:curY,cuotaAct:'',cuotas:''}]).map(g => ({
       descripcion: g.desc,
       categoria: g.cat,
       dia_pago: g.dia,
       tipo: g.tipo,
       monto: g.monto,
       mes: MS[g.mes],
+      anio: g.anio ?? curY,
       origen_mes: MS[g.origenMes],
+      origen_anio: g.origenAnio ?? (g.anio ?? curY),
       cuota_actual: g.tipo==='cuotas' ? g.cuotaAct : '',
       total_cuotas: g.tipo==='cuotas' ? g.cuotas : ''
     }))
@@ -2105,12 +2108,90 @@ async function exportExcel(){
       tipo: 'recurrente',
       monto: 120,
       mes: MS[curM],
+      anio: curY,
       cuota_actual: '',
       total_cuotas: ''
     }]
   );
 
-  ['Resumen','Gastos visibles','Adicionales','Cuotas activas','Categorias','Todos los gastos','Importar gastos'].forEach(name => {
+  addJsonSheet('Importar compromisos',
+    [{
+      descripcion: 'Ejemplo cuota laptop',
+      categoria: 'Personal',
+      dia_pago: 15,
+      tipo: 'cuotas',
+      monto: 250,
+      mes: MS[curM],
+      anio: curY,
+      cuota_actual: 3,
+      total_cuotas: 12
+    }]
+  );
+
+  addJsonSheet('Prestamos',
+    ((state.prestamos && state.prestamos.length) ? state.prestamos : [{id:'',tipo:'',persona:'',descripcion:'',monto_total:'',monto_pagado:'',saldo:'',fecha:'',vencimiento:'',notas:'',estado:''}]).map(p => ({
+      prestamo_id: p.id || '',
+      tipo: p.tipo || '',
+      persona: p.persona || '',
+      descripcion: p.desc || '',
+      monto_total: p.montoTotal || 0,
+      monto_pagado: p.montoPagado || 0,
+      saldo: prestamoSaldo(p),
+      fecha: p.fecha || '',
+      vencimiento: p.vencimiento || '',
+      notas: p.notas || '',
+      estado: prestamoEstado(p)
+    }))
+  );
+
+  addJsonSheet('Abonos prestamos',
+    ((state.prestamos || []).flatMap(p => (p.historial || []).map(h => ({ p, h }))).length
+      ? (state.prestamos || []).flatMap(p => (p.historial || []).map(h => ({ p, h })))
+      : [{ p: { id:'', tipo:'', persona:'', desc:'' }, h: { id:'', fecha:'', mes:'', monto:'', impacto:'', nota:'' } }]
+    ).map(({p,h}) => ({
+      prestamo_id: p.id || '',
+      abono_id: h.id || '',
+      tipo_prestamo: p.tipo || '',
+      persona: p.persona || '',
+      descripcion_prestamo: p.desc || '',
+      fecha_abono: h.fecha ? new Date(h.fecha).toISOString().slice(0,10) : '',
+      mes: typeof h.mes === 'number' ? MS[h.mes] : '',
+      anio: h.fecha ? new Date(h.fecha).getFullYear() : curY,
+      monto: h.monto || 0,
+      impacto: h.impacto || '',
+      nota: h.nota || ''
+    }))
+  );
+
+  addJsonSheet('Importar prestamos',
+    [{
+      tipo: 'por_pagar',
+      persona: 'Juan',
+      descripcion: 'Préstamo ejemplo',
+      monto_total: 1500,
+      monto_pagado: 300,
+      fecha: `${curY}-01-15`,
+      vencimiento: `${curY}-12-30`,
+      notas: 'Ejemplo de importación'
+    }]
+  );
+
+  addJsonSheet('Importar abonos prestamos',
+    [{
+      prestamo_id: '',
+      tipo_prestamo: 'por_pagar',
+      persona: 'Juan',
+      descripcion_prestamo: 'Préstamo ejemplo',
+      fecha_abono: `${curY}-02-10`,
+      mes: MS[curM],
+      anio: curY,
+      monto: 150,
+      impacto: 'ninguno',
+      nota: 'Pago parcial'
+    }]
+  );
+
+  ['Resumen','Gastos visibles','Adicionales','Cuotas activas','Categorias','Todos los gastos','Importar gastos','Importar compromisos','Prestamos','Abonos prestamos','Importar prestamos','Importar abonos prestamos'].forEach(name => {
     const ws = workbook.getWorksheet(name);
     if(!ws) return;
     ws.eachRow((row, rowNum) => {
@@ -2131,7 +2212,19 @@ async function exportExcel(){
 
   const wsImport = workbook.getWorksheet('Importar gastos');
   if(wsImport){
-    wsImport.getCell('A1').note = 'Usa esta hoja para volver a importar gastos a la web. Columnas esperadas: descripcion, categoria, dia_pago, tipo, monto, mes, cuota_actual, total_cuotas.';
+    wsImport.getCell('A1').note = 'Usa esta hoja para volver a importar gastos a la web. Columnas esperadas: descripcion, categoria, dia_pago, tipo, monto, mes, anio, cuota_actual, total_cuotas.';
+  }
+  const wsComp = workbook.getWorksheet('Importar compromisos');
+  if(wsComp){
+    wsComp.getCell('A1').note = 'Usa esta hoja para volver a importar cuotas/compromisos. Columnas esperadas: descripcion, categoria, dia_pago, tipo, monto, mes, anio, cuota_actual, total_cuotas.';
+  }
+  const wsPrest = workbook.getWorksheet('Importar prestamos');
+  if(wsPrest){
+    wsPrest.getCell('A1').note = 'Columnas esperadas: tipo, persona, descripcion, monto_total, monto_pagado, fecha, vencimiento, notas.';
+  }
+  const wsAbPrest = workbook.getWorksheet('Importar abonos prestamos');
+  if(wsAbPrest){
+    wsAbPrest.getCell('A1').note = 'Columnas esperadas: prestamo_id o (tipo_prestamo, persona, descripcion_prestamo), fecha_abono, mes, anio, monto, impacto, nota.';
   }
 
   const buffer = await workbook.xlsx.writeBuffer();
@@ -2154,6 +2247,12 @@ function parseMonthValue(value){
   const idxShort = MSH.findIndex(m => m.toLowerCase() === txt);
   if(idxShort >= 0) return idxShort;
   return curM;
+}
+
+function parseYearValue(value){
+  const y = parseInt(value, 10);
+  if(Number.isNaN(y)) return curY;
+  return Math.min(2100, Math.max(2000, y));
 }
 
 function normalizeExpenseType(value){
@@ -2183,7 +2282,16 @@ async function handleExcelImport(event){
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(buffer);
 
-    const sheet = workbook.getWorksheet('Importar gastos') || workbook.getWorksheet('Gastos visibles') || workbook.worksheets[0];
+    const sheet = workbook.getWorksheet('Importar gastos')
+      || workbook.getWorksheet('Importar compromisos')
+      || workbook.getWorksheet('Importar prestamos')
+      || workbook.getWorksheet('Importar abonos prestamos')
+      || workbook.getWorksheet('Prestamos')
+      || workbook.getWorksheet('Abonos prestamos')
+      || workbook.getWorksheet('Cuotas activas')
+      || workbook.getWorksheet('Gastos visibles')
+      || workbook.worksheets[0];
+
     if(!sheet){
       alert('El archivo no contiene hojas válidas.');
       return;
@@ -2195,10 +2303,109 @@ async function handleExcelImport(event){
       headers[colNumber] = String(cell.value || '').trim().toLowerCase();
     });
 
-    const required = ['descripcion','categoria','dia_pago','tipo','monto'];
+    const isLoanSheet = ['Importar prestamos','Prestamos'].includes(sheet.name);
+    const isLoanPaymentSheet = ['Importar abonos prestamos','Abonos prestamos'].includes(sheet.name);
+
+    if(isLoanSheet){
+      const requiredLoans = ['tipo','persona','descripcion','monto_total'];
+      const missingLoans = requiredLoans.filter(h => !headers.includes(h));
+      if(missingLoans.length){
+        alert('Faltan columnas requeridas: ' + missingLoans.join(', '));
+        return;
+      }
+
+      let nuevosPrestamos = 0;
+      for(let rowNumber = 2; rowNumber <= sheet.rowCount; rowNumber++){
+        const row = sheet.getRow(rowNumber);
+        const record = {};
+        headers.forEach((header, idx) => {
+          if(!header) return;
+          record[header] = row.getCell(idx).value?.result ?? row.getCell(idx).value ?? '';
+        });
+
+        const tipo = String(record.tipo || '').trim();
+        const persona = String(record.persona || '').trim();
+        const desc = String(record.descripcion || '').trim();
+        const montoTotal = Number(record.monto_total || 0);
+        const montoPagado = Number(record.monto_pagado || 0);
+        const fecha = String(record.fecha || '').trim();
+        const vencimiento = String(record.vencimiento || '').trim();
+        const notas = String(record.notas || '').trim();
+        if(!tipo || !persona || !desc || !montoTotal || montoTotal <= 0) continue;
+
+        const exists = (state.prestamos || []).some(p => p.tipo === tipo && p.persona === persona && p.desc === desc && Number(p.montoTotal) === montoTotal);
+        if(exists) continue;
+
+        const nextId = ((state.prestamos || []).reduce((max,x)=>Math.max(max,x.id||0),0))+1;
+        state.prestamos.push({ id: nextId, tipo, persona, desc, montoTotal, montoPagado: Math.min(Math.max(montoPagado,0),montoTotal), fecha, vencimiento, notas, historial: [] });
+        nuevosPrestamos++;
+      }
+
+      save();
+      updateAll();
+      toast(nuevosPrestamos ? `Se importaron ${nuevosPrestamos} préstamo(s)` : 'No hubo préstamos nuevos para importar');
+      return;
+    }
+
+    if(isLoanPaymentSheet){
+      const requiredPayments = ['monto'];
+      const missingPayments = requiredPayments.filter(h => !headers.includes(h));
+      if(missingPayments.length){
+        alert('Faltan columnas requeridas: ' + missingPayments.join(', '));
+        return;
+      }
+
+      let nuevosAbonos = 0;
+      for(let rowNumber = 2; rowNumber <= sheet.rowCount; rowNumber++){
+        const row = sheet.getRow(rowNumber);
+        const record = {};
+        headers.forEach((header, idx) => {
+          if(!header) return;
+          record[header] = row.getCell(idx).value?.result ?? row.getCell(idx).value ?? '';
+        });
+
+        const prestamoIdRaw = parseInt(record.prestamo_id, 10);
+        const tipoPrestamo = String(record.tipo_prestamo || '').trim();
+        const persona = String(record.persona || '').trim();
+        const descPrestamo = String(record.descripcion_prestamo || '').trim();
+        const monto = Number(record.monto || 0);
+        const fechaAbono = String(record.fecha_abono || '').trim();
+        const mes = parseMonthValue(record.mes);
+        const impacto = String(record.impacto || 'ninguno').trim() || 'ninguno';
+        const nota = String(record.nota || '').trim();
+        if(!monto || monto <= 0) continue;
+
+        let prestamo = null;
+        if(!Number.isNaN(prestamoIdRaw)){
+          prestamo = (state.prestamos || []).find(p => p.id === prestamoIdRaw) || null;
+        }
+        if(!prestamo){
+          prestamo = (state.prestamos || []).find(p => p.tipo === tipoPrestamo && p.persona === persona && p.desc === descPrestamo) || null;
+        }
+        if(!prestamo) continue;
+
+        const histExists = (prestamo.historial || []).some(h => Number(h.monto) === monto && (h.nota || '') === nota && (typeof h.mes === 'number' ? h.mes : -1) === mes);
+        if(histExists) continue;
+
+        const historialId = ((prestamo.historial || []).reduce((max,h)=>Math.max(max,h.id||0),0))+1;
+        prestamo.montoPagado = Math.min((prestamo.montoPagado || 0) + monto, prestamo.montoTotal || ((prestamo.montoPagado || 0) + monto));
+        prestamo.historial = prestamo.historial || [];
+        prestamo.historial.push({ id: historialId, fecha: fechaAbono ? new Date(fechaAbono).toISOString() : new Date().toISOString(), monto, mes, impacto, nota, linkedType: null, linkedId: null });
+        nuevosAbonos++;
+      }
+
+      save();
+      updateAll();
+      toast(nuevosAbonos ? `Se importaron ${nuevosAbonos} abono(s)` : 'No hubo abonos nuevos para importar');
+      return;
+    }
+
+    const required = ['descripcion','categoria','dia_pago'];
+    const hasMonto = headers.includes('monto') || headers.includes('monto_mensual');
     const missing = required.filter(h => !headers.includes(h));
-    if(missing.length){
-      alert('Faltan columnas requeridas: ' + missing.join(', '));
+    if(missing.length || !hasMonto){
+      const faltantes = [...missing, ...(!hasMonto ? ['monto o monto_mensual'] : [])];
+      alert('Faltan columnas requeridas: ' + faltantes.join(', '));
       return;
     }
 
@@ -2214,9 +2421,11 @@ async function handleExcelImport(event){
       const descripcion = String(record.descripcion || '').trim();
       const categoria = ensureCategory(record.categoria);
       const dia = parseInt(record.dia_pago, 10) || 1;
-      const tipo = normalizeExpenseType(record.tipo);
-      const monto = Number(record.monto || 0);
-      const mes = parseMonthValue(record.mes);
+      const rawTipo = record.tipo;
+      const tipo = normalizeExpenseType(rawTipo || (sheet.name === 'Importar compromisos' || sheet.name === 'Cuotas activas' ? 'cuotas' : 'unico'));
+      const monto = Number(record.monto || record.monto_mensual || 0);
+      const mes = parseMonthValue(record.mes || record.mes_origen);
+      const anio = parseYearValue(record.anio);
       const cuotaAct = tipo === 'cuotas' ? (parseInt(record.cuota_actual, 10) || 1) : 1;
       const cuotas = tipo === 'cuotas' ? (parseInt(record.total_cuotas, 10) || 1) : 0;
 
@@ -2230,7 +2439,9 @@ async function handleExcelImport(event){
         tipo,
         monto,
         mes,
+        anio,
         origenMes: mes,
+        origenAnio: anio,
         cuotaAct,
         cuotas
       });
@@ -2249,7 +2460,8 @@ async function handleExcelImport(event){
         g.dia === item.dia &&
         g.tipo === item.tipo &&
         g.monto === item.monto &&
-        g.mes === item.mes
+        g.mes === item.mes &&
+        (g.anio ?? curY) === item.anio
       );
       if(!exists){
         state.gastos.push(item);
