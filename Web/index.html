@@ -64,9 +64,8 @@
   <div class="mr-8 whitespace-nowrap font-heading text-lg font-bold text-accent max-md:mr-4 max-md:text-[15px]">💰 <span class="text-text1">Mis</span>Finanzas</div>
   <nav class="flex overflow-x-auto" id="main-nav">
     <button class="nav-tab active flex h-[54px] items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-4 font-heading text-[13px] font-bold text-text3 transition hover:text-text2 max-md:px-2.5 max-md:text-[11px]" onclick="goTo('inicio',this)">🏠 Inicio</button>
+    <button class="nav-tab flex h-[54px] items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-4 font-heading text-[13px] font-bold text-text3 transition hover:text-text2 max-md:px-2.5 max-md:text-[11px]" onclick="goTo('compromisos',this)">📌 Compromisos</button>
     <button class="nav-tab flex h-[54px] items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-4 font-heading text-[13px] font-bold text-text3 transition hover:text-text2 max-md:px-2.5 max-md:text-[11px]" onclick="goTo('anotaciones',this)">📝 Anotaciones</button>
-    <button class="nav-tab flex h-[54px] items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-4 font-heading text-[13px] font-bold text-text3 transition hover:text-text2 max-md:px-2.5 max-md:text-[11px]" onclick="goTo('prestamos',this)">🤝 Préstamos</button>
-    <button class="nav-tab flex h-[54px] items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-4 font-heading text-[13px] font-bold text-text3 transition hover:text-text2 max-md:px-2.5 max-md:text-[11px]" onclick="goTo('cuotas',this)">📅 Cuotas</button>
     <button class="nav-tab flex h-[54px] items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-4 font-heading text-[13px] font-bold text-text3 transition hover:text-text2 max-md:px-2.5 max-md:text-[11px]" onclick="goTo('cats',this)">🏷️ Categorías</button>
   </nav>
 </header>
@@ -206,66 +205,82 @@
   </div>
 </section>
 
-<section id="page-prestamos" class="page mx-auto hidden max-w-[1180px] px-6 py-7 max-md:px-4">
-  <div class="mb-1 font-heading text-[22px] font-bold">Préstamos 🤝</div>
-  <div class="mb-6 text-[13px] text-text2">Controla dinero prestado y dinero recibido sin mezclarlo con tus gastos normales.</div>
+<section id="page-compromisos" class="page mx-auto hidden max-w-[1180px] px-6 py-7 max-md:px-4">
+  <div class="mb-1 font-heading text-[22px] font-bold">Compromisos 📌</div>
+  <div class="mb-6 text-[13px] text-text2">Aquí se concentran tus cuotas activas y tus préstamos, manteniendo cada flujo separado.</div>
 
-  <div class="mb-6 grid grid-cols-1 gap-3 md:grid-cols-3">
-    <div class="rounded-app border border-[#cfe3fb] bg-bluebg px-5 py-4 shadow-soft">
-      <div class="mb-2 text-xl">⬅️</div>
-      <div class="mb-1 font-heading text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Me deben</div>
-      <div id="prestamos-cobrar" class="font-heading text-[26px] font-bold leading-none text-bluetx">S/ 0.00</div>
-      <div class="mt-1 text-xs text-text3">saldo por recuperar</div>
-    </div>
-    <div class="rounded-app border border-[#f0c8c8] bg-redbg px-5 py-4 shadow-soft">
-      <div class="mb-2 text-xl">➡️</div>
-      <div class="mb-1 font-heading text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Debo</div>
-      <div id="prestamos-pagar" class="font-heading text-[26px] font-bold leading-none text-red1">S/ 0.00</div>
-      <div class="mt-1 text-xs text-text3">saldo pendiente por pagar</div>
-    </div>
-    <div class="rounded-app border border-borderc bg-card px-5 py-4 shadow-soft">
-      <div class="mb-2 text-xl">📊</div>
-      <div class="mb-1 font-heading text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Saldo neto</div>
-      <div id="prestamos-neto" class="font-heading text-[26px] font-bold leading-none text-text1">S/ 0.00</div>
-      <div class="mt-1 text-xs text-text3">me deben menos lo que debo</div>
-    </div>
-  </div>
-
-  <div class="mb-4 flex justify-end gap-2">
+  <div class="mb-5 flex flex-wrap justify-end gap-2">
+    <button class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="openModal()">+ Agregar cuota</button>
     <button class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="openPrestamoModal()">+ Agregar préstamo</button>
   </div>
 
-  <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
-    <div class="overflow-hidden rounded-app border border-borderc bg-card shadow-soft">
-      <div class="border-b border-borderc bg-white px-5 py-4">
-        <div class="font-heading text-[17px] font-bold text-text1">Me deben</div>
-        <div class="text-[13px] text-text2">Préstamos que diste y deben devolverte</div>
+  <div class="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(340px,0.95fr)_minmax(0,1.35fr)]">
+    <section class="rounded-[18px] border border-[#f3d6d6] bg-gradient-to-b from-[#fff8f8] to-white shadow-soft">
+      <div class="border-b border-[#f3d6d6] px-6 py-5">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <div class="font-heading text-[18px] font-bold text-text1">Cuotas activas</div>
+            <div class="mt-1 text-[13px] text-text2">Tus pagos financiados que siguen vigentes</div>
+          </div>
+          <div class="rounded-2xl border border-[#f0c8c8] bg-white px-4 py-3 text-right shadow-soft">
+            <div class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Resumen</div>
+            <div id="compromisos-cuotas-total" class="mt-1 font-heading text-[24px] font-bold leading-none text-red1">S/ 0.00</div>
+            <div class="mt-1 text-[11px] text-text3">mensual</div>
+          </div>
+        </div>
       </div>
-      <div id="prestamos-lista-cobrar" class="max-h-[720px] overflow-y-auto bg-white"></div>
-    </div>
-
-    <div class="overflow-hidden rounded-app border border-borderc bg-card shadow-soft">
-      <div class="border-b border-borderc bg-white px-5 py-4">
-        <div class="font-heading text-[17px] font-bold text-text1">Debo</div>
-        <div class="text-[13px] text-text2">Préstamos recibidos que aún debes pagar</div>
+      <div class="bg-transparent px-4 py-4">
+        <div id="qlist" class="max-h-[900px] overflow-y-auto pr-1"></div>
       </div>
-      <div id="prestamos-lista-pagar" class="max-h-[720px] overflow-y-auto bg-white"></div>
-    </div>
-  </div>
-</section>
+    </section>
 
-<section id="page-cuotas" class="page mx-auto hidden max-w-[960px] px-6 py-7 max-md:px-4">
-  <div class="mb-1 font-heading text-[22px] font-bold">Cuotas y préstamos 📅</div>
-  <div class="mb-6 text-[13px] text-text2">Lleva el control de tus pagos en cuotas</div>
-  <div class="mb-4 flex justify-end">
-    <button class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="openModal()">+ Agregar cuota</button>
+    <section class="rounded-[18px] border border-[#d9e8fb] bg-gradient-to-b from-[#f8fbff] to-white shadow-soft">
+      <div class="border-b border-[#d9e8fb] px-6 py-5">
+        <div class="flex items-start justify-between gap-4 max-md:flex-col max-md:items-start">
+          <div>
+            <div class="font-heading text-[18px] font-bold text-text1">Préstamos</div>
+            <div class="mt-1 text-[13px] text-text2">Control de dinero por cobrar y por pagar</div>
+          </div>
+          <div class="grid grid-cols-2 gap-3 max-sm:w-full max-sm:grid-cols-1">
+            <div class="rounded-2xl border border-[#cfe3fb] bg-white px-4 py-3 text-right shadow-soft">
+              <div class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Me deben</div>
+              <div id="prestamos-cobrar" class="mt-1 font-heading text-[22px] font-bold leading-none text-bluetx">S/ 0.00</div>
+            </div>
+            <div class="rounded-2xl border border-[#f0c8c8] bg-white px-4 py-3 text-right shadow-soft">
+              <div class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Debo</div>
+              <div id="prestamos-pagar" class="mt-1 font-heading text-[22px] font-bold leading-none text-red1">S/ 0.00</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 gap-4 p-4 xl:grid-cols-2">
+        <div class="rounded-[16px] border border-[#dbe8f8] bg-white shadow-soft">
+          <div class="border-b border-[#dbe8f8] px-5 py-4">
+            <div class="font-heading text-[16px] font-bold text-text1">Me deben</div>
+            <div class="mt-1 text-[12px] text-text2">Préstamos que diste y deben devolverte</div>
+          </div>
+          <div id="prestamos-lista-cobrar" class="max-h-[900px] overflow-y-auto bg-white"></div>
+        </div>
+
+        <div class="rounded-[16px] border border-[#f3d6d6] bg-white shadow-soft">
+          <div class="border-b border-[#f3d6d6] px-5 py-4">
+            <div class="font-heading text-[16px] font-bold text-text1">Debo</div>
+            <div class="mt-1 text-[12px] text-text2">Préstamos recibidos que aún debes pagar</div>
+          </div>
+          <div id="prestamos-lista-pagar" class="max-h-[900px] overflow-y-auto bg-white"></div>
+        </div>
+      </div>
+    </section>
   </div>
-  <div id="qlist"></div>
 </section>
 
 <section id="page-cats" class="page mx-auto hidden max-w-[960px] px-6 py-7 max-md:px-4">
   <div class="mb-1 font-heading text-[22px] font-bold">Categorías 🏷️</div>
-  <div class="mb-6 text-[13px] text-text2">Grupos para organizar tus gastos</div>
+  <div class="mb-3 text-[13px] text-text2">Grupos para organizar tus gastos del mes seleccionado</div>
+  <div class="mb-6 flex flex-wrap items-center gap-2">
+    <span class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Mes:</span>
+    <div id="mbtns-cats" class="flex flex-wrap gap-1.5"></div>
+  </div>
   <div class="mb-4 flex justify-end">
     <button class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="addCat()">+ Nueva categoría</button>
   </div>
@@ -807,6 +822,13 @@ function delG(id){
   save();updateAll();toast('Gasto eliminado');
 }
 
+function renderCompromisosResumen(){
+  const cuotasActivas = state.gastos.filter(g => g.tipo==='cuotas' && g.mes <= curM && g.cuotaAct <= g.cuotas);
+  const totalCuotas = cuotasActivas.reduce((s,g)=>s + g.monto, 0);
+  const el = document.getElementById('compromisos-cuotas-total');
+  if(el) el.textContent = fmt(totalCuotas);
+}
+
 function renderCuotas(){
   const list=state.gastos
     .filter(g=>g.tipo==='cuotas' && g.mes <= curM)
@@ -827,7 +849,7 @@ function renderCuotas(){
     const comp=g.cuotaAct>g.cuotas;
     const cuotaMostrada=comp ? g.cuotas : g.cuotaAct;
 
-    return `<div class="mb-3 rounded-app border border-borderc bg-card px-6 py-5 shadow-soft ${comp?'opacity-75':''}">
+    return `<div class="mb-3 rounded-[16px] border border-[#f0d7d7] bg-white px-5 py-4 shadow-soft ${comp?'opacity-75':''}">
       <div class="mb-2.5 flex items-start justify-between gap-3">
         <div>
           <div class="font-heading text-[15px] font-bold">${g.desc} ${comp?'<span class="rounded-full bg-greenbg px-2 py-0.5 text-[11px] text-greentx">✓ Completado</span>':''}</div>
@@ -1429,13 +1451,8 @@ function renderPrestamos(){
 
   const elCobrar=document.getElementById('prestamos-cobrar');
   const elPagar=document.getElementById('prestamos-pagar');
-  const elNeto=document.getElementById('prestamos-neto');
   if(elCobrar) elCobrar.textContent=fmt(totalCobrar);
   if(elPagar) elPagar.textContent=fmt(totalPagar);
-  if(elNeto){
-    elNeto.textContent=fmt(neto);
-    elNeto.className='font-heading text-[26px] font-bold leading-none ' + (neto>=0 ? 'text-greentx' : 'text-red1');
-  }
 
   function renderList(items, targetId, emptyText){
     const el=document.getElementById(targetId);
@@ -1452,7 +1469,7 @@ function renderPrestamos(){
       const historialHtml=historial.length
         ? `<div class="mt-3 rounded-smapp border border-borderc bg-appbg/60 p-3"><div class="mb-2 text-[11px] font-bold uppercase tracking-[0.06em] text-text3">Últimos abonos</div><div class="space-y-2">${historial.map(h=>`<div class="flex items-start justify-between gap-3 text-[12px]"><div class="min-w-0 flex-1"><div class="font-semibold text-text1">${new Date(h.fecha).toLocaleDateString('es-PE')}</div><div class="text-text3">${MS[h.mes]||'-'} · ${h.impacto==='mes' ? 'impacta mes' : 'solo control'}${h.nota ? ' · ' + h.nota : ''}</div></div><div class="flex items-center gap-2"><div class="whitespace-nowrap font-heading font-bold ${p.tipo==='por_cobrar'?'text-greentx':'text-red1'}">${fmt(h.monto)}</div><button class="rounded-md border-0 bg-transparent px-1 py-0.5 text-[14px] leading-none text-text3 transition hover:bg-bluebg hover:text-accent" onclick="openEditAbono(${p.id},${h.id})">✎</button><button class="rounded-md border-0 bg-transparent px-1 py-0.5 text-[16px] leading-none text-text3 transition hover:bg-redbg hover:text-red1" onclick="removeAbono(${p.id},${h.id})">×</button></div></div>`).join('')}</div></div>`
         : `<div class="mt-3 rounded-smapp border border-dashed border-borderc bg-appbg/40 px-3 py-2 text-[12px] text-text3">Aún no hay abonos registrados.</div>`;
-      return `<div class="border-b border-appbg2 px-5 py-4 last:border-b-0"><div class="mb-2 flex items-start justify-between gap-3"><div class="min-w-0"><div class="truncate font-heading text-[15px] font-bold text-text1">${p.persona}</div><div class="text-[13px] text-text2">${p.desc}</div></div><div class="shrink-0 text-right"><div class="font-heading text-[15px] font-bold ${p.tipo==='por_cobrar'?'text-bluetx':'text-red1'}">${fmt(saldo)}</div><div class="mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${badge}">${estado}</div></div></div><div class="mb-3 grid grid-cols-2 gap-2 text-[12px] text-text2"><div>Total: <strong class="text-text1">${fmt(p.montoTotal)}</strong></div><div>Abonado: <strong class="text-text1">${fmt(p.montoPagado||0)}</strong></div><div>Fecha: <strong class="text-text1">${p.fecha||'-'}</strong></div><div>Vence: <strong class="text-text1">${p.vencimiento||'-'}</strong></div></div><div class="flex flex-wrap items-center justify-between gap-2"><div class="text-[12px] text-text3 truncate">${p.notas||'Sin notas'}</div><div class="flex flex-wrap items-center gap-2"><button class="rounded-smapp border border-borderc bg-white px-3 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="openAbonoModal(${p.id})">Abono</button><button class="rounded-smapp border border-borderc bg-white px-3 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="editPrestamo(${p.id})">Editar</button><button class="rounded-smapp border border-borderc bg-white px-3 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-red1 hover:text-red1" onclick="delPrestamo(${p.id})">Eliminar</button></div></div>${historialHtml}</div>`;
+      return `<div class="border-b border-appbg2 px-5 py-4 last:border-b-0 hover:bg-appbg/40 transition"><div class="mb-2 flex items-start justify-between gap-3"><div class="min-w-0"><div class="truncate font-heading text-[15px] font-bold text-text1">${p.persona}</div><div class="text-[13px] text-text2">${p.desc}</div></div><div class="shrink-0 text-right"><div class="font-heading text-[15px] font-bold ${p.tipo==='por_cobrar'?'text-bluetx':'text-red1'}">${fmt(saldo)}</div><div class="mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${badge}">${estado}</div></div></div><div class="mb-3 grid grid-cols-2 gap-2 text-[12px] text-text2"><div>Total: <strong class="text-text1">${fmt(p.montoTotal)}</strong></div><div>Abonado: <strong class="text-text1">${fmt(p.montoPagado||0)}</strong></div><div>Fecha: <strong class="text-text1">${p.fecha||'-'}</strong></div><div>Vence: <strong class="text-text1">${p.vencimiento||'-'}</strong></div></div><div class="flex flex-wrap items-center justify-between gap-2"><div class="text-[12px] text-text3 truncate">${p.notas||'Sin notas'}</div><div class="flex flex-wrap items-center gap-2"><button class="rounded-smapp border border-borderc bg-white px-3 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="openAbonoModal(${p.id})">Abono</button><button class="rounded-smapp border border-borderc bg-white px-3 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="editPrestamo(${p.id})">Editar</button><button class="rounded-smapp border border-borderc bg-white px-3 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-red1 hover:text-red1" onclick="delPrestamo(${p.id})">Eliminar</button></div></div>${historialHtml}</div>`;
     }).join('');
   }
 
@@ -1463,11 +1480,12 @@ function renderPrestamos(){
 function renderCats(){
   const el=document.getElementById('catgrid');
   if(!el)return;
+  rMonths('mbtns-cats');
   el.innerHTML=state.categorias.map(cat=>{
     const s=cs(cat);
-    const gs=state.gastos.filter(g=>g.cat===cat);
+    const gs=state.gastos.filter(g=>g.cat===cat && g.mes===curM);
     const tot=gs.reduce((s,g)=>s+g.monto,0);
-    return `<div class="rounded-app border px-4 py-4 shadow-soft" style="background:#fff;border-color:${s.bar}40"><div class="mb-2 flex items-center justify-between"><div class="h-[26px] w-[26px] rounded-full" style="background:${s.bar}"></div><button class="rounded-md border-0 bg-transparent px-1.5 py-0.5 text-lg leading-none text-text3 transition hover:bg-redbg hover:text-red1" onclick="delCat('${cat}')">×</button></div><div class="font-heading text-sm font-bold">${cat}</div><div class="text-xs text-text3">${gs.length} gasto${gs.length!==1?'s':''}</div><div class="mt-1 font-heading text-[15px] font-bold text-red1">${fmt(tot)}</div></div>`;
+    return `<div class="rounded-app border px-4 py-4 shadow-soft" style="background:#fff;border-color:${s.bar}40"><div class="mb-2 flex items-center justify-between"><div class="h-[26px] w-[26px] rounded-full" style="background:${s.bar}"></div><button class="rounded-md border-0 bg-transparent px-1.5 py-0.5 text-lg leading-none text-text3 transition hover:bg-redbg hover:text-red1" onclick="delCat('${cat}')">×</button></div><div class="font-heading text-sm font-bold">${cat}</div><div class="text-xs text-text3">${gs.length} gasto${gs.length!==1?'s':''} en ${MS[curM]}</div><div class="mt-1 font-heading text-[15px] font-bold text-red1">${fmt(tot)}</div></div>`;
   }).join('');
 }
 
@@ -2174,6 +2192,7 @@ function updateAll(){
   renderGastos();
   renderNotes();
   renderPrestamos();
+  renderCompromisosResumen();
   renderCuotas();
   renderCats();
 }
