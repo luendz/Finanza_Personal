@@ -103,8 +103,7 @@
       <div class="font-heading text-[26px] font-bold leading-none text-bluetx" id="cextra">S/ 0</div>
       <div class="mt-1 text-xs text-text3" id="cextrasub">0 ingresos extra este mes</div>
       <div class="mt-3 flex gap-2">
-        <button class="rounded-smapp border border-accent bg-accent px-3 py-1 font-heading text-[12px] font-bold text-white transition hover:brightness-95" onclick="openExtraModal()">+ Agregar</button>
-        <button class="rounded-smapp border border-borderc bg-white px-3 py-1 font-heading text-[12px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="clearExtrasMonth()">Limpiar</button>
+        <button class="rounded-smapp border border-accent bg-accent px-3 py-1 font-heading text-[12px] font-bold text-white transition hover:brightness-95" onclick="openExtraModal()">Ingresar</button>
       </div>
     </div>
 
@@ -350,10 +349,12 @@
         <select id="extra-mes" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white"></select>
       </div>
     </div>
-    <div id="extra-list" class="mb-3 max-h-[180px] overflow-y-auto rounded-smapp border border-borderc bg-appbg/60 p-3"></div>
     <div class="mt-5 flex justify-end gap-2">
-      <button class="rounded-smapp border border-borderc bg-white px-4 py-1.5 font-heading text-[13px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="closeExtraModal()">Cerrar</button>
       <button class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="saveExtra()">Guardar ✓</button>
+    </div>
+    <div id="extra-list" class="mt-4 max-h-[180px] overflow-y-auto rounded-smapp border border-borderc bg-appbg/60 p-3"></div>
+    <div class="mt-4 flex justify-end gap-2">
+      <button class="rounded-smapp border border-borderc bg-white px-4 py-1.5 font-heading text-[13px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="closeExtraModal()">Cerrar</button>
     </div>
   </div>
 </div>
@@ -483,6 +484,12 @@
           <option value="ninguno">Solo registrar abono</option>
           <option value="mes">Registrar también en el mes</option>
         </select>
+      </div>
+    </div>
+    <div class="mb-3 grid grid-cols-1 gap-3">
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Nota del abono</label>
+        <input id="abono-nota" type="text" placeholder="Ej: pago parcial, transferencia, efectivo..." class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
       </div>
     </div>
     <div class="mt-5 flex justify-end gap-2">
@@ -1244,6 +1251,7 @@ function openAbonoModal(id){
   document.getElementById('abono-monto').value='';
   fillMonthsSelect('abono-month', curM);
   document.getElementById('abono-impacto').value='ninguno';
+  document.getElementById('abono-nota').value='';
   const overlay=document.getElementById('overlay-abono');
   overlay.classList.remove('hidden');
   overlay.classList.add('flex');
@@ -1263,13 +1271,14 @@ function saveAbono(){
   const monto=parseFloat(document.getElementById('abono-monto').value);
   const mes=parseInt(document.getElementById('abono-month').value,10);
   const impacto=document.getElementById('abono-impacto').value;
+  const nota=document.getElementById('abono-nota').value.trim();
   const saldo=prestamoSaldo(p);
   if(!monto || monto<=0){ alert('Ingresa un monto válido.'); return; }
   if(monto > saldo){ alert('El abono supera el saldo pendiente.'); return; }
 
   p.montoPagado = (p.montoPagado || 0) + monto;
   p.historial = p.historial || [];
-  p.historial.push({ fecha: new Date().toISOString(), monto, mes, impacto });
+  p.historial.push({ fecha: new Date().toISOString(), monto, mes, impacto, nota });
 
   if(impacto === 'mes'){
     if(p.tipo === 'por_pagar'){
@@ -1315,7 +1324,7 @@ function renderPrestamos(){
       const badge=estado==='pagado' ? 'bg-greenbg text-greentx' : estado==='parcial' ? 'bg-bluebg text-bluetx' : 'bg-appbg text-text2';
       const historial=(p.historial||[]).slice().reverse().slice(0,5);
       const historialHtml=historial.length
-        ? `<div class="mt-3 rounded-smapp border border-borderc bg-appbg/60 p-3"><div class="mb-2 text-[11px] font-bold uppercase tracking-[0.06em] text-text3">Últimos abonos</div><div class="space-y-2">${historial.map(h=>`<div class="flex items-center justify-between gap-3 text-[12px]"><div class="min-w-0"><div class="font-semibold text-text1">${new Date(h.fecha).toLocaleDateString('es-PE')}</div><div class="text-text3">${MS[h.mes]||'-'} · ${h.impacto==='mes' ? 'impacta mes' : 'solo control'}</div></div><div class="whitespace-nowrap font-heading font-bold ${p.tipo==='por_cobrar'?'text-greentx':'text-red1'}">${fmt(h.monto)}</div></div>`).join('')}</div></div>`
+        ? `<div class="mt-3 rounded-smapp border border-borderc bg-appbg/60 p-3"><div class="mb-2 text-[11px] font-bold uppercase tracking-[0.06em] text-text3">Últimos abonos</div><div class="space-y-2">${historial.map(h=>`<div class="flex items-center justify-between gap-3 text-[12px]"><div class="min-w-0"><div class="font-semibold text-text1">${new Date(h.fecha).toLocaleDateString('es-PE')}</div><div class="text-text3">${MS[h.mes]||'-'} · ${h.impacto==='mes' ? 'impacta mes' : 'solo control'}${h.nota ? ' · ' + h.nota : ''}</div></div><div class="whitespace-nowrap font-heading font-bold ${p.tipo==='por_cobrar'?'text-greentx':'text-red1'}">${fmt(h.monto)}</div></div>`).join('')}</div></div>`
         : `<div class="mt-3 rounded-smapp border border-dashed border-borderc bg-appbg/40 px-3 py-2 text-[12px] text-text3">Aún no hay abonos registrados.</div>`;
       return `<div class="border-b border-appbg2 px-5 py-4 last:border-b-0"><div class="mb-2 flex items-start justify-between gap-3"><div class="min-w-0"><div class="truncate font-heading text-[15px] font-bold text-text1">${p.persona}</div><div class="text-[13px] text-text2">${p.desc}</div></div><div class="shrink-0 text-right"><div class="font-heading text-[15px] font-bold ${p.tipo==='por_cobrar'?'text-bluetx':'text-red1'}">${fmt(saldo)}</div><div class="mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${badge}">${estado}</div></div></div><div class="mb-3 grid grid-cols-2 gap-2 text-[12px] text-text2"><div>Total: <strong class="text-text1">${fmt(p.montoTotal)}</strong></div><div>Abonado: <strong class="text-text1">${fmt(p.montoPagado||0)}</strong></div><div>Fecha: <strong class="text-text1">${p.fecha||'-'}</strong></div><div>Vence: <strong class="text-text1">${p.vencimiento||'-'}</strong></div></div><div class="flex flex-wrap items-center justify-between gap-2"><div class="text-[12px] text-text3 truncate">${p.notas||'Sin notas'}</div><div class="flex flex-wrap items-center gap-2"><button class="rounded-smapp border border-borderc bg-white px-3 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="openAbonoModal(${p.id})">Abono</button><button class="rounded-smapp border border-borderc bg-white px-3 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="editPrestamo(${p.id})">Editar</button><button class="rounded-smapp border border-borderc bg-white px-3 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-red1 hover:text-red1" onclick="delPrestamo(${p.id})">Eliminar</button></div></div>${historialHtml}</div>`;
     }).join('');
