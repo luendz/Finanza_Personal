@@ -64,6 +64,7 @@
   <div class="mr-8 whitespace-nowrap font-heading text-lg font-bold text-accent max-md:mr-4 max-md:text-[15px]">💰 <span class="text-text1">Mis</span>Finanzas</div>
   <nav class="flex overflow-x-auto" id="main-nav">
     <button class="nav-tab active flex h-[54px] items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-4 font-heading text-[13px] font-bold text-text3 transition hover:text-text2 max-md:px-2.5 max-md:text-[11px]" onclick="goTo('inicio',this)">🏠 Inicio</button>
+    <button class="nav-tab flex h-[54px] items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-4 font-heading text-[13px] font-bold text-text3 transition hover:text-text2 max-md:px-2.5 max-md:text-[11px]" onclick="goTo('anotaciones',this)">📝 Anotaciones</button>
     <button class="nav-tab flex h-[54px] items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-4 font-heading text-[13px] font-bold text-text3 transition hover:text-text2 max-md:px-2.5 max-md:text-[11px]" onclick="goTo('cuotas',this)">📅 Cuotas</button>
     <button class="nav-tab flex h-[54px] items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-4 font-heading text-[13px] font-bold text-text3 transition hover:text-text2 max-md:px-2.5 max-md:text-[11px]" onclick="goTo('cats',this)">🏷️ Categorías</button>
   </nav>
@@ -175,6 +176,31 @@
           <canvas id="donut" width="220" height="220" class="h-[220px] w-[220px]"></canvas>
           <div id="dlegend" class="flex w-full flex-col gap-2"></div>
         </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="page-anotaciones" class="page mx-auto hidden max-w-[1100px] px-6 py-7 max-md:px-4">
+  <div class="mb-1 font-heading text-[22px] font-bold">Anotaciones 📝</div>
+  <div class="mb-6 text-[13px] text-text2">Gastos recordatorio que aún no deben entrar a tus resúmenes ni al total del mes.</div>
+  <div class="overflow-hidden rounded-app border border-borderc bg-card shadow-soft">
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-borderc bg-white px-5 py-4">
+      <div>
+        <div class="font-heading text-[17px] font-bold text-text1">Lista de anotaciones</div>
+        <div class="text-[13px] text-text2">Pagos futuros o pendientes por considerar</div>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <select class="rounded-smapp border border-borderc bg-white px-2.5 py-1.5 font-heading text-xs font-bold text-text2 outline-none focus:border-accent" id="note-cat-filter" onchange="renderNotes()"><option value="">Todas las categorías</option></select>
+        <button class="rounded-smapp border border-borderc bg-white px-3 py-1.5 font-heading text-[12px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="openBulkMoveNotesModal()">Enviar varias</button>
+        <button class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="openNoteModal()">+ Agregar</button>
+      </div>
+    </div>
+    <div id="notes-list" class="max-h-[720px] overflow-y-auto bg-white"></div>
+    <div class="border-t border-borderc bg-appbg px-5 py-4">
+      <div class="flex items-center justify-between gap-3">
+        <span class="font-heading text-[14px] font-bold uppercase tracking-[0.05em] text-text2">Total anotado</span>
+        <span id="notes-total-footer" class="font-heading text-[22px] font-bold text-accent">S/ 0.00</span>
       </div>
     </div>
   </div>
@@ -302,12 +328,42 @@
   </div>
 </div>
 
+<div class="fixed inset-0 z-[230] hidden items-center justify-center bg-black/35 p-4" id="overlay-note" onclick="maybeCloseNote(event)">
+  <div class="w-full max-w-[450px] rounded-app bg-card p-6 shadow-modal animate-up">
+    <h3 id="note-mh" class="mb-5 font-heading text-lg font-bold">Agregar anotación</h3>
+    <div class="mb-3 grid grid-cols-1 gap-3"><div class="flex flex-col gap-1.5"><label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Descripción</label><input id="note-desc" placeholder="Ej: Seguro anual, regalo, mantenimiento..." class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white"></div></div>
+    <div class="mb-3 grid grid-cols-2 gap-3"><div class="flex flex-col gap-1.5"><label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Monto estimado (S/)</label><input id="note-monto" type="number" placeholder="0.00" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white"></div><div class="flex flex-col gap-1.5"><label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Categoría</label><select id="note-cat" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white"></select></div></div>
+    <div class="mb-3 grid grid-cols-2 gap-3"><div class="flex flex-col gap-1.5"><label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Día tentativo</label><input id="note-dia" type="number" value="15" min="1" max="31" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white"></div><div class="flex flex-col gap-1.5"><label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Tipo sugerido</label><select id="note-tipo" onchange="toggleNoteQ()" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white"><option value="unico">Solo un mes</option><option value="recurrente">Recurrente</option><option value="cuotas">En cuotas</option></select></div></div>
+    <div id="note-qfields" class="hidden"><div class="mb-2.5 mt-3 border-t border-borderc pt-3 text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Detalles de las cuotas</div><div class="grid grid-cols-2 gap-3"><div class="flex flex-col gap-1.5"><label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Total de cuotas</label><input id="note-cuotas" type="number" placeholder="Ej: 12" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white"></div><div class="flex flex-col gap-1.5"><label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Inicio de cuota</label><input id="note-cuotaact" type="number" value="1" min="1" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white"></div></div></div>
+    <div class="mt-5 flex justify-end gap-2"><button class="rounded-smapp border border-borderc bg-white px-4 py-1.5 font-heading text-[13px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="closeNoteModal()">Cancelar</button><button class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="saveNote()">Guardar ✓</button></div>
+  </div>
+</div>
+
+<div class="fixed inset-0 z-[240] hidden items-center justify-center bg-black/35 p-4" id="overlay-note-move" onclick="maybeCloseNoteMove(event)">
+  <div class="w-full max-w-[430px] rounded-app bg-card p-6 shadow-modal animate-up">
+    <h3 class="mb-4 font-heading text-lg font-bold">Enviar anotación a un mes</h3>
+    <div id="note-move-title" class="mb-4 text-[13px] text-text2"></div>
+    <div class="mb-3 grid grid-cols-2 gap-3"><div class="flex flex-col gap-1.5"><label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Mes destino</label><select id="note-move-month" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white"></select></div><div class="flex flex-col gap-1.5"><label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Acción</label><select id="note-move-action" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white"><option value="move">Mover y quitar anotación</option><option value="copy">Copiar y conservar anotación</option></select></div></div>
+    <div class="mt-5 flex justify-end gap-2"><button class="rounded-smapp border border-borderc bg-white px-4 py-1.5 font-heading text-[13px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="closeNoteMoveModal()">Cancelar</button><button class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="confirmMoveNote()">Confirmar</button></div>
+  </div>
+</div>
+
+<div class="fixed inset-0 z-[245] hidden items-center justify-center bg-black/35 p-4" id="overlay-note-bulk" onclick="maybeCloseBulkMoveNotes(event)">
+  <div class="w-full max-w-[620px] rounded-app bg-card p-6 shadow-modal animate-up">
+    <h3 class="mb-1 font-heading text-lg font-bold">Enviar anotaciones a un mes</h3>
+    <div class="mb-4 text-[13px] text-text2">Selecciona las anotaciones que ya quieres considerar como gasto real.</div>
+    <div class="mb-3 flex flex-wrap items-center gap-2"><button class="rounded-smapp border border-borderc bg-white px-3 py-1.5 font-heading text-[12px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="markAllNotesBulk(true)">Todas</button><button class="rounded-smapp border border-borderc bg-white px-3 py-1.5 font-heading text-[12px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="markAllNotesBulk(false)">Limpiar</button><select id="bulk-note-month" class="rounded-smapp border border-borderc bg-appbg px-3 py-1.5 font-heading text-[12px] font-bold text-text2 outline-none focus:border-accent"></select><select id="bulk-note-action" class="rounded-smapp border border-borderc bg-appbg px-3 py-1.5 font-heading text-[12px] font-bold text-text2 outline-none focus:border-accent"><option value="move">Mover</option><option value="copy">Copiar</option></select></div>
+    <div id="bulk-notes-list" class="max-h-[320px] overflow-y-auto rounded-smapp border border-borderc bg-white"></div>
+    <div class="mt-5 flex justify-end gap-2"><button class="rounded-smapp border border-borderc bg-white px-4 py-1.5 font-heading text-[13px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="closeBulkMoveNotesModal()">Cancelar</button><button class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="confirmBulkMoveNotes()">Aplicar</button></div>
+  </div>
+</div>
+
 <div class="fixed bottom-6 right-6 z-[999] translate-y-[60px] rounded-smapp bg-text1 px-[18px] py-2.5 font-heading text-[13px] font-bold text-white opacity-0 shadow-toast transition-all duration-200" id="toast"></div>
 
 <script>
 const MS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const MSH = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-let curM = new Date().getMonth(), editId = null, nid = 50;
+let curM = new Date().getMonth(), editId = null, editMode = 'gasto', editingNoteId = null, movingNoteId = null, nid = 50;
 
 const CSTYLE = {
   'Maria Elena':{ bg:'#f3eaf8', tx:'#7a3fa0', bar:'#b07fd4' },
@@ -321,6 +377,7 @@ function cs(cat){ return CSTYLE[cat]||{bg:'#fef9ec',tx:'#7a5c10',bar:'#e8b84b'};
 let state = {
   categorias:['Maria Elena','Personal','Carro','Viejo','Vane'],
   ingresosExtra: [],
+  anotaciones: [],
   gastos:[
     {id:1, desc:'Internet Maria Elena', monto:25, cat:'Maria Elena',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, origenMes: curM},
     {id:2, desc:'Google Drive', monto:40, cat:'Personal',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, origenMes: curM},
@@ -345,6 +402,7 @@ function load(){
     if(d){
       state=JSON.parse(d);
       state.ingresosExtra = state.ingresosExtra || [];
+      state.anotaciones = state.anotaciones || [];
       state.gastos = (state.gastos || []).map(g => ({
         ...g,
         mes: typeof g.mes === 'number' ? g.mes : curM,
@@ -587,7 +645,7 @@ function renderGastos(){
       : g.tipo==='recurrente'
         ? `<span class="ml-1.5 rounded-full bg-appbg px-2 py-0.5 text-[10px] font-bold text-text2">Recurrente</span>`
         : '';
-    return `<div class="grid grid-cols-[1fr_auto_auto_auto] items-center gap-3 border-b border-appbg2 px-5 py-3 transition hover:bg-appbg"><div class="min-w-0 flex items-center gap-2"><div class="truncate text-[14px] font-semibold text-text1">${g.desc}${qtag}</div><span class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold leading-none" style="background:${s.bg};color:${s.tx}"><span class="h-1.5 w-1.5 rounded-full" style="background:${s.bar}"></span>${g.cat}</span></div><div class="whitespace-nowrap text-[12px] text-text3">día ${g.dia}</div><div class="whitespace-nowrap font-heading text-[15px] font-bold text-red1">${fmt(g.monto)}</div><button class="rounded-md border-0 bg-transparent px-1.5 py-0.5 text-[20px] leading-none text-text3 transition hover:bg-redbg hover:text-red1" onclick="delG(${g.id})">×</button></div>`;
+    return `<div class="grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-3 border-b border-appbg2 px-5 py-3 transition hover:bg-appbg"><div class="min-w-0 flex items-center gap-2"><div class="truncate text-[14px] font-semibold text-text1">${g.desc}${qtag}</div><span class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold leading-none" style="background:${s.bg};color:${s.tx}"><span class="h-1.5 w-1.5 rounded-full" style="background:${s.bar}"></span>${g.cat}</span></div><div class="whitespace-nowrap text-[12px] text-text3">día ${g.dia}</div><div class="whitespace-nowrap font-heading text-[15px] font-bold text-red1">${fmt(g.monto)}</div><button class="rounded-md border-0 bg-transparent px-1.5 py-0.5 text-[16px] leading-none text-text3 transition hover:bg-bluebg hover:text-accent" onclick="editG(${g.id})">✎</button><button class="rounded-md border-0 bg-transparent px-1.5 py-0.5 text-[20px] leading-none text-text3 transition hover:bg-redbg hover:text-red1" onclick="delG(${g.id})">×</button></div>`;
   }).join('');
 }
 
@@ -765,6 +823,194 @@ function carrySelectedExpenses(){
   toast(created ? `Se copiaron ${created} gasto(s) a ${monthName(nextM)}` : 'No hubo nuevos gastos para copiar');
 }
 
+function fillMonthsSelect(selectId, selected = curM){
+  const sel=document.getElementById(selectId);
+  if(!sel) return;
+  sel.innerHTML=MS.map((m,i)=>`<option value="${i}" ${i===selected?'selected':''}>${m}</option>`).join('');
+}
+
+function getFilteredNotes(){
+  const filter=document.getElementById('note-cat-filter')?.value||'';
+  let list=(state.anotaciones || []);
+  if(filter) list=list.filter(n=>n.cat===filter);
+  return list;
+}
+
+function renderNotes(){
+  const fcat=document.getElementById('note-cat-filter');
+  if(fcat){
+    const cur=fcat.value;
+    fcat.innerHTML='<option value="">Todas las categorías</option>'+state.categorias.map(c=>`<option value="${c}"${c===cur?' selected':''}>${c}</option>`).join('');
+  }
+  const list=getFilteredNotes();
+  const total=list.reduce((s,n)=>s+n.monto,0);
+  const totalFooter=document.getElementById('notes-total-footer');
+  if(totalFooter) totalFooter.textContent=fmt(total);
+  const el=document.getElementById('notes-list');
+  if(!el) return;
+  if(!list.length){
+    el.innerHTML='<div class="px-10 py-10 text-center text-text3"><div class="mb-2.5 text-[32px]">📝</div>No tienes anotaciones pendientes</div>';
+    return;
+  }
+  el.innerHTML=list.map(n=>{
+    const s=cs(n.cat);
+    const noteTag=n.tipo==='cuotas' ? `<span class="ml-1.5 rounded-full bg-bluebg px-2 py-0.5 text-[10px] font-bold text-bluetx">Cuotas</span>` : n.tipo==='recurrente' ? `<span class="ml-1.5 rounded-full bg-appbg px-2 py-0.5 text-[10px] font-bold text-text2">Recurrente</span>` : `<span class="ml-1.5 rounded-full bg-appbg px-2 py-0.5 text-[10px] font-bold text-text2">Pendiente</span>`;
+    return `<div class="grid grid-cols-[1fr_auto_auto_auto_auto_auto] items-center gap-3 border-b border-appbg2 px-5 py-3 transition hover:bg-appbg"><div class="min-w-0 flex items-center gap-2"><div class="truncate text-[14px] font-semibold text-text1">${n.desc}${noteTag}</div><span class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold leading-none" style="background:${s.bg};color:${s.tx}"><span class="h-1.5 w-1.5 rounded-full" style="background:${s.bar}"></span>${n.cat}</span></div><div class="whitespace-nowrap text-[12px] text-text3">día ${n.dia}</div><div class="whitespace-nowrap font-heading text-[15px] font-bold text-accent">${fmt(n.monto)}</div><button class="rounded-md border-0 bg-transparent px-1.5 py-0.5 text-[12px] leading-none text-text3 transition hover:bg-greenbg hover:text-greentx" onclick="openMoveNoteModal(${n.id})">Mes</button><button class="rounded-md border-0 bg-transparent px-1.5 py-0.5 text-[16px] leading-none text-text3 transition hover:bg-bluebg hover:text-accent" onclick="editNote(${n.id})">✎</button><button class="rounded-md border-0 bg-transparent px-1.5 py-0.5 text-[20px] leading-none text-text3 transition hover:bg-redbg hover:text-red1" onclick="delNote(${n.id})">×</button></div>`;
+  }).join('');
+}
+
+function toggleNoteQ(){
+  document.getElementById('note-qfields').classList.toggle('hidden', document.getElementById('note-tipo').value!=='cuotas');
+}
+
+function openNoteModal(){
+  editingNoteId = null;
+  document.getElementById('note-mh').textContent='Agregar anotación';
+  const sel=document.getElementById('note-cat');
+  sel.innerHTML=state.categorias.map(c=>`<option>${c}</option>`).join('');
+  document.getElementById('note-desc').value='';
+  document.getElementById('note-monto').value='';
+  document.getElementById('note-dia').value=15;
+  document.getElementById('note-tipo').value='unico';
+  document.getElementById('note-cuotas').value='';
+  document.getElementById('note-cuotaact').value=1;
+  toggleNoteQ();
+  const overlay=document.getElementById('overlay-note');
+  overlay.classList.remove('hidden');
+  overlay.classList.add('flex');
+  setTimeout(()=>document.getElementById('note-desc').focus(),50);
+}
+
+function closeNoteModal(){
+  const overlay=document.getElementById('overlay-note');
+  overlay.classList.add('hidden');
+  overlay.classList.remove('flex');
+}
+
+function maybeCloseNote(e){ if(e.target===document.getElementById('overlay-note')) closeNoteModal(); }
+
+function saveNote(){
+  const desc=document.getElementById('note-desc').value.trim();
+  const monto=parseFloat(document.getElementById('note-monto').value);
+  const cat=document.getElementById('note-cat').value;
+  const dia=parseInt(document.getElementById('note-dia').value)||15;
+  const tipo=document.getElementById('note-tipo').value;
+  const cuotas=tipo==='cuotas'?(parseInt(document.getElementById('note-cuotas').value)||0):0;
+  const cuotaAct=tipo==='cuotas'?(parseInt(document.getElementById('note-cuotaact').value)||1):1;
+  if(!desc){ alert('Escribe una descripción.'); return; }
+  if(!monto || monto<=0){ alert('Ingresa un monto válido.'); return; }
+  if(tipo==='cuotas'&&cuotas<1){ alert('Ingresa el número total de cuotas.'); return; }
+  if(editingNoteId !== null){
+    const n=(state.anotaciones||[]).find(x=>x.id===editingNoteId);
+    if(!n) return;
+    n.desc=desc; n.monto=monto; n.cat=cat; n.dia=dia; n.tipo=tipo; n.cuotas=cuotas; n.cuotaAct=cuotaAct;
+    if(tipo!=='cuotas'){ n.cuotas=0; n.cuotaAct=1; }
+    save(); renderNotes(); closeNoteModal(); toast('Anotación actualizada ✓');
+    return;
+  }
+  state.anotaciones = state.anotaciones || [];
+  const nextId=(state.anotaciones.reduce((max,x)=>Math.max(max,x.id||0),0))+1;
+  state.anotaciones.push({ id: nextId, desc, monto, cat, dia, tipo, cuotas, cuotaAct, creadoMes: curM });
+  save(); renderNotes(); closeNoteModal(); toast('Anotación agregada ✓');
+}
+
+function editNote(id){
+  const n=(state.anotaciones||[]).find(x=>x.id===id);
+  if(!n) return;
+  editingNoteId=id;
+  document.getElementById('note-mh').textContent='Editar anotación';
+  const sel=document.getElementById('note-cat');
+  sel.innerHTML=state.categorias.map(c=>`<option ${c===n.cat?'selected':''}>${c}</option>`).join('');
+  document.getElementById('note-desc').value=n.desc;
+  document.getElementById('note-monto').value=n.monto;
+  document.getElementById('note-dia').value=n.dia;
+  document.getElementById('note-tipo').value=n.tipo;
+  document.getElementById('note-cuotas').value=n.tipo==='cuotas' ? n.cuotas : '';
+  document.getElementById('note-cuotaact').value=n.tipo==='cuotas' ? n.cuotaAct : 1;
+  toggleNoteQ();
+  const overlay=document.getElementById('overlay-note');
+  overlay.classList.remove('hidden');
+  overlay.classList.add('flex');
+}
+
+function delNote(id){
+  if(!confirm('¿Eliminar esta anotación?')) return;
+  state.anotaciones=(state.anotaciones||[]).filter(x=>x.id!==id);
+  save(); renderNotes(); toast('Anotación eliminada');
+}
+
+function noteToExpense(note, mesDestino){
+  return { id: nid++, desc: note.desc, monto: note.monto, cat: note.cat, dia: note.dia, tipo: note.tipo, cuotas: note.tipo==='cuotas' ? note.cuotas : 0, cuotaAct: note.tipo==='cuotas' ? note.cuotaAct : 1, mes: mesDestino, origenMes: mesDestino };
+}
+
+function openMoveNoteModal(id){
+  const note=(state.anotaciones||[]).find(x=>x.id===id);
+  if(!note) return;
+  movingNoteId=id;
+  document.getElementById('note-move-title').textContent=`${note.desc} · ${fmt(note.monto)}`;
+  fillMonthsSelect('note-move-month', curM);
+  document.getElementById('note-move-action').value='move';
+  const overlay=document.getElementById('overlay-note-move');
+  overlay.classList.remove('hidden');
+  overlay.classList.add('flex');
+}
+
+function closeNoteMoveModal(){
+  const overlay=document.getElementById('overlay-note-move');
+  overlay.classList.add('hidden');
+  overlay.classList.remove('flex');
+}
+
+function maybeCloseNoteMove(e){ if(e.target===document.getElementById('overlay-note-move')) closeNoteMoveModal(); }
+
+function confirmMoveNote(){
+  const note=(state.anotaciones||[]).find(x=>x.id===movingNoteId);
+  if(!note) return;
+  const mesDestino=parseInt(document.getElementById('note-move-month').value,10);
+  const action=document.getElementById('note-move-action').value;
+  const exists=state.gastos.some(g => g.desc===note.desc && g.cat===note.cat && g.dia===note.dia && g.tipo===note.tipo && g.monto===note.monto && g.mes===mesDestino);
+  if(!exists) state.gastos.push(noteToExpense(note, mesDestino));
+  if(action==='move') state.anotaciones=(state.anotaciones||[]).filter(x=>x.id!==movingNoteId);
+  save(); updateAll(); renderNotes(); closeNoteMoveModal(); toast(action==='move' ? `Anotación enviada a ${MS[mesDestino]}` : `Anotación copiada a ${MS[mesDestino]}`);
+}
+
+function openBulkMoveNotesModal(){
+  fillMonthsSelect('bulk-note-month', curM);
+  document.getElementById('bulk-note-action').value='move';
+  const listEl=document.getElementById('bulk-notes-list');
+  const list=(state.anotaciones||[]);
+  if(!listEl) return;
+  listEl.innerHTML=!list.length ? '<div class="px-4 py-6 text-center text-[13px] text-text3">No tienes anotaciones para enviar.</div>' : list.map(n=>`<label class="flex cursor-pointer items-center gap-3 border-b border-appbg2 px-4 py-3 last:border-b-0 hover:bg-appbg"><input type="checkbox" class="bulk-note-item h-4 w-4" data-id="${n.id}"><div class="min-w-0 flex-1"><div class="truncate text-[13px] font-semibold text-text1">${n.desc}</div><div class="text-[11px] text-text3">${n.cat} · día ${n.dia}</div></div><div class="whitespace-nowrap font-heading text-[14px] font-bold text-accent">${fmt(n.monto)}</div></label>`).join('');
+  const overlay=document.getElementById('overlay-note-bulk');
+  overlay.classList.remove('hidden');
+  overlay.classList.add('flex');
+}
+
+function closeBulkMoveNotesModal(){
+  const overlay=document.getElementById('overlay-note-bulk');
+  overlay.classList.add('hidden');
+  overlay.classList.remove('flex');
+}
+
+function maybeCloseBulkMoveNotes(e){ if(e.target===document.getElementById('overlay-note-bulk')) closeBulkMoveNotesModal(); }
+function markAllNotesBulk(value){ document.querySelectorAll('.bulk-note-item').forEach(chk => chk.checked = value); }
+
+function confirmBulkMoveNotes(){
+  const ids=Array.from(document.querySelectorAll('.bulk-note-item:checked')).map(x=>Number(x.dataset.id));
+  if(!ids.length){ alert('Selecciona al menos una anotación.'); return; }
+  const mesDestino=parseInt(document.getElementById('bulk-note-month').value,10);
+  const action=document.getElementById('bulk-note-action').value;
+  let created=0;
+  ids.forEach(id => {
+    const note=(state.anotaciones||[]).find(x=>x.id===id);
+    if(!note) return;
+    const exists=state.gastos.some(g => g.desc===note.desc && g.cat===note.cat && g.dia===note.dia && g.tipo===note.tipo && g.monto===note.monto && g.mes===mesDestino);
+    if(!exists){ state.gastos.push(noteToExpense(note, mesDestino)); created++; }
+  });
+  if(action==='move') state.anotaciones=(state.anotaciones||[]).filter(n => !ids.includes(n.id));
+  save(); updateAll(); renderNotes(); closeBulkMoveNotesModal(); toast(created ? `${created} anotación(es) enviadas a ${MS[mesDestino]}` : 'No hubo nuevas anotaciones para enviar');
+}
+
 function renderCats(){
   const el=document.getElementById('catgrid');
   if(!el)return;
@@ -867,6 +1113,9 @@ function clearExtrasMonth(){
 }
 
 function openModal(){
+  editId = null;
+  editMode = 'gasto';
+  document.getElementById('mh').textContent='Agregar gasto';
   const sel=document.getElementById('fcatModal');
   sel.innerHTML=state.categorias.map(c=>`<option>${c}</option>`).join('');
   document.getElementById('fdesc').value='';
@@ -875,6 +1124,27 @@ function openModal(){
   document.getElementById('ftipo').value='unico';
   document.getElementById('fcuotas').value='';
   document.getElementById('fcuotaact').value=1;
+  toggleQ();
+  const overlay=document.getElementById('overlay');
+  overlay.classList.remove('hidden');
+  overlay.classList.add('flex');
+  setTimeout(()=>document.getElementById('fdesc').focus(),50);
+}
+
+function editG(id){
+  const g = state.gastos.find(x => x.id === id);
+  if(!g) return;
+  editId = id;
+  editMode = 'gasto';
+  document.getElementById('mh').textContent='Editar gasto';
+  const sel=document.getElementById('fcatModal');
+  sel.innerHTML=state.categorias.map(c=>`<option ${c===g.cat?'selected':''}>${c}</option>`).join('');
+  document.getElementById('fdesc').value=g.desc;
+  document.getElementById('fmonto').value=g.monto;
+  document.getElementById('fdia').value=g.dia;
+  document.getElementById('ftipo').value=g.tipo;
+  document.getElementById('fcuotas').value=g.tipo==='cuotas' ? g.cuotas : '';
+  document.getElementById('fcuotaact').value=g.tipo==='cuotas' ? g.cuotaAct : 1;
   toggleQ();
   const overlay=document.getElementById('overlay');
   overlay.classList.remove('hidden');
@@ -899,6 +1169,25 @@ function saveG(){
   if(!desc){alert('Escribe una descripción.');return;}
   if(!m||m<=0){alert('Ingresa un monto válido.');return;}
   if(tipo==='cuotas'&&cuotas<1){alert('Ingresa el número total de cuotas.');return;}
+
+  if(editId !== null && editMode === 'gasto'){
+    const g = state.gastos.find(x => x.id === editId);
+    if(!g) return;
+    g.desc = desc;
+    g.monto = m;
+    g.cat = cat;
+    g.dia = dia;
+    g.tipo = tipo;
+    g.cuotas = cuotas;
+    g.cuotaAct = cuotaAct;
+    if(tipo !== 'cuotas'){
+      g.cuotas = 0;
+      g.cuotaAct = 1;
+    }
+    closeModal();save();updateAll();toast('Gasto actualizado ✓');
+    return;
+  }
+
   state.gastos.push({id:nid++,desc,monto:m,cat,dia,tipo,cuotas,cuotaAct,mes:curM,origenMes:curM});
   closeModal();save();updateAll();toast('Gasto agregado ✓');
 }
@@ -1330,6 +1619,7 @@ function updateAll(){
   rMonths('mbtns1');
   updateInicio();
   renderGastos();
+  renderNotes();
   renderCuotas();
   renderCats();
 }
