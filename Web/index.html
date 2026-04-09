@@ -1401,14 +1401,14 @@ function saveAbono(){
 
   if(impacto === 'mes'){
     if(p.tipo === 'por_pagar'){
-      const nuevoGasto = { id:nid++, desc:`Abono préstamo - ${p.persona}`, monto, cat:'Personal', dia:15, tipo:'unico', cuotas:0, cuotaAct:1, mes, origenMes:mes, abonoPrestamoId: historialId, prestamoId: p.id };
+      const nuevoGasto = { id:nid++, desc:`Abono préstamo - ${p.persona}`, monto, cat:'Personal', dia:15, tipo:'unico', cuotas:0, cuotaAct:1, mes, anio:curY, origenMes:mes, origenAnio:curY, abonoPrestamoId: historialId, prestamoId: p.id };
       state.gastos.push(nuevoGasto);
       hist.linkedType = 'gasto';
       hist.linkedId = nuevoGasto.id;
     } else {
       state.ingresosExtra = state.ingresosExtra || [];
       const nextId=(state.ingresosExtra.reduce((max,x)=>Math.max(max,x.id||0),0))+1;
-      const nuevoIngreso = { id: nextId, desc:`Devolución préstamo - ${p.persona}`, monto, mes, abonoPrestamoId: historialId, prestamoId: p.id };
+      const nuevoIngreso = { id: nextId, desc:`Devolución préstamo - ${p.persona}`, monto, mes, anio:curY, abonoPrestamoId: historialId, prestamoId: p.id };
       state.ingresosExtra.push(nuevoIngreso);
       hist.linkedType = 'ingreso';
       hist.linkedId = nextId;
@@ -1503,14 +1503,14 @@ function saveAbonoEdit(){
 
   if(impacto === 'mes'){
     if(p.tipo === 'por_pagar'){
-      const nuevoGasto = { id:nid++, desc:`Abono préstamo - ${p.persona}`, monto, cat:'Personal', dia:15, tipo:'unico', cuotas:0, cuotaAct:1, mes, origenMes:mes, abonoPrestamoId: hist.id, prestamoId: p.id };
+      const nuevoGasto = { id:nid++, desc:`Abono préstamo - ${p.persona}`, monto, cat:'Personal', dia:15, tipo:'unico', cuotas:0, cuotaAct:1, mes, anio:curY, origenMes:mes, origenAnio:curY, abonoPrestamoId: hist.id, prestamoId: p.id };
       state.gastos.push(nuevoGasto);
       hist.linkedType = 'gasto';
       hist.linkedId = nuevoGasto.id;
     } else {
       state.ingresosExtra = state.ingresosExtra || [];
       const nextId=(state.ingresosExtra.reduce((max,x)=>Math.max(max,x.id||0),0))+1;
-      const nuevoIngreso = { id: nextId, desc:`Devolución préstamo - ${p.persona}`, monto, mes, abonoPrestamoId: hist.id, prestamoId: p.id };
+      const nuevoIngreso = { id: nextId, desc:`Devolución préstamo - ${p.persona}`, monto, mes, anio:curY, abonoPrestamoId: hist.id, prestamoId: p.id };
       state.ingresosExtra.push(nuevoIngreso);
       hist.linkedType = 'ingreso';
       hist.linkedId = nextId;
@@ -1671,7 +1671,7 @@ function saveExtra(){
 
   state.ingresosExtra = state.ingresosExtra || [];
   const nextId = (state.ingresosExtra.reduce((max,x)=>Math.max(max,x.id||0),0)) + 1;
-  state.ingresosExtra.push({ id: nextId, desc, monto, mes });
+  state.ingresosExtra.push({ id: nextId, desc, monto, mes, anio: curY });
   save();
   renderExtraList();
   updateAll();
@@ -1812,7 +1812,7 @@ function saveG(){
     return;
   }
 
-  state.gastos.push({id:nid++,desc,monto:m,cat,dia,tipo,cuotas,cuotaAct,mes:curM,origenMes:curM});
+  state.gastos.push({id:nid++,desc,monto:m,cat,dia,tipo,cuotas,cuotaAct,mes:curM,anio:curY,origenMes:curM,origenAnio:curY});
   closeModal();save();updateAll();toast('Gasto agregado ✓');
 }
 
@@ -1993,12 +1993,12 @@ async function exportExcel(){
     wsDashboard.addImage(donutImageId, { tl: { col: 6.2, row: 2.6 }, ext: { width: 250, height: 250 } });
   }
 
-  wsDashboard.getCell('G16').value = 'Categoría';
-  wsDashboard.getCell('H16').value = '%';
-  wsDashboard.getCell('I16').value = 'Monto';
-  styleHeaderRow(wsDashboard.getRow(16));
+  wsDashboard.getCell('G15').value = 'Categoría';
+  wsDashboard.getCell('H15').value = '%';
+  wsDashboard.getCell('I15').value = 'Monto';
+  styleHeaderRow(wsDashboard.getRow(15));
   (categoriasResumen.length ? categoriasResumen : [{ categoria:'Sin datos', porcentaje:0, monto:0 }]).forEach((item, idx) => {
-    const row = wsDashboard.getRow(17 + idx);
+    const row = wsDashboard.getRow(16 + idx);
     row.getCell(7).value = item.categoria;
     row.getCell(8).value = item.porcentaje / 100;
     row.getCell(8).numFmt = pctFmt;
@@ -2022,69 +2022,7 @@ async function exportExcel(){
     row.getCell(6).value = MS[g.mes];
   });
 
-  const wsResumen = workbook.addWorksheet('Resumen');
-  wsResumen.columns = [{ width: 24 }, { width: 18 }];
-  wsResumen.addRow(['Concepto','Valor']);
-  styleHeaderRow(wsResumen.getRow(1));
-  [
-    ['Vista exportada', monthYearLabel()],
-    ['Sueldo base', sueldoBase],
-    ['Adicionales', totalExtra],
-    ['Total ingresos', ingresos],
-    ['Total gastos', totalGastos],
-    ['Disponible', disponible],
-    ['% gastado', pct/100]
-  ].forEach(([k,v], idx) => {
-    const row = wsResumen.addRow([k,v]);
-    if(idx >= 1 && idx <= 5) row.getCell(2).numFmt = moneyFmt;
-    if(k === '% gastado') row.getCell(2).numFmt = pctFmt;
-  });
-  wsResumen.views = [{ state: 'frozen', ySplit: 1 }];
-
-  addJsonSheet('Gastos visibles',
-    (gastosVisibles.length ? gastosVisibles : [{desc:'',cat:'',dia:'',tipo:'',monto:'',mes:curM,cuotaAct:'',cuotas:''}]).map(g => ({
-      descripcion: g.desc,
-      categoria: g.cat,
-      dia_pago: g.dia,
-      tipo: g.tipo,
-      monto: g.monto,
-      mes: MS[g.mes],
-      cuota_actual: g.tipo==='cuotas' ? g.cuotaAct : '',
-      total_cuotas: g.tipo==='cuotas' ? g.cuotas : ''
-    }))
-  );
-
-  addJsonSheet('Adicionales',
-    (extras.length ? extras : [{desc:'',monto:'',mes:curM}]).map(x => ({
-      descripcion: x.desc,
-      monto: x.monto,
-      mes: MS[x.mes]
-    }))
-  );
-
-  addJsonSheet('Cuotas activas',
-    (cuotasActivas.length ? cuotasActivas : [{desc:'',cat:'',monto:'',cuotaAct:'',cuotas:'',faltan:'',dia:'',mes:'',anio:''}]).map(g => ({
-      descripcion: g.desc,
-      categoria: g.cat,
-      monto_mensual: g.monto,
-      cuota_actual: g.cuotaAct,
-      total_cuotas: g.cuotas,
-      faltan: Math.max(g.cuotas-g.cuotaAct+1,0),
-      dia_pago: g.dia,
-      mes_origen: MS[g.mes],
-      anio: g.anio ?? curY
-    }))
-  );
-
-  addJsonSheet('Categorias',
-    (categoriasResumen.length ? categoriasResumen : [{categoria:'',monto:'',porcentaje:''}]).map(c => ({
-      categoria: c.categoria,
-      monto: c.monto,
-      porcentaje: c.porcentaje / 100
-    }))
-  );
-
-  const wsTodos = addJsonSheet('Todos los gastos',
+    addJsonSheet('Gastos visibles',
     (state.gastos.length ? state.gastos : [{desc:'',cat:'',dia:'',tipo:'',monto:'',mes:curM,anio:curY,origenMes:curM,origenAnio:curY,cuotaAct:'',cuotas:''}]).map(g => ({
       descripcion: g.desc,
       categoria: g.cat,
@@ -2100,7 +2038,21 @@ async function exportExcel(){
     }))
   );
 
-  addJsonSheet('Importar gastos',
+    addJsonSheet('Cuotas activas',
+    (cuotasActivas.length ? cuotasActivas : [{desc:'',cat:'',monto:'',cuotaAct:'',cuotas:'',faltan:'',dia:'',mes:'',anio:''}]).map(g => ({
+      descripcion: g.desc,
+      categoria: g.cat,
+      monto_mensual: g.monto,
+      cuota_actual: g.cuotaAct,
+      total_cuotas: g.cuotas,
+      faltan: Math.max(g.cuotas-g.cuotaAct+1,0),
+      dia_pago: g.dia,
+      mes_origen: MS[g.mes],
+      anio: g.anio ?? curY
+    }))
+  );
+
+      addJsonSheet('Importar gastos',
     [{
       descripcion: 'Ejemplo internet',
       categoria: 'Personal',
@@ -2191,7 +2143,7 @@ async function exportExcel(){
     }]
   );
 
-  ['Resumen','Gastos visibles','Adicionales','Cuotas activas','Categorias','Todos los gastos','Importar gastos','Importar compromisos','Prestamos','Abonos prestamos','Importar prestamos','Importar abonos prestamos'].forEach(name => {
+  ['Gastos visibles','Cuotas activas','Importar gastos','Importar compromisos','Prestamos','Abonos prestamos','Importar prestamos','Importar abonos prestamos'].forEach(name => {
     const ws = workbook.getWorksheet(name);
     if(!ws) return;
     ws.eachRow((row, rowNum) => {
