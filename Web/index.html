@@ -132,6 +132,7 @@
             <button class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="openModal()">+ Agregar</button>
           </div>
         </div>
+        <div id="gastos-payment-summary" class="grid grid-cols-1 gap-2 border-b border-borderc bg-appbg/70 px-5 py-3 sm:grid-cols-3"></div>
         <div id="glist" class="max-h-[780px] overflow-y-auto bg-white divide-y divide-borderc"></div>
         <div class="border-t border-borderc bg-appbg px-5 py-4">
           <div class="flex items-center justify-between gap-3">
@@ -408,6 +409,16 @@
   <div class="w-full max-w-[620px] rounded-app bg-card p-6 shadow-modal animate-up">
     <h3 class="mb-1 font-heading text-lg font-bold">Pasar gastos al siguiente mes</h3>
     <div class="mb-4 text-[13px] text-text2">Selecciona qué gastos de este mes quieres copiar al siguiente.</div>
+    <div class="mb-3 grid grid-cols-2 gap-3">
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Mes destino</label>
+        <select id="carry-target-month" onchange="updateCarrySummary()" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white"></select>
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Año destino</label>
+        <input id="carry-target-year" type="number" min="2000" max="2100" value="2025" oninput="updateCarrySummary()" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+      </div>
+    </div>
     <div class="mb-3 flex flex-wrap gap-2">
       <button class="rounded-smapp border border-borderc bg-white px-3 py-1.5 font-heading text-[12px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="markCarryByMode('all')">Todos</button>
       <button class="rounded-smapp border border-borderc bg-white px-3 py-1.5 font-heading text-[12px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="markCarryByMode('recurrente')">Solo recurrentes</button>
@@ -510,7 +521,7 @@
 
 <div class="fixed inset-0 z-[255] hidden items-center justify-center bg-black/35 p-4" id="overlay-abono" onclick="maybeCloseAbono(event)">
   <div class="w-full max-w-[430px] rounded-app bg-card p-6 shadow-modal animate-up">
-    <h3 class="mb-4 font-heading text-lg font-bold">Registrar abono</h3>
+    <h3 id="abono-mh" class="mb-4 font-heading text-lg font-bold">Registrar abono</h3>
     <div id="abono-title" class="mb-4 text-[13px] text-text2"></div>
     <div class="mb-3 grid grid-cols-1 gap-3">
       <div class="flex flex-col gap-1.5">
@@ -539,7 +550,7 @@
     </div>
     <div class="mt-5 flex justify-end gap-2">
       <button class="rounded-smapp border border-borderc bg-white px-4 py-1.5 font-heading text-[13px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="closeAbonoModal()">Cancelar</button>
-      <button class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="saveAbono()">Registrar ✓</button>
+      <button id="abono-save-btn" class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="saveAbono()">Registrar ✓</button>
     </div>
   </div>
 </div>

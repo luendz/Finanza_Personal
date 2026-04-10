@@ -278,6 +278,8 @@ async function loadCloudData() {
     anio: Number(g.anio),
     origenMes: g.origen_mes ?? g.mes,
     origenAnio: g.origen_anio ?? g.anio,
+    pagado: Boolean(g.pagado),
+    fechaPagado: g.fecha_pagado || null,
     cuotaAct: Number(g.cuota_actual || 1),
     cuotas: Number(g.total_cuotas || 0)
   }));
@@ -374,6 +376,81 @@ function active(){
     }
     return gy === curY && g.mes === curM;
   });
+}
+function daysInMonth(year, monthIndex){ return new Date(year, monthIndex + 1, 0).getDate(); }
+function paymentDateForView(){
+  const today = new Date();
+  const safeDay = Math.min(today.getDate(), daysInMonth(curY, curM));
+  return `${curY}-${String(curM + 1).padStart(2,'0')}-${String(safeDay).padStart(2,'0')}`;
+}
+function isSameMonthYear(dateStr, monthIndex, year){
+  if (!dateStr) return false;
+  const [yy, mm] = String(dateStr).split('-').map(Number);
+  return yy === year && mm === (monthIndex + 1);
+}
+function formatLocalDate(dateStr){
+  if (!dateStr) return '';
+  const [yy, mm, dd] = String(dateStr).split('-').map(Number);
+  if (!yy || !mm || !dd) return dateStr;
+  return new Date(yy, mm - 1, dd).toLocaleDateString('es-PE');
+}
+function isCurrentViewMonth(){
+  const today = new Date();
+  return curY === today.getFullYear() && curM === today.getMonth();
+}
+function gastoPaidInView(g){
+  if (!g?.pagado) return false;
+  return !g.fechaPagado || isSameMonthYear(g.fechaPagado, curM, curY);
+}
+function gastoPaymentStatus(g){
+  if (gastoPaidInView(g)) {
+    return {
+      key: 'pagado',
+      label: 'Pagado',
+      detail: g.fechaPagado ? `Pagado ${formatLocalDate(g.fechaPagado)}` : 'Marcado como pagado'
+    };
+  }
+  if (isCurrentViewMonth() && Number(g.dia) < new Date().getDate()) {
+    return {
+      key: 'vencido',
+      label: 'Vencido',
+      detail: `Vencio el dia ${g.dia}`
+    };
+  }
+  return {
+    key: 'pendiente',
+    label: 'Pendiente',
+    detail: `Pago esperado el dia ${g.dia}`
+  };
+}
+function gastoCuotaLabel(g){
+  if (g.tipo !== 'cuotas') return '';
+  const cuotaVisible = gastoPaidInView(g) ? Math.max((g.cuotaAct || 1) - 1, 1) : Math.min(g.cuotaAct || 1, g.cuotas || 1);
+  return gastoPaidInView(g)
+    ? `Cuota ${cuotaVisible} de ${g.cuotas} pagada`
+    : `Cuota ${cuotaVisible} de ${g.cuotas}`;
+}
+function renderGastosPaymentSummary(items){
+  const summary = document.getElementById('gastos-payment-summary');
+  if (!summary) return;
+  const totals = items.reduce((acc, g) => {
+    acc[gastoPaymentStatus(g).key] += Number(g.monto || 0);
+    return acc;
+  }, { pagado: 0, pendiente: 0, vencido: 0 });
+  summary.innerHTML = `
+    <div class="rounded-[14px] border border-[#d8ead8] bg-[#f5fbf5] px-4 py-3">
+      <div class="text-[11px] font-bold uppercase tracking-[0.06em] text-text3">Pagado</div>
+      <div class="mt-1 font-heading text-[20px] font-bold text-green1">${fmt(totals.pagado)}</div>
+    </div>
+    <div class="rounded-[14px] border border-[#eadfca] bg-[#fffaf1] px-4 py-3">
+      <div class="text-[11px] font-bold uppercase tracking-[0.06em] text-text3">Pendiente</div>
+      <div class="mt-1 font-heading text-[20px] font-bold text-[#b7791f]">${fmt(totals.pendiente)}</div>
+    </div>
+    <div class="rounded-[14px] border border-[#f1d3d3] bg-[#fff5f5] px-4 py-3">
+      <div class="text-[11px] font-bold uppercase tracking-[0.06em] text-text3">Vencido</div>
+      <div class="mt-1 font-heading text-[20px] font-bold text-red1">${fmt(totals.vencido)}</div>
+    </div>
+  `;
 }
 function total(){ return active().reduce((s,g)=>s+g.monto,0); }
 function extrasDelMes(){ return (state.ingresosExtra||[]).filter(x => Number(x.mes)===curM && Number(x.anio||curY)===curY); }
@@ -559,10 +636,29 @@ function closeExtraModal() {
   resetExtraForm();
 }
 
+function getDefaultCarryTarget() {
+  return curM === 11
+    ? { month: 0, year: curY + 1 }
+    : { month: curM + 1, year: curY };
+}
+
+function getCarryTarget() {
+  const monthEl = document.getElementById('carry-target-month');
+  const yearEl = document.getElementById('carry-target-year');
+  const fallback = getDefaultCarryTarget();
+  const month = monthEl ? Math.max(0, Math.min(11, parseInt(monthEl.value, 10) || fallback.month)) : fallback.month;
+  const year = yearEl ? Math.max(2000, Math.min(2100, parseInt(yearEl.value, 10) || fallback.year)) : fallback.year;
+  return { month, year };
+}
+
 function openCarryModal() {
   carrySelection = new Set();
-  document.getElementById('carry-summary').textContent = '';
+  const target = getDefaultCarryTarget();
+  fillMonthOptions('carry-target-month');
+  document.getElementById('carry-target-month').value = target.month;
+  document.getElementById('carry-target-year').value = target.year;
   refreshCarryList();
+  updateCarrySummary();
   showOverlay('overlay-carry');
 }
 
@@ -576,7 +672,7 @@ function refreshCarryList() {
   const items = active();
   if (!items.length) {
     carryContainer.innerHTML = '<div class="p-4 text-sm text-text2">No hay gastos activos para copiar.</div>';
-    document.getElementById('carry-summary').textContent = '';
+    updateCarrySummary();
     return;
   }
   carryContainer.innerHTML = items.map(g => {
@@ -593,10 +689,21 @@ function toggleCarryItem(id) {
 }
 
 function updateCarrySummary() {
+  const target = getCarryTarget();
+  const destination = `${MS[target.month]} ${target.year}`;
   const selected = Array.from(carrySelection).map(id => state.gastos.find(g => g.id === id)).filter(Boolean);
   const total = selected.reduce((sum, g) => sum + g.monto, 0);
-  const months = selected.length ? selected.map(g => `${MS[g.mes]} ${g.anio}`) : [];
   document.getElementById('carry-summary').textContent = selected.length ? `${selected.length} gasto(s) seleccionados · Total ${fmt(total)}` : 'Selecciona gastos para copiar al siguiente mes.';
+}
+
+function updateCarrySummary() {
+  const target = getCarryTarget();
+  const destination = `${MS[target.month]} ${target.year}`;
+  const selected = Array.from(carrySelection).map(id => state.gastos.find(g => g.id === id)).filter(Boolean);
+  const total = selected.reduce((sum, g) => sum + g.monto, 0);
+  document.getElementById('carry-summary').textContent = selected.length
+    ? `${selected.length} gasto(s) seleccionados · Total ${fmt(total)} · Destino ${destination}`
+    : `Selecciona gastos para copiar a ${destination}.`;
 }
 
 function markCarryByMode(mode) {
@@ -618,8 +725,11 @@ async function carrySelectedExpenses() {
   if (!currentUser) { alert('Primero inicia sesión.'); return; }
   const selected = Array.from(carrySelection).map(id => state.gastos.find(g => g.id === id)).filter(Boolean);
   if (!selected.length) { alert('Selecciona al menos un gasto.'); return; }
-  const nextM = curM === 11 ? 0 : curM + 1;
-  const nextY = curM === 11 ? curY + 1 : curY;
+  const target = getCarryTarget();
+  if (target.month === curM && target.year === curY) {
+    alert('Elige un mes o año distinto al que estás viendo.');
+    return;
+  }
   const payloads = selected.map(g => ({
     user_id: currentUser.id,
     descripcion: g.desc,
@@ -627,8 +737,8 @@ async function carrySelectedExpenses() {
     dia_pago: g.dia,
     tipo: g.tipo,
     monto: g.monto,
-    mes: nextM,
-    anio: nextY,
+    mes: target.month,
+    anio: target.year,
     origen_mes: g.mes,
     origen_anio: g.anio,
     cuota_actual: g.cuotaAct,
@@ -639,7 +749,7 @@ async function carrySelectedExpenses() {
   await loadCloudData();
   updateAll();
   closeCarryModal();
-  toast('Gastos copiados al siguiente mes');
+  toast(`Gastos copiados a ${MS[target.month]} ${target.year}`);
 }
 
 function toggleQ() {
@@ -792,7 +902,7 @@ async function confirmMoveNote() {
 
 function openPrestamoModal() {
   editingPrestamoId = null;
-  document.getElementById('prestamo-mh').textContent = 'Agregar préstamo';
+  document.getElementById('prestamo-mh').textContent = 'Agregar prestamo';
   document.getElementById('prestamo-tipo').value = 'por_cobrar';
   document.getElementById('prestamo-persona').value = '';
   document.getElementById('prestamo-desc').value = '';
@@ -801,6 +911,22 @@ function openPrestamoModal() {
   document.getElementById('prestamo-fecha').value = '';
   document.getElementById('prestamo-vencimiento').value = '';
   document.getElementById('prestamo-notas').value = '';
+  showOverlay('overlay-prestamo');
+}
+
+function editPrestamo(id) {
+  const prestamo = state.prestamos.find(p => p.id === id);
+  if (!prestamo) return;
+  editingPrestamoId = id;
+  document.getElementById('prestamo-mh').textContent = 'Editar prestamo';
+  document.getElementById('prestamo-tipo').value = prestamo.tipo;
+  document.getElementById('prestamo-persona').value = prestamo.persona || '';
+  document.getElementById('prestamo-desc').value = prestamo.desc || '';
+  document.getElementById('prestamo-monto').value = prestamo.montoTotal || '';
+  document.getElementById('prestamo-abonado').value = prestamo.montoPagado || 0;
+  document.getElementById('prestamo-fecha').value = prestamo.fecha || '';
+  document.getElementById('prestamo-vencimiento').value = prestamo.vencimiento || '';
+  document.getElementById('prestamo-notas').value = prestamo.notas || '';
   showOverlay('overlay-prestamo');
 }
 
@@ -814,6 +940,8 @@ function openAbonoModal(id) {
   editingAbonoRef = null;
   const p = state.prestamos.find(x => x.id === id);
   if (!p) return;
+  document.getElementById('abono-mh').textContent = 'Registrar abono';
+  document.getElementById('abono-save-btn').textContent = 'Registrar ✓';
   document.getElementById('abono-title').textContent = `Registrar abono - ${p.persona}`;
   document.getElementById('abono-monto').value = '';
   document.getElementById('abono-month').value = curM;
@@ -823,10 +951,29 @@ function openAbonoModal(id) {
   showOverlay('overlay-abono');
 }
 
+function openEditAbono(prestamoId, historialId) {
+  const prestamo = state.prestamos.find(p => p.id === prestamoId);
+  const historial = prestamo?.historial.find(h => h.id === historialId);
+  if (!prestamo || !historial) return;
+  abonoPrestamoId = prestamoId;
+  editingAbonoRef = { prestamoId, historialId };
+  document.getElementById('abono-mh').textContent = 'Editar abono';
+  document.getElementById('abono-save-btn').textContent = 'Actualizar ✓';
+  document.getElementById('abono-title').textContent = `Editar abono - ${prestamo.persona}`;
+  document.getElementById('abono-monto').value = historial.monto || '';
+  fillMonthOptions('abono-month');
+  document.getElementById('abono-month').value = historial.mes;
+  document.getElementById('abono-impacto').value = historial.impacto || 'ninguno';
+  document.getElementById('abono-nota').value = historial.nota || '';
+  showOverlay('overlay-abono');
+}
+
 function closeAbonoModal() {
   hideOverlay('overlay-abono');
   abonoPrestamoId = null;
   editingAbonoRef = null;
+  document.getElementById('abono-mh').textContent = 'Registrar abono';
+  document.getElementById('abono-save-btn').textContent = 'Registrar ✓';
 }
 
 function renderGastos() {
@@ -837,6 +984,7 @@ function renderGastos() {
   if (!list) return;
   const items = active().filter(g => !filter || g.cat === filter);
   const itemsTotal = items.reduce((sum, g) => sum + g.monto, 0);
+  renderGastosPaymentSummary(items);
   if (footerTotal) {
     footerTotal.textContent = fmt(itemsTotal);
   }
@@ -844,18 +992,45 @@ function renderGastos() {
     list.innerHTML = '<div class="p-4 text-sm text-text2">No hay gastos para este mes.</div>';
     return;
   }
-  list.innerHTML = items.map(g => `
-    <div class="grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-3 border-b border-appbg2 px-5 py-3 transition hover:bg-appbg">
-      <div class="min-w-0 flex items-center gap-2">
-        <div class="truncate text-[14px] font-semibold text-text1">${g.desc}<span class="ml-1.5 rounded-full bg-appbg px-2 py-0.5 text-[10px] font-bold text-text2">${g.tipo}</span></div>
-        <span class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold leading-none" style="background:${cs(g.cat).bg};color:${cs(g.cat).tx}"><span class="h-1.5 w-1.5 rounded-full" style="background:${cs(g.cat).bar}"></span>${g.cat}</span>
+  list.innerHTML = items.map(g => {
+    const style = cs(g.cat);
+    const status = gastoPaymentStatus(g);
+    const isPaid = status.key === 'pagado';
+    const statusClass = status.key === 'pagado'
+      ? 'border-[#d8ead8] bg-[#f5fbf5] text-green1'
+      : status.key === 'vencido'
+        ? 'border-[#f1d3d3] bg-[#fff5f5] text-red1'
+        : 'border-[#eadfca] bg-[#fffaf1] text-[#b7791f]';
+    const amountClass = isPaid ? 'text-green1' : status.key === 'vencido' ? 'text-red1' : 'text-[#b7791f]';
+    const toggleLabel = g.tipo === 'cuotas'
+      ? (isPaid ? 'Deshacer cuota' : 'Registrar cuota')
+      : (isPaid ? 'Deshacer pago' : 'Marcar pagado');
+    const toggleHandler = g.tipo === 'cuotas'
+      ? (isPaid ? `undoCuota(${g.id})` : `registerCuota(${g.id})`)
+      : `toggleGastoPago(${g.id})`;
+    const extraDetail = g.tipo === 'cuotas' ? gastoCuotaLabel(g) : `Dia ${g.dia}`;
+    const toggleBtnClass = isPaid
+      ? 'text-green1 hover:bg-greenbg hover:text-green1'
+      : 'text-text3 hover:bg-greenbg hover:text-green1';
+    return `
+    <div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 border-b border-appbg2 px-5 py-3 transition hover:bg-appbg">
+      <div class="flex min-w-0 items-center gap-2 overflow-hidden">
+        <div class="min-w-0 truncate text-[14px] font-semibold ${isPaid ? 'text-text2 line-through' : 'text-text1'}">${g.desc}</div>
+        <span class="inline-flex h-5 shrink-0 items-center rounded-full bg-appbg px-2 text-[10px] font-bold leading-none text-text2">${g.tipo}</span>
+        <span class="inline-flex h-5 shrink-0 items-center rounded-full border border-borderc bg-white px-2 text-[10px] font-bold leading-none text-text3">${extraDetail}</span>
+        <span class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold leading-none" style="background:${style.bg};color:${style.tx}"><span class="h-1.5 w-1.5 rounded-full" style="background:${style.bar}"></span>${g.cat}</span>
+        <span class="inline-flex h-5 shrink-0 items-center rounded-full border px-2 text-[10px] font-bold leading-none ${statusClass}">${status.label}</span>
+        <span class="min-w-0 truncate whitespace-nowrap text-[11px] text-text3">${status.detail}</span>
       </div>
-      <div class="whitespace-nowrap text-[12px] text-text3">día ${g.dia}</div>
-      <div class="whitespace-nowrap font-heading text-[15px] font-bold text-red1">${fmt(g.monto)}</div>
-      <button class="rounded-md border-0 bg-transparent px-1.5 py-0.5 text-[16px] leading-none text-text3 transition hover:bg-bluebg hover:text-accent" onclick="editG(${g.id})">✎</button>
-      <button class="rounded-md border-0 bg-transparent px-1.5 py-0.5 text-[20px] leading-none text-text3 transition hover:bg-redbg hover:text-red1" onclick="delG(${g.id})">×</button>
+      <div class="whitespace-nowrap font-heading text-[15px] font-bold ${amountClass}">${fmt(g.monto)}</div>
+      <div class="flex shrink-0 items-center gap-1">
+        <button class="inline-flex h-7 w-7 items-center justify-center rounded-md border-0 bg-transparent text-[16px] leading-none transition ${toggleBtnClass}" onclick="${toggleHandler}" title="${toggleLabel}" aria-label="${toggleLabel}">&#10003;</button>
+        <button class="inline-flex h-7 w-7 items-center justify-center rounded-md border-0 bg-transparent text-[16px] leading-none text-text3 transition hover:bg-bluebg hover:text-accent" onclick="editG(${g.id})" title="Editar gasto" aria-label="Editar gasto">&#9998;</button>
+        <button class="inline-flex h-7 w-7 items-center justify-center rounded-md border-0 bg-transparent text-[20px] leading-none text-text3 transition hover:bg-redbg hover:text-red1" onclick="delG(${g.id})" title="Eliminar gasto" aria-label="Eliminar gasto">&times;</button>
+      </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 async function saveG() {
@@ -924,24 +1099,118 @@ async function delG(id) {
   toast('Gasto eliminado');
 }
 
+async function toggleGastoPago(id) {
+  if (!currentUser) return;
+  const gasto = state.gastos.find(g => g.id === id);
+  if (!gasto) return;
+  if (gasto.tipo === 'cuotas') {
+    if (gastoPaidInView(gasto)) {
+      await undoCuota(id);
+    } else {
+      await registerCuota(id);
+    }
+    return;
+  }
+  const nextPaid = !gastoPaidInView(gasto);
+  const payload = nextPaid
+    ? { pagado: true, fecha_pagado: paymentDateForView() }
+    : { pagado: false, fecha_pagado: null };
+  const { error } = await supabaseClient.from('gastos').update(payload).eq('id', id);
+  if (error) { alert(error.message); return; }
+  await loadCloudData();
+  updateAll();
+  toast(nextPaid ? 'Gasto marcado como pagado' : 'Pago deshecho');
+}
+
+async function registerCuota(id) {
+  if (!currentUser) return;
+  const gasto = state.gastos.find(g => g.id === id && g.tipo === 'cuotas');
+  if (!gasto) return;
+  const nextCuota = Math.min(gasto.cuotaAct + 1, gasto.cuotas + 1);
+  if (nextCuota === gasto.cuotaAct) return;
+  const { error } = await supabaseClient.from('gastos').update({
+    cuota_actual: nextCuota,
+    pagado: true,
+    fecha_pagado: paymentDateForView()
+  }).eq('id', id);
+  if (error) { alert(error.message); return; }
+  await loadCloudData();
+  updateAll();
+  toast(nextCuota > gasto.cuotas ? 'Ultima cuota registrada' : 'Cuota registrada');
+}
+
+async function undoCuota(id) {
+  if (!currentUser) return;
+  const gasto = state.gastos.find(g => g.id === id && g.tipo === 'cuotas');
+  if (!gasto) return;
+  if (gasto.cuotaAct <= 1) {
+    toast('No hay cuotas para deshacer');
+    return;
+  }
+  const prevCuota = gasto.cuotaAct - 1;
+  const { error } = await supabaseClient.from('gastos').update({
+    cuota_actual: prevCuota,
+    pagado: false,
+    fecha_pagado: null
+  }).eq('id', id);
+  if (error) { alert(error.message); return; }
+  await loadCloudData();
+  updateAll();
+  toast('Cuota deshecha');
+}
+
 async function saveExtra() {
   if (!currentUser) { alert('Primero inicia sesión.'); return; }
   const desc = document.getElementById('extra-desc').value.trim();
   const monto = parseFloat(document.getElementById('extra-monto').value);
   const mes = parseInt(document.getElementById('extra-mes').value, 10);
   if (!desc || !monto || monto <= 0) { alert('Datos inválidos'); return; }
-  const { error } = await supabaseClient.from('ingresos_extra').insert({
+  const payload = {
     user_id: currentUser.id,
     descripcion: desc,
     monto,
     mes,
     anio: curY
-  });
+  };
+  let error;
+  if (editingExtraId !== null) {
+    ({ error } = await supabaseClient.from('ingresos_extra').update(payload).eq('id', editingExtraId));
+  } else {
+    ({ error } = await supabaseClient.from('ingresos_extra').insert(payload));
+  }
   if (error) { alert(error.message); return; }
   await loadCloudData();
   updateAll();
   renderExtraList();
-  toast('Ingreso adicional guardado');
+  toast(editingExtraId !== null ? 'Ingreso adicional actualizado' : 'Ingreso adicional guardado');
+  resetExtraForm();
+}
+
+function editExtra(id) {
+  const extra = state.ingresosExtra.find(x => x.id === id);
+  if (!extra) return;
+  editingExtraId = id;
+  document.getElementById('extra-mh').textContent = 'Editar ingreso adicional';
+  document.getElementById('extra-save-btn').textContent = 'Actualizar ✓';
+  document.getElementById('extra-desc').value = extra.desc;
+  document.getElementById('extra-monto').value = extra.monto;
+  fillMonthOptions('extra-mes');
+  document.getElementById('extra-mes').value = extra.mes;
+  showOverlay('overlay-extra');
+}
+
+async function delExtra(id) {
+  if (!currentUser) return;
+  if (!confirm('Â¿Eliminar este ingreso adicional?')) return;
+  const { error } = await supabaseClient.from('ingresos_extra').delete().eq('id', id);
+  if (error) { alert(error.message); return; }
+  if (editingExtraId === id) {
+    resetExtraForm();
+  }
+  await loadCloudData();
+  updateAll();
+  renderExtraList();
+  toast('Ingreso adicional eliminado');
 }
 
 function drawDonut(sorted, total, income) {
@@ -953,8 +1222,10 @@ function drawDonut(sorted, total, income) {
   const centerX = width / 2;
   const centerY = height / 2;
   const radius = Math.min(width, height) / 2 - 15;
+  const innerRadius = radius * 0.55;
   ctx.clearRect(0, 0, width, height);
   let start = -Math.PI / 2;
+  const sliceLabels = [];
   if (!sorted.length || total <= 0) {
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
@@ -963,19 +1234,39 @@ function drawDonut(sorted, total, income) {
   } else {
     sorted.forEach(([cat, value]) => {
       const slice = (value / total) * Math.PI * 2;
+      const midAngle = start + (slice / 2);
       ctx.beginPath();
       ctx.moveTo(centerX, centerY);
       ctx.arc(centerX, centerY, radius, start, start + slice);
       ctx.closePath();
       ctx.fillStyle = cs(cat).bar;
       ctx.fill();
+      sliceLabels.push({
+        angle: midAngle,
+        percent: `${Math.round((value / total) * 100)}%`
+      });
       start += slice;
     });
   }
   ctx.beginPath();
-  ctx.arc(centerX, centerY, radius * 0.55, 0, Math.PI * 2);
+  ctx.arc(centerX, centerY, innerRadius, 0, Math.PI * 2);
   ctx.fillStyle = '#ffffff';
   ctx.fill();
+  if (sliceLabels.length) {
+    const labelRadius = (radius + innerRadius) / 2;
+    ctx.font = '700 11px "Nunito Sans", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(24, 32, 51, 0.25)';
+    ctx.fillStyle = '#ffffff';
+    sliceLabels.forEach(label => {
+      const x = centerX + Math.cos(label.angle) * labelRadius;
+      const y = centerY + Math.sin(label.angle) * labelRadius;
+      ctx.strokeText(label.percent, x, y);
+      ctx.fillText(label.percent, x, y);
+    });
+  }
   const legend = document.getElementById('dlegend');
   if (!legend) return;
   const centerTotal = document.getElementById('donut-total');
@@ -987,15 +1278,17 @@ function drawDonut(sorted, total, income) {
     return;
   }
   legend.innerHTML = sorted.map(([cat, value]) => `
-    <div class="grid gap-2 rounded-[14px] border border-borderc bg-appbg px-3 py-2 text-[12px] text-text2">
+    <div class="rounded-[14px] border border-borderc bg-appbg px-3 py-2 text-[12px] text-text2">
       <div class="flex items-center justify-between gap-2">
         <div class="flex items-center gap-2">
           <span class="h-2.5 w-2.5 rounded-full" style="background:${cs(cat).bar}"></span>
           <span class="font-semibold text-text1">${cat}</span>
         </div>
-        <span class="font-semibold text-text1">${fmt(value)}</span>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-text3">${Math.round((value / total) * 100)}%</span>
+          <span class="font-semibold text-text1">${fmt(value)}</span>
+        </div>
       </div>
-      <div class="text-xs text-text3">${Math.round((value / total) * 100)}%</div>
     </div>
   `).join('');
 }
@@ -1052,54 +1345,74 @@ function renderPrestamos() {
   const cuotasLista = document.getElementById('qlist');
   if (cuotasLista) {
     const items = active().filter(g => g.tipo === 'cuotas');
-    cuotasLista.innerHTML = items.length ? items.map(g => `
-      <div class="mb-3 rounded-[16px] border border-borderc bg-white p-4">
-        <div class="flex items-center justify-between gap-3">
+    cuotasLista.innerHTML = items.length ? items.map(g => {
+      const style = cs(g.cat);
+      const done = Math.max(Math.min(g.cuotaAct - 1, g.cuotas), 0);
+      const pct = g.cuotas > 0 ? ((done / g.cuotas) * 100).toFixed(0) : 0;
+      const faltan = Math.max(g.cuotas - g.cuotaAct + 1, 0);
+      return `
+      <div class="mb-3 rounded-[16px] border border-[#eadfca] bg-white px-5 py-4 shadow-soft">
+        <div class="mb-2.5 flex items-start justify-between gap-3">
           <div>
-            <div class="font-semibold text-text1">${g.desc}</div>
-            <div class="text-[12px] text-text3">${g.cat} · Cuota ${g.cuotaAct}/${g.cuotas}</div>
+            <div class="font-heading text-[15px] font-bold text-text1">${g.desc}</div>
+            <div class="mt-1.5">
+              <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold" style="background:${style.bg};color:${style.tx}">
+                <span class="h-1.5 w-1.5 rounded-full" style="background:${style.bar}"></span>${g.cat}
+              </span>
+            </div>
           </div>
-          <div class="font-heading text-lg font-bold text-red1">${fmt(g.monto)}</div>
-        </div>
-      </div>
-    `).join('') : '<div class="p-4 text-sm text-text2">No hay cuotas activas.</div>';
-  }
-  const cobrar = document.getElementById('prestamos-lista-cobrar');
-  const pagar = document.getElementById('prestamos-lista-pagar');
-  if (cobrar) {
-    const items = state.prestamos.filter(p => p.tipo === 'por_cobrar');
-    cobrar.innerHTML = items.length ? items.map(p => `
-      <div class="mb-3 rounded-[16px] border border-borderc bg-white p-4">
-        <div class="flex items-center justify-between gap-3">
-          <div>
-            <div class="font-semibold text-text1">${p.persona}</div>
-            <div class="text-[12px] text-text3">${p.desc}</div>
-          </div>
-          <div class="text-right">
-            <div class="font-heading text-lg font-bold text-bluetx">${fmt(prestamoSaldo(p))}</div>
-            <button class="mt-2 text-[12px] text-accent" onclick="openAbonoModal(${p.id})">Registrar abono</button>
+          <div class="shrink-0 text-right">
+            <div class="font-heading text-[17px] font-bold text-[#b7791f]">${fmt(g.monto)}<span class="text-xs font-normal text-text3">/mes</span></div>
+            <div class="mt-0.5 text-[11px] text-text3">Cuota ${g.cuotaAct} de ${g.cuotas}</div>
           </div>
         </div>
-      </div>
-    `).join('') : '<div class="p-4 text-sm text-text2">No hay préstamos por cobrar.</div>';
-  }
-  if (pagar) {
-    const items = state.prestamos.filter(p => p.tipo === 'por_pagar');
-    pagar.innerHTML = items.length ? items.map(p => `
-      <div class="mb-3 rounded-[16px] border border-borderc bg-white p-4">
-        <div class="flex items-center justify-between gap-3">
-          <div>
-            <div class="font-semibold text-text1">${p.persona}</div>
-            <div class="text-[12px] text-text3">${p.desc}</div>
-          </div>
-          <div class="text-right">
-            <div class="font-heading text-lg font-bold text-[#b7791f]">${fmt(prestamoSaldo(p))}</div>
-            <button class="mt-2 text-[12px] text-accent" onclick="openAbonoModal(${p.id})">Registrar abono</button>
+        <div class="my-2 h-2.5 overflow-hidden rounded-full bg-appbg2">
+          <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${style.bar}"></div>
+        </div>
+        <div class="mb-2.5 flex justify-between text-[11px] text-text3">
+          <span>Pagado: ${fmt(g.monto * done)}</span>
+          <span>${pct}% completado</span>
+          <span>Falta: ${fmt(g.monto * Math.max(g.cuotas - done, 0))}</span>
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="text-xs text-text2">Faltan <strong class="text-text1">${faltan} cuotas</strong> · Dia <strong class="text-text1">${g.dia}</strong></div>
+          <div class="flex items-center gap-2">
+            <button class="rounded-[7px] border border-borderc bg-white px-2.5 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="registerCuota(${g.id})">Registrar cuota</button>
+            <button class="rounded-[7px] border border-borderc bg-white px-2.5 py-1 text-[11px] font-heading font-bold transition ${g.cuotaAct > 1 ? 'text-text2 hover:border-red1 hover:text-red1' : 'cursor-not-allowed text-text3 opacity-60'}" onclick="undoCuota(${g.id})" ${g.cuotaAct > 1 ? '' : 'disabled'}>Deshacer cuota</button>
           </div>
         </div>
       </div>
-    `).join('') : '<div class="p-4 text-sm text-text2">No hay préstamos por pagar.</div>';
+      `;
+    }).join('') : '<div class="p-4 text-sm text-text2">No hay cuotas activas.</div>';
   }
+  function renderPrestamoList(items, targetId, emptyText) {
+    const container = document.getElementById(targetId);
+    if (!container) return;
+    if (!items.length) {
+      container.innerHTML = `<div class="px-8 py-10 text-center text-text3">${emptyText}</div>`;
+      return;
+    }
+    container.innerHTML = items.map(p => {
+      const saldo = prestamoSaldo(p);
+      const abonado = p.montoPagado || 0;
+      const pct = p.montoTotal > 0 ? Math.min((abonado / p.montoTotal) * 100, 100).toFixed(0) : 0;
+      const estado = prestamoEstado(p);
+      const amountColor = p.tipo === 'por_cobrar' ? 'text-bluetx' : 'text-[#b7791f]';
+      const progressColor = p.tipo === 'por_cobrar' ? '#3f6fd8' : '#d29a2f';
+      const badgeClass = estado === 'pagado' ? 'bg-greenbg text-greentx' : estado === 'parcial' ? 'bg-bluebg text-bluetx' : 'bg-appbg text-text2';
+      const cardBorder = p.tipo === 'por_cobrar' ? 'border-[#dbe5f3] shadow-[0_10px_24px_rgba(63,111,216,0.08)]' : 'border-[#eadfca] shadow-[0_10px_24px_rgba(210,154,47,0.10)]';
+      const cardAccent = p.tipo === 'por_cobrar' ? 'bg-[linear-gradient(180deg,#3f6fd8_0%,#7ea0ea_100%)]' : 'bg-[linear-gradient(180deg,#d29a2f_0%,#e8be67_100%)]';
+      const historial = (p.historial || []).slice().reverse().slice(0, 5);
+      const historialHtml = historial.length
+        ? `<div class="mt-4 rounded-[14px] border border-borderc bg-appbg/70 p-3"><div class="mb-2 text-[11px] font-bold uppercase tracking-[0.06em] text-text3">Ultimos abonos</div><div class="space-y-2">${historial.map(h => `<div class="rounded-[12px] bg-white px-3 py-2"><div class="flex items-start justify-between gap-3 text-[12px]"><div class="min-w-0 flex-1"><div class="font-semibold text-text1">${new Date(h.fecha).toLocaleDateString('es-PE')}</div><div class="text-text3">${MS[h.mes] || '-'} · ${h.impacto === 'mes' ? 'impacta mes' : 'solo control'}${h.nota ? ' · ' + h.nota : ''}</div></div><div class="flex items-center gap-2"><div class="whitespace-nowrap font-heading font-bold ${p.tipo === 'por_cobrar' ? 'text-greentx' : 'text-red1'}">${fmt(h.monto)}</div><button class="rounded-md border-0 bg-transparent px-1 py-0.5 text-[14px] leading-none text-text3 transition hover:bg-bluebg hover:text-accent" onclick="openEditAbono(${p.id},${h.id})">✎</button><button class="rounded-md border-0 bg-transparent px-1 py-0.5 text-[16px] leading-none text-text3 transition hover:bg-redbg hover:text-red1" onclick="removeAbono(${p.id},${h.id})">×</button></div></div></div>`).join('')}</div></div>`
+        : `<div class="mt-4 rounded-[14px] border border-dashed border-borderc bg-appbg/40 px-3 py-2 text-[12px] text-text3">Aun no hay abonos registrados.</div>`;
+
+      return `<div class="mb-4 overflow-hidden rounded-[18px] border bg-white ${cardBorder}"><div class="flex"><div class="w-1.5 shrink-0 ${cardAccent}"></div><div class="flex-1 px-5 py-4"><div class="mb-3 flex items-start justify-between gap-3"><div class="min-w-0"><div class="truncate font-heading text-[15px] font-bold text-text1">${p.persona}</div><div class="mt-0.5 text-[13px] text-text2">${p.desc}</div></div><div class="shrink-0 text-right"><div class="font-heading text-[15px] font-bold ${amountColor}">${fmt(saldo)}</div><div class="mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${badgeClass}">${estado}</div></div></div><div class="rounded-[14px] border border-borderc bg-appbg/45 px-3 py-3"><div class="mb-3 h-2.5 overflow-hidden rounded-full bg-white"><div class="h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${progressColor}"></div></div><div class="mb-3 flex justify-between text-[11px] text-text3"><span>Total: ${fmt(p.montoTotal)}</span><span>${pct}% abonado</span><span>Abonado: ${fmt(abonado)}</span></div><div class="grid grid-cols-2 gap-2 text-[12px] text-text2"><div>Fecha: <strong class="text-text1">${p.fecha || '-'}</strong></div><div>Vence: <strong class="text-text1">${p.vencimiento || '-'}</strong></div></div></div><div class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-appbg2 pt-3"><div class="max-w-[55%] text-[12px] text-text3">${p.notas || 'Sin notas'}</div><div class="flex flex-wrap items-center gap-2"><button class="rounded-smapp border border-borderc bg-white px-3 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="openAbonoModal(${p.id})">Abono</button><button class="rounded-smapp border border-borderc bg-white px-3 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="editPrestamo(${p.id})">Editar</button><button class="rounded-smapp border border-borderc bg-white px-3 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-red1 hover:text-red1" onclick="delPrestamo(${p.id})">Eliminar</button></div></div>${historialHtml}</div></div></div>`;
+    }).join('');
+  }
+
+  renderPrestamoList(state.prestamos.filter(p => p.tipo === 'por_cobrar'), 'prestamos-lista-cobrar', 'No tienes prestamos por cobrar.');
+  renderPrestamoList(state.prestamos.filter(p => p.tipo === 'por_pagar'), 'prestamos-lista-pagar', 'No tienes prestamos por pagar.');
 }
 
 function renderCompromisosResumen() {
@@ -1281,6 +1594,11 @@ async function delNote(id) {
 
 // ==================== FUNCIONES PARA PRÉSTAMOS ====================
 function prestamoSaldo(p){ return Math.max((p.montoTotal||0) - (p.montoPagado||0), 0); }
+function prestamoEstado(p){
+  if (prestamoSaldo(p) <= 0) return 'pagado';
+  if ((p.montoPagado||0) > 0) return 'parcial';
+  return 'pendiente';
+}
 
 async function savePrestamo() {
   if (!currentUser) { alert('Primero inicia sesión.'); return; }
