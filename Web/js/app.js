@@ -24,7 +24,8 @@ let state = {
   ingresosExtra: [],
   anotaciones: [],
   prestamos: [],
-  gastos: []
+  gastos: [],
+  userSettings: { sueldo: null }
 };
 
 // --- Inicialización y autenticación ---
@@ -336,6 +337,21 @@ async function loadCloudData() {
   });
 
   nid = Math.max(...state.gastos.map(g => g.id), 49) + 1;
+
+  state.userSettings = { sueldo: null };
+  const settingsRes = await supabaseClient.from('user_settings').select('sueldo').eq('user_id', currentUser.id).single();
+  if (!settingsRes.error && settingsRes.data) {
+    state.userSettings.sueldo = Number(settingsRes.data.sueldo || 0);
+  } else {
+    const storedSalary = localStorage.getItem('mf3_sueldo');
+    if (storedSalary !== null) {
+      state.userSettings.sueldo = Number(storedSalary);
+    }
+    const errorMessage = settingsRes.error?.message?.toLowerCase() || '';
+    if (settingsRes.error && !errorMessage.includes('no row') && !errorMessage.includes('not found') && !errorMessage.includes('user_settings')) {
+      console.warn('No se pudo cargar sueldo de BD:', settingsRes.error.message);
+    }
+  }
 }
 
 // --- Utilidades de formato y UI ---
@@ -345,6 +361,32 @@ function monthYearLabel(){ return `${MS[curM]} ${curY}`; }
 function syncYearInputs(){
   document.getElementById('year-input-main').value = curY;
   document.getElementById('year-input-cats').value = curY;
+}
+
+function syncSueldoInput(){
+  const sueldoInput = document.getElementById('sueldo');
+  if (!sueldoInput) return;
+  const current = sueldoInput.value;
+  const stored = typeof state.userSettings?.sueldo === 'number' && !Number.isNaN(state.userSettings.sueldo)
+    ? state.userSettings.sueldo
+    : (localStorage.getItem('mf3_sueldo') !== null ? Number(localStorage.getItem('mf3_sueldo')) : null);
+  if (stored !== null && String(stored) !== current) {
+    sueldoInput.value = stored;
+  }
+}
+
+async function saveSueldo(){
+  const sueldoInput = document.getElementById('sueldo');
+  if (!sueldoInput) return;
+  const sueldoBase = parseFloat(sueldoInput.value) || 0;
+  localStorage.setItem('mf3_sueldo', sueldoBase);
+  state.userSettings = { ...state.userSettings, sueldo: sueldoBase };
+  if (!currentUser) return;
+
+  const { error } = await supabaseClient.from('user_settings').upsert({ user_id: currentUser.id, sueldo: sueldoBase }, { onConflict: 'user_id' });
+  if (error) {
+    console.warn('No se pudo guardar el sueldo en BD:', error.message);
+  }
 }
 
 function changeYear(delta){ curY = Math.min(2100, Math.max(2000, curY + delta)); updateAll(); }
@@ -461,7 +503,6 @@ function totalIngresos(){ return (parseFloat(document.getElementById('sueldo').v
 
 function updateInicio(){
   const sueldoBase = parseFloat(document.getElementById('sueldo').value)||0;
-  localStorage.setItem('mf3_sueldo', sueldoBase);
   const extras = totalExtras();
   const ingresos = totalIngresos();
   const gastos = total();
@@ -584,6 +625,7 @@ function renderExtraList() {
 
 function updateAll() {
   syncYearInputs();
+  syncSueldoInput();
   rMonths('mbtns1');
   rMonths('mbtns-cats');
   fillCategorySelectors();
@@ -614,6 +656,29 @@ function openModal() {
 function closeModal() {
   hideOverlay('overlay');
   editId = null;
+}
+
+function openSueldoModal() {
+  const currentSueldo = document.getElementById('sueldo').value;
+  document.getElementById('sueldo-modal-input').value = currentSueldo;
+  showOverlay('overlay-sueldo');
+}
+
+function closeSueldoModal() {
+  hideOverlay('overlay-sueldo');
+}
+
+function maybeCloseSueldo(event) {
+  if (event.target === event.currentTarget) closeSueldoModal();
+}
+
+async function saveSueldoFromModal() {
+  const newSueldo = parseFloat(document.getElementById('sueldo-modal-input').value) || 0;
+  document.getElementById('sueldo').value = newSueldo;
+  await saveSueldo();
+  updateAll();
+  closeSueldoModal();
+  toast('Sueldo actualizado');
 }
 
 function resetExtraForm() {
