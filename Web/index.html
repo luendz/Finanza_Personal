@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mis Finanzas</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -68,6 +69,12 @@
     <button class="nav-tab flex h-[54px] items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-4 font-heading text-[13px] font-bold text-text3 transition hover:text-text2 max-md:px-2.5 max-md:text-[11px]" onclick="goTo('anotaciones',this)">📝 Anotaciones</button>
     <button class="nav-tab flex h-[54px] items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-4 font-heading text-[13px] font-bold text-text3 transition hover:text-text2 max-md:px-2.5 max-md:text-[11px]" onclick="goTo('cats',this)">🏷️ Categorías</button>
   </nav>
+  <div class="ml-auto flex items-center gap-2">
+  <button id="auth-register" onclick="openAuthModal('register')" class="rounded bg-white border px-3 py-1">Registrarme</button>
+  <button id="auth-login" onclick="openAuthModal('login')" class="rounded bg-accent text-white px-3 py-1">Ingresar</button>
+  <button id="auth-logout" onclick="signOutUser()" class="rounded bg-white border px-3 py-1 hidden">Salir</button>
+  <span id="auth-status" class="hidden whitespace-nowrap rounded-full bg-bluebg px-3 py-1 text-[11px] font-semibold text-bluetx shadow-soft"></span>
+</div>
 </header>
 
 <section id="page-inicio" class="page active mx-auto block max-w-[1280px] animate-up px-6 py-7 max-md:px-4">
@@ -172,7 +179,7 @@
             <button class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="openModal()">+ Agregar</button>
           </div>
         </div>
-        <div id="glist" class="max-h-[780px] overflow-y-auto bg-white"></div>
+        <div id="glist" class="max-h-[780px] overflow-y-auto bg-white divide-y divide-borderc"></div>
         <div class="border-t border-borderc bg-appbg px-5 py-4">
           <div class="flex items-center justify-between gap-3">
             <span class="font-heading text-[14px] font-bold uppercase tracking-[0.05em] text-text2">Total gastos</span>
@@ -381,6 +388,40 @@
   </div>
 </div>
 
+<div class="fixed inset-0 z-[205] hidden items-center justify-center bg-black/35 p-4" id="overlay-auth" onclick="maybeCloseAuth(event)">
+  <div class="w-full max-w-[420px] rounded-app bg-card p-6 shadow-modal animate-up">
+    <div class="mb-5 flex items-center justify-between gap-3">
+      <div>
+        <div id="auth-modal-title" class="font-heading text-lg font-bold text-text1">Iniciar sesión</div>
+        <div id="auth-modal-sub" class="text-[12px] text-text2">Accede a tu cuenta para sincronizar datos.</div>
+      </div>
+      <div class="flex gap-2">
+        <button id="auth-mode-login" onclick="toggleAuthMode('login')" class="rounded-full border border-accent bg-accent px-3 py-1 text-[11px] font-bold text-white">Login</button>
+        <button id="auth-mode-register" onclick="toggleAuthMode('register')" class="rounded-full border border-borderc bg-white px-3 py-1 text-[11px] font-bold text-text2">Registro</button>
+      </div>
+    </div>
+    <div class="mb-3 grid grid-cols-1 gap-3">
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Correo</label>
+        <input id="auth-email" type="email" placeholder="ejemplo@mail.com" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Clave</label>
+        <input id="auth-password" type="password" placeholder="******" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+      </div>
+      <div id="auth-confirm-field" class="hidden flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Confirmar clave</label>
+        <input id="auth-confirm-password" type="password" placeholder="******" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+      </div>
+    </div>
+    <div id="auth-modal-message" class="mb-3 hidden text-sm text-text2"></div>
+    <div class="mt-4 flex justify-end gap-2">
+      <button class="rounded-smapp border border-borderc bg-white px-4 py-1.5 font-heading text-[13px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="closeAuthModal()">Cancelar</button>
+      <button id="auth-modal-action" class="rounded-smapp bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="submitAuthAction()">Ingresar</button>
+    </div>
+  </div>
+</div>
+
 <div class="fixed inset-0 z-[210] hidden items-center justify-center bg-black/35 p-4" id="overlay-extra" onclick="maybeCloseExtra(event)">
   <div class="w-full max-w-[420px] rounded-app bg-card p-6 shadow-modal animate-up">
     <h3 class="mb-5 font-heading text-lg font-bold">Agregar ingreso adicional</h3>
@@ -553,6 +594,14 @@
 <div class="fixed bottom-6 right-6 z-[999] translate-y-[60px] rounded-smapp bg-text1 px-[18px] py-2.5 font-heading text-[13px] font-bold text-white opacity-0 shadow-toast transition-all duration-200" id="toast"></div>
 
 <script>
+// --- Configuración de Supabase ---
+const SUPABASE_URL = 'https://yrufxaubdztblkdfkpvw.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_jzmn10WLpF_UXfKojxuJpQ_j0Q5MXpk';
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let currentUser = null;
+
+// --- Constantes y estado global ---
 const MS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const MSH = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 let curM = new Date().getMonth(), curY = new Date().getFullYear(), editId = null, editMode = 'gasto', editingNoteId = null, movingNoteId = null, editingPrestamoId = null, abonoPrestamoId = null, editingAbonoRef = null, nid = 50;
@@ -567,88 +616,352 @@ const CSTYLE = {
 function cs(cat){ return CSTYLE[cat]||{bg:'#fef9ec',tx:'#7a5c10',bar:'#e8b84b'}; }
 
 let state = {
-  categorias:['Maria Elena','Personal','Carro','Viejo','Vane'],
+  categorias: [],
   ingresosExtra: [],
   anotaciones: [],
   prestamos: [],
-  gastos:[
-    {id:1, desc:'Internet Maria Elena', monto:25, cat:'Maria Elena',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, anio: curY, origenMes: curM, origenAnio: curY},
-    {id:2, desc:'Google Drive', monto:40, cat:'Personal',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, anio: curY, origenMes: curM, origenAnio: curY},
-    {id:3, desc:'Luz y Agua Maria Elena', monto:40, cat:'Maria Elena',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, anio: curY, origenMes: curM, origenAnio: curY},
-    {id:4, desc:'Limpieza (propina)', monto:100, cat:'Maria Elena',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, anio: curY, origenMes: curM, origenAnio: curY},
-    {id:5, desc:'Postpago', monto:35, cat:'Personal',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, anio: curY, origenMes: curM, origenAnio: curY},
-    {id:6, desc:'ChatGPT', monto:90, cat:'Personal',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, anio: curY, origenMes: curM, origenAnio: curY},
-    {id:7, desc:'Seguro Changan Cs15', monto:73, cat:'Carro',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, anio: curY, origenMes: curM, origenAnio: curY},
-    {id:8, desc:'Comida Maria Elena', monto:185, cat:'Maria Elena',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, anio: curY, origenMes: curM, origenAnio: curY},
-    {id:9, desc:'Internet viejo', monto:500, cat:'Viejo',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, anio: curY, origenMes: curM, origenAnio: curY},
-    {id:10,desc:'Préstamo Changan Cs15', monto:500, cat:'Carro',dia:15,tipo:'cuotas', cuotas:36,cuotaAct:12, mes: curM, anio: curY, origenMes: curM, origenAnio: curY},
-    {id:11,desc:'Tarjeta Crédito Interbank', monto:2000, cat:'Vane',dia:15,tipo:'cuotas', cuotas:12,cuotaAct:3, mes: curM, anio: curY, origenMes: curM, origenAnio: curY},
-    {id:12,desc:'Pago clínica bebé', monto:1000, cat:'Personal',dia:15,tipo:'cuotas', cuotas:6, cuotaAct:2, mes: curM, anio: curY, origenMes: curM, origenAnio: curY},
-    {id:13,desc:'Internet nuevo', monto:50, cat:'Personal',dia:15,tipo:'recurrente',cuotas:0, cuotaAct:1, mes: curM, anio: curY, origenMes: curM, origenAnio: curY},
-  ]
+  gastos: []
 };
 
-function save(){ try{localStorage.setItem('mf3',JSON.stringify(state));}catch(e){} }
-function load(){
-  try{
-    const d=localStorage.getItem('mf3');
-    if(d){
-      state=JSON.parse(d);
-      state.ingresosExtra = state.ingresosExtra || [];
-      state.anotaciones = state.anotaciones || [];
-      state.prestamos = state.prestamos || [];
-      state.gastos = (state.gastos || []).map(g => ({
-        ...g,
-        mes: typeof g.mes === 'number' ? g.mes : curM,
-        anio: typeof g.anio === 'number' ? g.anio : curY,
-        origenMes: typeof g.origenMes === 'number' ? g.origenMes : (typeof g.mes === 'number' ? g.mes : curM),
-        origenAnio: typeof g.origenAnio === 'number' ? g.origenAnio : (typeof g.anio === 'number' ? g.anio : curY)
-      }));
-      state.ingresosExtra = (state.ingresosExtra || []).map(x => ({ ...x, mes: typeof x.mes === 'number' ? x.mes : curM, anio: typeof x.anio === 'number' ? x.anio : curY }));
-      state.anotaciones = (state.anotaciones || []).map(x => ({ ...x, creadoMes: typeof x.creadoMes === 'number' ? x.creadoMes : curM, creadoAnio: typeof x.creadoAnio === 'number' ? x.creadoAnio : curY }));
-      nid=Math.max(...state.gastos.map(g=>g.id),49)+1;
-    }
-    const sv=localStorage.getItem('mf3_sueldo');
-    if(sv) document.getElementById('sueldo').value=sv;
-  }catch(e){}
+// --- Inicialización y autenticación ---
+const authState = { loading: false };
+let authMode = 'login';
+
+function setAuthMessage(message, type = 'info') {
+  const el = document.getElementById('auth-status');
+  if (!el) return;
+  if (!message) {
+    el.classList.add('hidden');
+    el.textContent = '';
+    return;
+  }
+  el.textContent = message;
+  el.classList.remove('hidden', 'bg-redbg', 'text-red1', 'bg-greenbg', 'text-greentx', 'bg-bluebg', 'text-bluetx');
+  if (type === 'error') {
+    el.classList.add('bg-redbg', 'text-red1');
+  } else if (type === 'success') {
+    el.classList.add('bg-greenbg', 'text-greentx');
+  } else {
+    el.classList.add('bg-bluebg', 'text-bluetx');
+  }
 }
 
+function setAuthLoading(loading) {
+  authState.loading = loading;
+  ['auth-email', 'auth-password', 'auth-confirm-password', 'auth-register', 'auth-login', 'auth-logout'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.disabled = loading;
+  });
+}
+
+function updateAuthUI() {
+  const register = document.getElementById('auth-register');
+  const login = document.getElementById('auth-login');
+  const logout = document.getElementById('auth-logout');
+  if (currentUser) {
+    register.classList.add('hidden');
+    login.classList.add('hidden');
+    logout.classList.remove('hidden');
+    setAuthMessage(`Conectado: ${currentUser.email || currentUser.id}`, 'success');
+  } else {
+    register.classList.remove('hidden');
+    login.classList.remove('hidden');
+    logout.classList.add('hidden');
+    setAuthMessage('');
+  }
+}
+
+async function initAuth() {
+  const { data, error } = await supabaseClient.auth.getSession();
+  if (error) { console.error(error); setAuthMessage('Error al comprobar sesión', 'error'); return; }
+  currentUser = data.session?.user ?? null;
+  updateAuthUI();
+  if (currentUser) {
+    await loadCloudData();
+    updateAll();
+  }
+}
+
+function validateSignUpInputs(email, password, confirmPassword) {
+  if (!email) return 'Ingresa tu correo.';
+  if (!password) return 'Ingresa tu clave.';
+  if (!confirmPassword) return 'Confirma tu clave.';
+  if (!/^\S+@\S+\.\S+$/.test(email)) return 'Ingresa un correo válido.';
+  if (password.length < 6) return 'La clave debe tener al menos 6 caracteres.';
+  if (password !== confirmPassword) return 'Las claves no coinciden.';
+  return null;
+}
+
+function validateSignInInputs(email, password) {
+  if (!email) return 'Ingresa tu correo.';
+  if (!password) return 'Ingresa tu clave.';
+  if (!/^\S+@\S+\.\S+$/.test(email)) return 'Ingresa un correo válido.';
+  return null;
+}
+
+async function signUp() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value.trim();
+  const confirmPassword = document.getElementById('auth-confirm-password').value.trim();
+  const errorMessage = validateSignUpInputs(email, password, confirmPassword);
+  if (errorMessage) { setAuthModalMessage(errorMessage, 'error'); return; }
+  setAuthLoading(true);
+  setAuthModalMessage('Registrando...', 'info');
+  const { data, error } = await supabaseClient.auth.signUp({ email, password });
+  setAuthLoading(false);
+  if (error) { setAuthModalMessage(error.message, 'error'); return; }
+  setAuthModalMessage('Cuenta creada. Revisa tu correo para confirmar.', 'success');
+  if (data.user) {
+    currentUser = data.user;
+    updateAuthUI();
+    await loadCloudData();
+    updateAll();
+    closeAuthModal();
+    setAuthMessage(`Bienvenido ${currentUser.email}`, 'success');
+  }
+}
+
+async function signIn() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value.trim();
+  const errorMessage = validateSignInInputs(email, password);
+  if (errorMessage) { setAuthModalMessage(errorMessage, 'error'); return; }
+  setAuthLoading(true);
+  setAuthModalMessage('Iniciando sesión...', 'info');
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  setAuthLoading(false);
+  if (error) { setAuthModalMessage(error.message, 'error'); return; }
+  currentUser = data.user;
+  updateAuthUI();
+  await loadCloudData();
+  updateAll();
+  setAuthMessage(`Bienvenido ${currentUser.email}`, 'success');
+  closeAuthModal();
+}
+
+async function signOutUser() {
+  setAuthLoading(true);
+  const { error } = await supabaseClient.auth.signOut();
+  setAuthLoading(false);
+  if (error) { setAuthMessage(error.message, 'error'); return; }
+  currentUser = null;
+  state = { categorias:[], ingresosExtra:[], anotaciones:[], prestamos:[], gastos:[] };
+  updateAuthUI();
+  updateAll();
+  closeAuthModal();
+  setAuthMessage('Sesión cerrada.', 'info');
+}
+
+function setAuthModalMessage(message, type = 'info') {
+  const el = document.getElementById('auth-modal-message');
+  if (!el) return;
+  if (!message) {
+    el.textContent = '';
+    el.classList.add('hidden');
+    el.classList.remove('text-red1', 'text-green1', 'text-blue1');
+    return;
+  }
+  el.textContent = message;
+  el.classList.remove('hidden', 'text-red1', 'text-green1', 'text-blue1');
+  if (type === 'error') {
+    el.classList.add('text-red1');
+  } else if (type === 'success') {
+    el.classList.add('text-green1');
+  } else {
+    el.classList.add('text-blue1');
+  }
+}
+
+function openAuthModal(mode = 'login') {
+  authMode = mode;
+  toggleAuthMode(mode);
+  document.getElementById('auth-email').value = '';
+  document.getElementById('auth-password').value = '';
+  document.getElementById('auth-confirm-password').value = '';
+  setAuthModalMessage('');
+  setAuthMessage('');
+  showOverlay('overlay-auth');
+}
+
+function closeAuthModal() {
+  hideOverlay('overlay-auth');
+  setAuthModalMessage('');
+}
+
+function maybeCloseAuth(event) {
+  if (event.target === event.currentTarget) closeAuthModal();
+}
+
+function toggleAuthMode(mode) {
+  authMode = mode;
+  const loginBtn = document.getElementById('auth-mode-login');
+  const registerBtn = document.getElementById('auth-mode-register');
+  const title = document.getElementById('auth-modal-title');
+  const sub = document.getElementById('auth-modal-sub');
+  const action = document.getElementById('auth-modal-action');
+  if (!loginBtn || !registerBtn || !title || !sub || !action) return;
+  const confirmField = document.getElementById('auth-confirm-field');
+  if (mode === 'register') {
+    loginBtn.classList.remove('bg-accent', 'text-white');
+    loginBtn.classList.add('bg-white', 'text-text2', 'border-borderc');
+    registerBtn.classList.remove('bg-white', 'text-text2');
+    registerBtn.classList.add('bg-accent', 'text-white');
+    title.textContent = 'Crear cuenta';
+    sub.textContent = 'Regístrate para sincronizar y proteger tus finanzas.';
+    action.textContent = 'Registrarme';
+    if (confirmField) confirmField.classList.remove('hidden');
+  } else {
+    loginBtn.classList.add('bg-accent', 'text-white');
+    loginBtn.classList.remove('bg-white', 'text-text2');
+    registerBtn.classList.remove('bg-accent', 'text-white');
+    registerBtn.classList.add('bg-white', 'text-text2', 'border-borderc');
+    title.textContent = 'Iniciar sesión';
+    sub.textContent = 'Accede a tu cuenta para sincronizar datos.';
+    action.textContent = 'Ingresar';
+    if (confirmField) confirmField.classList.add('hidden');
+  }
+}
+
+function submitAuthAction() {
+  if (authMode === 'register') {
+    signUp();
+  } else {
+    signIn();
+  }
+}
+
+// --- Carga de datos desde Supabase ---
+async function loadCloudData() {
+  if (!currentUser) {
+    state = { categorias:[], ingresosExtra:[], anotaciones:[], prestamos:[], gastos:[] };
+    return;
+  }
+
+  const [
+    categoriasRes,
+    gastosRes,
+    ingresosRes,
+    anotacionesRes,
+    prestamosRes,
+    abonosRes
+  ] = await Promise.all([
+    supabaseClient.from('categorias').select('*').eq('user_id', currentUser.id).order('nombre'),
+    supabaseClient.from('gastos').select('*').eq('user_id', currentUser.id).order('id'),
+    supabaseClient.from('ingresos_extra').select('*').eq('user_id', currentUser.id).order('id'),
+    supabaseClient.from('anotaciones').select('*').eq('user_id', currentUser.id).order('id'),
+    supabaseClient.from('prestamos').select('*').eq('user_id', currentUser.id).order('id'),
+    supabaseClient.from('abonos_prestamos').select('*').eq('user_id', currentUser.id).order('id')
+  ]);
+
+  if (categoriasRes.error) throw categoriasRes.error;
+  if (gastosRes.error) throw gastosRes.error;
+  if (ingresosRes.error) throw ingresosRes.error;
+  if (anotacionesRes.error) throw anotacionesRes.error;
+  if (prestamosRes.error) throw prestamosRes.error;
+  if (abonosRes.error) throw abonosRes.error;
+
+  state.categorias = (categoriasRes.data || []).map(x => String(x.nombre || '').trim());
+
+  state.gastos = (gastosRes.data || []).map(g => ({
+    id: Number(g.id),
+    desc: String(g.descripcion || '').trim(),
+    cat: String(g.categoria || '').trim(),
+    dia: Number(g.dia_pago || 1),
+    tipo: String(g.tipo || 'unico').trim(),
+    monto: Number(g.monto || 0),
+    mes: Number(g.mes),
+    anio: Number(g.anio),
+    origenMes: g.origen_mes ?? g.mes,
+    origenAnio: g.origen_anio ?? g.anio,
+    cuotaAct: Number(g.cuota_actual || 1),
+    cuotas: Number(g.total_cuotas || 0)
+  }));
+
+  state.ingresosExtra = (ingresosRes.data || []).map(x => ({
+    id: Number(x.id),
+    desc: String(x.descripcion || '').trim(),
+    monto: Number(x.monto || 0),
+    mes: Number(x.mes),
+    anio: Number(x.anio)
+  }));
+
+  state.anotaciones = (anotacionesRes.data || []).map(n => ({
+    id: Number(n.id),
+    desc: String(n.descripcion || '').trim(),
+    cat: String(n.categoria || '').trim(),
+    dia: Number(n.dia_pago || 1),
+    tipo: String(n.tipo || 'unico').trim(),
+    monto: Number(n.monto || 0),
+    creadoMes: Number(n.creado_mes),
+    creadoAnio: Number(n.creado_anio),
+    cuotaAct: Number(n.cuota_actual || 1),
+    cuotas: Number(n.total_cuotas || 0)
+  }));
+
+  const prestamosData = prestamosRes.data || [];
+  const abonosData = abonosRes.data || [];
+  state.prestamos = prestamosData.map(p => {
+    const historial = abonosData
+      .filter(a => a.prestamo_id === p.id)
+      .map(a => ({
+        id: Number(a.id),
+        fecha: a.fecha || new Date().toISOString(),
+        mes: Number(a.mes),
+        monto: Number(a.monto),
+        impacto: a.impacto || 'ninguno',
+        nota: a.nota || '',
+        linkedType: a.linked_type,
+        linkedId: a.linked_id ? Number(a.linked_id) : null
+      }))
+      .sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+    return {
+      id: Number(p.id),
+      tipo: p.tipo,
+      persona: p.persona,
+      desc: p.descripcion,
+      montoTotal: Number(p.monto_total),
+      montoPagado: Number(p.monto_pagado),
+      fecha: p.fecha,
+      vencimiento: p.vencimiento,
+      notas: p.notas,
+      historial
+    };
+  });
+
+  nid = Math.max(...state.gastos.map(g => g.id), 49) + 1;
+}
+
+// --- Utilidades de formato y UI ---
 function fmt(n){ return 'S/ '+Math.abs(n).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function monthYearLabel(){ return `${MS[curM]} ${curY}`; }
-function yearBtnClass(active){
-  return 'rounded-full border px-3 py-1 font-heading text-xs font-bold transition ' +
-    (active ? 'border-text1 bg-text1 text-white' : 'border-borderc bg-white text-text2 hover:border-text1 hover:text-text1');
-}
+
 function syncYearInputs(){
-  const a=document.getElementById('year-input-main');
-  const b=document.getElementById('year-input-cats');
-  if(a) a.value=String(curY);
-  if(b) b.value=String(curY);
+  document.getElementById('year-input-main').value = curY;
+  document.getElementById('year-input-cats').value = curY;
 }
-function normalizeYear(value){
-  const y=parseInt(value,10);
-  if(Number.isNaN(y)) return curY;
-  return Math.min(2100, Math.max(2000, y));
+
+function changeYear(delta){ curY = Math.min(2100, Math.max(2000, curY + delta)); updateAll(); }
+function applyYearInput(val){ curY = Math.min(2100, Math.max(2000, parseInt(val)||curY)); updateAll(); }
+function setM(m){ curM = m; updateAll(); }
+
+function rMonths(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.innerHTML = MSH.map((m,i)=>`<button class="month-btn ${i===curM?'active':''}" onclick="setM(${i})">${m}</button>`).join('');
 }
-function applyYearInput(value){
-  curY = normalizeYear(value);
+
+function goTo(id, btn){
+  document.querySelectorAll('.page').forEach(p => { p.classList.add('hidden'); p.classList.remove('block','animate-up','active'); });
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  const page = document.getElementById('page-'+id);
+  page.classList.remove('hidden');
+  page.classList.add('block','animate-up','active');
+  btn.classList.add('active');
   updateAll();
 }
-function changeYear(delta){
-  curY = normalizeYear(curY + delta);
-  updateAll();
-}
-function availableYears(){
-  const years = new Set([curY, new Date().getFullYear()]);
-  (state.gastos||[]).forEach(g => years.add(g.anio ?? curY));
-  (state.ingresosExtra||[]).forEach(x => years.add(x.anio ?? curY));
-  (state.anotaciones||[]).forEach(x => years.add(x.creadoAnio ?? curY));
-  return Array.from(years).sort((a,b)=>a-b);
-}
-function rYears(id){
-  syncYearInputs();
-}
-function setY(y){ curY = normalizeYear(y); updateAll(); }
+
+// --- Funciones de cálculo para el dashboard ---
 function active(){
   return state.gastos.filter(g => {
     const gy = typeof g.anio === 'number' ? g.anio : curY;
@@ -659,1955 +972,128 @@ function active(){
   });
 }
 function total(){ return active().reduce((s,g)=>s+g.monto,0); }
-function extrasDelMes(){ return (state.ingresosExtra||[]).filter(x => x.mes === curM && (typeof x.anio === 'number' ? x.anio : curY) === curY); }
-function totalExtras(){ return extrasDelMes().reduce((s,x)=>s + x.monto,0); }
-function totalIngresos(){
-  const sueldoBase=parseFloat(document.getElementById('sueldo').value)||0;
-  return sueldoBase + totalExtras();
-}
+function extrasDelMes(){ return (state.ingresosExtra||[]).filter(x => Number(x.mes)===curM && Number(x.anio||curY)===curY); }
+function totalExtras(){ return extrasDelMes().reduce((s,x)=>s+Number(x.monto||0),0); }
+function totalIngresos(){ return (parseFloat(document.getElementById('sueldo').value)||0) + totalExtras(); }
 
-function navTabClass(active){
-  return 'nav-tab flex h-[54px] items-center gap-1.5 whitespace-nowrap border-b-2 px-4 font-heading text-[13px] font-bold transition max-md:px-2.5 max-md:text-[11px] ' +
-    (active ? 'border-accent text-accent' : 'border-transparent text-text3 hover:text-text2');
-}
-function monthBtnClass(active){
-  return 'rounded-full border px-3 py-1 font-heading text-xs font-bold transition ' +
-    (active ? 'border-accent bg-accent text-white' : 'border-borderc bg-white text-text2 hover:border-accent hover:text-accent');
-}
-
-function rMonths(id){
-  const el=document.getElementById(id);
-  if(!el)return;
-  el.innerHTML=MSH.map((m,i)=>`<button class="${monthBtnClass(i===curM)}" onclick="setM(${i})">${m}</button>`).join('');
-}
-function setM(m){curM=m;updateAll();}
-
-function goTo(id,btn){
-  document.querySelectorAll('.page').forEach(p=>{
-    p.classList.add('hidden');
-    p.classList.remove('block','animate-up','active');
-  });
-  document.querySelectorAll('.nav-tab').forEach((b)=>b.className=navTabClass(false));
-  const page=document.getElementById('page-'+id);
-  page.classList.remove('hidden');
-  page.classList.add('block','animate-up','active');
-  btn.className=navTabClass(true);
-  updateAll();
-}
+// --- Renderizado principal ---
 
 function updateInicio(){
-  const sueldoBase=parseFloat(document.getElementById('sueldo').value)||0;
-  try{ localStorage.setItem('mf3_sueldo', sueldoBase); }catch(e){}
+  const sueldoBase = parseFloat(document.getElementById('sueldo').value)||0;
+  localStorage.setItem('mf3_sueldo', sueldoBase);
+  const extras = totalExtras();
+  const ingresos = totalIngresos();
+  const gastos = total();
+  const resta = ingresos - gastos;
+  const pct = ingresos>0 ? (gastos/ingresos)*100 : 0;
 
-  const extras=totalExtras();
-  const ingresos=totalIngresos();
-  const gastos=total();
-  const resta=ingresos-gastos;
-  const pct=ingresos>0?(gastos/ingresos)*100:0;
+  document.getElementById('inicio-sub').textContent = `Tu resumen de ${MS[curM]} ${curY}`;
+  document.getElementById('cextra').textContent = fmt(extras);
+  document.getElementById('cextrasub').textContent = `${extrasDelMes().length} ingreso(s) extra este mes`;
+  document.getElementById('cing').textContent = fmt(ingresos);
+  document.getElementById('cg').textContent = fmt(gastos);
+  document.getElementById('cgsub').textContent = `${active().length} gastos activos`;
+  document.getElementById('cr').textContent = fmt(Math.abs(resta));
 
-  document.getElementById('inicio-sub').textContent=`Tu resumen de ${MS[curM]} ${curY}`;
-  document.getElementById('cextra').textContent=fmt(extras);
-  document.getElementById('cextrasub').textContent=extrasDelMes().length + ' ingreso' + (extrasDelMes().length !== 1 ? 's' : '') + ' extra este mes';
-  document.getElementById('cing').textContent=fmt(ingresos);
-  document.getElementById('cg').textContent=fmt(gastos);
-  document.getElementById('cgsub').textContent=active().length+' gastos activos';
-  document.getElementById('cr').textContent=fmt(Math.abs(resta));
-
-  const rcard=document.getElementById('rcard');
-  const crsub=document.getElementById('crsub');
-  const crv=document.getElementById('cr');
-  const riconWrap=document.getElementById('ricon-wrap');
+  const rcard = document.getElementById('rcard');
+  const crv = document.getElementById('cr');
   if(resta>=0){
-    crv.className='font-heading text-[34px] font-bold leading-none text-bluetx';
-    if(riconWrap) riconWrap.textContent='Disponible';
-    crsub.textContent='disponible';
-    rcard.className='rounded-[20px] border border-[#d9e4fb] bg-gradient-to-br from-bluebg to-white px-5 py-5 shadow-soft ring-1 ring-[#d9e4fb]';
+    crv.className = 'font-heading text-[34px] font-bold leading-none text-bluetx';
+    document.getElementById('ricon-wrap').textContent = 'Disponible';
+    document.getElementById('crsub').textContent = 'disponible';
+    rcard.className = 'rounded-[22px] border border-[#d8e4fb] bg-gradient-to-br from-bluebg via-white to-white px-6 py-5 shadow-soft ring-1 ring-[#dde8fb]';
   } else {
-    crv.className='font-heading text-[34px] font-bold leading-none text-red1';
-    if(riconWrap) riconWrap.textContent='Alerta';
-    crsub.textContent='te pasaste';
-    rcard.className='rounded-[20px] border border-[#f4d3d3] bg-gradient-to-br from-redbg to-white px-5 py-5 shadow-soft ring-1 ring-[#f4d3d3]';
+    crv.className = 'font-heading text-[34px] font-bold leading-none text-red1';
+    document.getElementById('ricon-wrap').textContent = 'Alerta';
+    document.getElementById('crsub').textContent = 'te pasaste';
+    rcard.className = 'rounded-[22px] border border-[#f4d6d6] bg-gradient-to-br from-redbg via-white to-white px-6 py-5 shadow-soft ring-1 ring-[#f8e1e1]';
   }
 
-  const clamp=Math.min(pct,100);
-  const pf=document.getElementById('pfill');
-  pf.style.width=clamp.toFixed(1)+'%';
-  pf.className='h-full rounded-full transition-all duration-500 ' + (pct>=100?'bg-red1':pct>=80?'bg-[#e8b84b]':'bg-green1');
+  const pf = document.getElementById('pfill');
+  pf.style.width = Math.min(pct,100).toFixed(1)+'%';
+  pf.className = 'h-full rounded-full transition-all duration-500 ' + (pct>=100?'bg-red1':pct>=80?'bg-[#e8b84b]':'bg-green1');
 
-  const pp=document.getElementById('ppct');
-  pp.textContent=pct.toFixed(0)+'%';
-  pp.className='font-heading text-[22px] font-bold ' + (pct>=100?'text-red1':'text-accent');
+  document.getElementById('ppct').textContent = pct.toFixed(0)+'%';
+  document.getElementById('pleft').textContent = fmt(gastos)+' gastado';
+  document.getElementById('pright').textContent = resta>=0 ? fmt(resta)+' disponible' : '⚠️ Te pasaste '+fmt(Math.abs(resta));
 
-  document.getElementById('pleft').textContent=fmt(gastos)+' gastado';
-  document.getElementById('pright').textContent=resta>=0?fmt(resta)+' disponible':'⚠️ Te pasaste '+fmt(Math.abs(resta));
-  const bycat={};
-  active().forEach(g=>{bycat[g.cat]=(bycat[g.cat]||0)+g.monto;});
-  const sorted=Object.entries(bycat).sort((a,b)=>b[1]-a[1]);
-
-  drawDonut(sorted,gastos,ingresos);
-  save();
+  const bycat = {};
+  active().forEach(g => { bycat[g.cat] = (bycat[g.cat]||0) + g.monto; });
+  const sorted = Object.entries(bycat).sort((a,b)=>b[1]-a[1]);
+  drawDonut(sorted, gastos, ingresos);
 }
 
-function drawDonut(sorted,tot,sueldo){
-  const c=document.getElementById('donut');
-  const ctx=c.getContext('2d');
-  const size=220;
-  const center=size/2;
-  const outer=88;
-  const inner=54;
-  ctx.clearRect(0,0,size,size);
+let carrySelection = new Set();
+let noteBulkSelection = new Set();
+let toastTimer = null;
 
-  const resta=Math.max(sueldo-tot,0);
-
-  const legendItems = sorted.slice(0,5);
-  const otherItems = sorted.slice(5);
-  const otherTotal = otherItems.reduce((acc, [, val]) => acc + val, 0);
-  const chartData = [...legendItems];
-  if(otherTotal > 0){
-    chartData.push(['Otros', otherTotal]);
-  }
-  if(resta > 0 && sueldo > 0){
-    chartData.push(['Disponible', resta]);
-  }
-
-  const chartTotal = chartData.reduce((acc, [, val]) => acc + val, 0);
-  let ang=-Math.PI/2;
-
-  chartData.forEach(([cat,val])=>{
-    let color;
-    if(cat === 'Disponible'){
-      color = '#2ecc8a';
-    } else if(cat === 'Otros'){
-      color = '#cbd5e1';
-    } else {
-      color = cs(cat).bar;
-    }
-
-    const sl=chartTotal>0?(val/chartTotal)*Math.PI*2:0;
-    const startAng=ang;
-    const endAng=ang+sl;
-    const midAng=startAng + (sl / 2);
-
-    ctx.beginPath();
-    ctx.moveTo(center,center);
-    ctx.arc(center,center,outer,startAng,endAng);
-    ctx.closePath();
-    ctx.fillStyle=color;
-    ctx.fill();
-
-    const pct = chartTotal>0 ? (val/chartTotal)*100 : 0;
-    if (pct >= 6) {
-      const labelRadius = (outer + inner) / 2 + 2;
-      const lx = center + Math.cos(midAng) * labelRadius;
-      const ly = center + Math.sin(midAng) * labelRadius;
-
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '700 10px Nunito, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.strokeStyle = 'rgba(0,0,0,0.18)';
-      ctx.lineWidth = 3;
-      ctx.strokeText(`${Math.round(pct)}%`, lx, ly);
-      ctx.fillText(`${Math.round(pct)}%`, lx, ly);
-    }
-
-    ang=endAng;
-  });
-
-  ctx.beginPath();
-  ctx.arc(center,center,inner,0,Math.PI*2);
-  ctx.fillStyle='#ffffff';
-  ctx.fill();
-
-  ctx.fillStyle='#9aa0b0';
-  ctx.font='700 11px Nunito, sans-serif';
-  ctx.textAlign='center';
-  ctx.textBaseline='middle';
-  ctx.fillText('Total gastado', center, center-12);
-
-  ctx.fillStyle='#1a1f2e';
-  ctx.font='bold 16px Nunito, sans-serif';
-  ctx.fillText(fmt(tot), center, center+10);
-
-  const catRows=legendItems.map(([cat,val])=>{
-    const s=cs(cat);
-    const pct=tot>0?((val/tot)*100).toFixed(0):0;
-    return `<div class="rounded-app border border-borderc bg-white px-3 py-2"><div class="flex items-center gap-3"><div class="h-8 w-1.5 rounded-full" style="background:${s.bar}"></div><div class="min-w-0 flex-1"><div class="truncate text-[13px] font-semibold text-text1">${cat}</div></div><div class="flex items-center gap-3 text-right"><div class="font-heading text-sm font-bold text-text1">${pct}%</div><div class="text-[11px] text-text2">${fmt(val)}</div></div></div></div>`;
-  }).join('');
-
-  const otrosRow=otherTotal>0
-    ? `<div class="rounded-app border border-borderc bg-white px-3 py-2"><div class="flex items-center gap-3"><div class="h-8 w-1.5 rounded-full bg-slate-300"></div><div class="min-w-0 flex-1"><div class="truncate text-[13px] font-semibold text-text1">Otros</div></div><div class="flex items-center gap-3 text-right"><div class="font-heading text-sm font-bold text-text1">${tot>0?((otherTotal/tot)*100).toFixed(0):0}%</div><div class="text-[11px] text-text2">${fmt(otherTotal)}</div></div></div></div>` : '';
-
-  const libreRow=resta>0&&sueldo>0
-    ? `<div class="rounded-app border border-[#c0e8d4] bg-greenbg px-3 py-2"><div class="flex items-center gap-3"><div class="h-8 w-1.5 rounded-full bg-green1"></div><div class="min-w-0 flex-1"><div class="truncate text-[13px] font-semibold text-greentx">Disponible</div><div class="text-[11px] text-greentx/80">Lo que aún no has gastado</div></div><div class="flex items-center gap-3 text-right"><div class="font-heading text-sm font-bold text-greentx">${sueldo>0?((resta/sueldo)*100).toFixed(0):0}%</div><div class="text-[11px] text-greentx">${fmt(resta)}</div></div></div></div>` : '';
-
-  document.getElementById('dlegend').innerHTML=catRows+otrosRow+libreRow;
+function showOverlay(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('hidden');
+  el.classList.add('flex');
 }
 
-function getFilteredActiveExpenses(){
-  const filter=document.getElementById('fcat')?.value||'';
-  let list=active();
-  if(filter) list=list.filter(g=>g.cat===filter);
-  return list;
+function hideOverlay(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('flex');
+  el.classList.add('hidden');
 }
 
-function renderGastos(){
-  const fcat=document.getElementById('fcat');
-  if(fcat){
-    const cur=fcat.value;
-    fcat.innerHTML='<option value="">Todas las categorías</option>'+state.categorias.map(c=>`<option value="${c}"${c===cur?' selected':''}>${c}</option>`).join('');
-  }
+function maybeClose(event) { if (event.target === event.currentTarget) closeModal(); }
+function maybeCloseExtra(event) { if (event.target === event.currentTarget) closeExtraModal(); }
+function maybeCloseCarry(event) { if (event.target === event.currentTarget) closeCarryModal(); }
+function maybeCloseNote(event) { if (event.target === event.currentTarget) closeNoteModal(); }
+function maybeCloseNoteMove(event) { if (event.target === event.currentTarget) closeNoteMoveModal(); }
+function maybeCloseBulkMoveNotes(event) { if (event.target === event.currentTarget) closeBulkMoveNotesModal(); }
+function maybeClosePrestamo(event) { if (event.target === event.currentTarget) closePrestamoModal(); }
+function maybeCloseAbono(event) { if (event.target === event.currentTarget) closeAbonoModal(); }
 
-  const list=getFilteredActiveExpenses();
-  const totalFiltrado=list.reduce((s,g)=>s+g.monto,0);
-  const totalFooter=document.getElementById('gastos-total-footer');
-  if(totalFooter){
-    totalFooter.textContent=fmt(totalFiltrado);
-  }
+function fillMonthOptions(selectId) {
+  const el = document.getElementById(selectId);
+  if (!el) return;
+  const current = parseInt(el.value, 10);
+  const selectedIndex = Number.isInteger(current) && current >= 0 && current < MS.length ? current : curM;
+  el.innerHTML = MS.map((name, index) => `<option value="${index}" ${index===selectedIndex?'selected':''}>${name}</option>`).join('');
+}
 
-  const el=document.getElementById('glist');
-  if(!el)return;
-  if(!list.length){
-    el.innerHTML='<div class="px-10 py-10 text-center text-text3"><div class="mb-2.5 text-[32px]">📭</div>No hay gastos aquí</div>';
+function fillCategorySelectors() {
+  const categoryOptions = state.categorias.map(c => `<option value="${c}">${c}</option>`).join('');
+  const fcat = document.getElementById('fcat');
+  if (fcat) {
+    const selected = fcat.value || '';
+    fcat.innerHTML = `<option value="">Todas las categorías</option>${categoryOptions}`;
+    if (selected) fcat.value = selected;
+  }
+  const noteFilter = document.getElementById('note-cat-filter');
+  if (noteFilter) {
+    const selected = noteFilter.value || '';
+    noteFilter.innerHTML = `<option value="">Todas las categorías</option>${categoryOptions}`;
+    if (selected) noteFilter.value = selected;
+  }
+  const fcatModal = document.getElementById('fcatModal');
+  if (fcatModal) fcatModal.innerHTML = categoryOptions;
+  const noteCat = document.getElementById('note-cat');
+  if (noteCat) noteCat.innerHTML = categoryOptions;
+}
+
+function renderExtraList() {
+  const list = document.getElementById('extra-list');
+  if (!list) return;
+  const extras = state.ingresosExtra.filter(x => Number(x.mes)===curM && Number(x.anio)===curY);
+  if (!extras.length) {
+    list.innerHTML = '<div class="text-xs text-text2">No hay ingresos adicionales para este mes.</div>';
     return;
   }
-  el.innerHTML=list.map(g=>{
-    const s=cs(g.cat);
-    const qtag=g.tipo==='cuotas'
-      ? `<span class="ml-1.5 rounded-full bg-bluebg px-2 py-0.5 text-[10px] font-bold text-bluetx">Cuota ${g.cuotaAct}/${g.cuotas}</span>`
-      : g.tipo==='recurrente'
-        ? `<span class="ml-1.5 rounded-full bg-appbg px-2 py-0.5 text-[10px] font-bold text-text2">Recurrente</span>`
-        : '';
-    return `<div class="grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-3 border-b border-appbg2 px-5 py-3 transition hover:bg-appbg"><div class="min-w-0 flex items-center gap-2"><div class="truncate text-[14px] font-semibold text-text1">${g.desc}${qtag}</div><span class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold leading-none" style="background:${s.bg};color:${s.tx}"><span class="h-1.5 w-1.5 rounded-full" style="background:${s.bar}"></span>${g.cat}</span></div><div class="whitespace-nowrap text-[12px] text-text3">día ${g.dia}</div><div class="whitespace-nowrap font-heading text-[15px] font-bold text-red1">${fmt(g.monto)}</div><button class="rounded-md border-0 bg-transparent px-1.5 py-0.5 text-[16px] leading-none text-text3 transition hover:bg-bluebg hover:text-accent" onclick="editG(${g.id})">✎</button><button class="rounded-md border-0 bg-transparent px-1.5 py-0.5 text-[20px] leading-none text-text3 transition hover:bg-redbg hover:text-red1" onclick="delG(${g.id})">×</button></div>`;
-  }).join('');
+  list.innerHTML = extras.map(x => `<div class="mb-2 rounded-smapp border border-borderc bg-white p-3 text-[13px] text-text1"><div class="flex items-center justify-between gap-2"><span>${x.desc}</span><span class="font-bold">${fmt(x.monto)}</span></div><div class="mt-1 text-[11px] text-text3">${MS[x.mes]} ${x.anio}</div></div>`).join('');
 }
 
-function delG(id){
-  const gasto = state.gastos.find(g=>g.id===id);
-  if(!gasto) return;
-  if(!confirm('¿Eliminar este gasto?'))return;
-
-  if(gasto.prestamoId && gasto.abonoPrestamoId){
-    removePrestamoHistoryLink(gasto.prestamoId, gasto.abonoPrestamoId);
-  } else if(gasto.abonoPrestamoId){
-    revertPrestamoAbonoByLinkedRecord('gasto', id);
-  }
-
-  state.gastos=state.gastos.filter(g=>g.id!==id);
-  save();updateAll();toast('Gasto eliminado');
-}
-
-function renderCompromisosResumen(){
-  const cuotasActivas = state.gastos.filter(g => g.tipo==='cuotas' && (g.anio ?? curY) === curY && g.mes <= curM && g.cuotaAct <= g.cuotas);
-  const totalCuotas = cuotasActivas.reduce((s,g)=>s + g.monto, 0);
-  const el = document.getElementById('compromisos-cuotas-total');
-  if(el) el.textContent = fmt(totalCuotas);
-}
-
-function renderCuotas(){
-  const list=state.gastos
-    .filter(g=>g.tipo==='cuotas' && (g.anio ?? curY) === curY && g.mes <= curM)
-    .sort((a,b)=>a.desc.localeCompare(b.desc));
-
-  const el=document.getElementById('qlist');
-  if(!el)return;
-  if(!list.length){
-    el.innerHTML='<div class="px-10 py-10 text-center text-text3"><div class="mb-2.5 text-[32px]">📅</div>No tienes cuotas registradas.<br>¡Agrégalas con el botón de arriba!</div>';
-    return;
-  }
-
-  el.innerHTML=list.map(g=>{
-    const s=cs(g.cat);
-    const done=Math.max(Math.min(g.cuotaAct-1, g.cuotas), 0);
-    const pct=g.cuotas>0?((done/g.cuotas)*100).toFixed(0):0;
-    const faltan=Math.max(g.cuotas-g.cuotaAct+1,0);
-    const comp=g.cuotaAct>g.cuotas;
-    const cuotaMostrada=comp ? g.cuotas : g.cuotaAct;
-
-    return `<div class="mb-3 rounded-[16px] border border-[#eadfca] bg-white px-5 py-4 shadow-soft ${comp?'opacity-75':''}">
-      <div class="mb-2.5 flex items-start justify-between gap-3">
-        <div>
-          <div class="font-heading text-[15px] font-bold">${g.desc} ${comp?'<span class="rounded-full bg-greenbg px-2 py-0.5 text-[11px] text-greentx">✓ Completado</span>':''}</div>
-          <div class="mt-1.5"><span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold" style="background:${s.bg};color:${s.tx}"><span class="h-1.5 w-1.5 rounded-full" style="background:${s.bar}"></span>${g.cat}</span></div>
-        </div>
-        <div class="shrink-0 text-right">
-          <div class="font-heading text-[17px] font-bold text-[#b7791f]">${fmt(g.monto)}<span class="text-xs font-normal text-text3">/mes</span></div>
-          <div class="mt-0.5 text-[11px] text-text3">Cuota ${cuotaMostrada} de ${g.cuotas}</div>
-        </div>
-      </div>
-
-      <div class="my-2 h-2.5 overflow-hidden rounded-full bg-appbg2">
-        <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${s.bar}"></div>
-      </div>
-
-      <div class="mb-2.5 flex justify-between text-[11px] text-text3">
-        <span>Pagado: ${fmt(g.monto*done)}</span>
-        <span>${pct}% completado</span>
-        <span>Falta: ${fmt(g.monto*Math.max(g.cuotas-done,0))}</span>
-      </div>
-
-      <div class="flex items-center justify-between">
-        <div class="text-xs text-text2">${comp ? 'Crédito completado' : `Faltan <strong class="text-text1">${faltan} cuotas</strong> · Día <strong class="text-text1">${g.dia}</strong>`}</div>
-        <div class="flex items-center gap-2">
-          ${!comp ? `<button class="rounded-[7px] border border-borderc bg-white px-2.5 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="markPaid(${g.id})">✓ Registrar pago</button>` : ''}
-          ${g.cuotaAct > 1 ? `<button class="rounded-[7px] border border-borderc bg-white px-2.5 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-red1 hover:text-red1" onclick="undoPaid(${g.id})">Deshacer</button>` : ''}
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function markPaid(id){
-  const g=state.gastos.find(x=>x.id===id);
-  if(!g)return;
-  g.cuotaAct++;
-  save();updateAll();
-  toast(g.cuotaAct>g.cuotas?'🎉 ¡Última cuota pagada!':'Cuota registrada ✓');
-}
-
-function undoPaid(id){
-  const g=state.gastos.find(x=>x.id===id);
-  if(!g)return;
-  if(g.cuotaAct <= 1){
-    toast('No hay pagos para deshacer');
-    return;
-  }
-  g.cuotaAct--;
-  save();updateAll();
-  toast('Pago deshecho');
-}
-
-function nextMonthIndex(m){ return (m + 1) % 12; }
-
-function monthName(index){ return MS[index]; }
-
-function monthlyExpensesBase(){
-  return state.gastos.filter(g => {
-    const gy = g.anio ?? curY;
-    if(g.tipo === 'cuotas'){
-      return gy === curY && g.mes <= curM && g.cuotaAct <= g.cuotas;
-    }
-    return gy === curY && g.mes === curM;
-  });
-}
-
-function openCarryModal(){
-  renderCarryList();
-  const overlay=document.getElementById('overlay-carry');
-  overlay.classList.remove('hidden');
-  overlay.classList.add('flex');
-}
-
-function closeCarryModal(){
-  const overlay=document.getElementById('overlay-carry');
-  overlay.classList.add('hidden');
-  overlay.classList.remove('flex');
-}
-
-function maybeCloseCarry(e){ if(e.target===document.getElementById('overlay-carry')) closeCarryModal(); }
-
-function getCarryCandidates(){
-  return state.gastos.filter(g => (g.anio ?? curY) === curY && g.mes === curM && (g.tipo === 'recurrente' || g.tipo === 'cuotas' || g.tipo === 'unico'));
-}
-
-function renderCarryList(){
-  const nextM = nextMonthIndex(curM);
-  const nextY = curM === 11 ? curY + 1 : curY;
-  const candidates = getCarryCandidates();
-  const listEl = document.getElementById('carry-list');
-  const summaryEl = document.getElementById('carry-summary');
-  if(summaryEl){
-    summaryEl.textContent = `Periodo actual: ${monthName(curM)} ${curY} · Destino: ${monthName(nextM)} ${nextY}.`;
-  }
-  if(!listEl) return;
-  if(!candidates.length){
-    listEl.innerHTML = '<div class="px-4 py-6 text-center text-[13px] text-text3">No hay gastos de este mes para copiar.</div>';
-    return;
-  }
-  listEl.innerHTML = candidates.map(g => {
-    const checked = g.tipo === 'recurrente' || g.tipo === 'cuotas' ? 'checked' : '';
-    const s = cs(g.cat);
-    const subtitle = g.tipo === 'cuotas' ? `Cuota ${g.cuotaAct}/${g.cuotas}` : (g.tipo === 'recurrente' ? 'Recurrente' : 'Solo este mes');
-    return `<label class="flex cursor-pointer items-center gap-3 border-b border-appbg2 px-4 py-3 last:border-b-0 hover:bg-appbg"><input type="checkbox" class="carry-item h-4 w-4" data-id="${g.id}" ${checked}><div class="min-w-0 flex-1"><div class="flex items-center gap-2"><div class="truncate text-[13px] font-semibold text-text1">${g.desc}</div><span class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold leading-none" style="background:${s.bg};color:${s.tx}"><span class="h-1.5 w-1.5 rounded-full" style="background:${s.bar}"></span>${g.cat}</span></div><div class="text-[11px] text-text3">${subtitle}</div></div><div class="whitespace-nowrap font-heading text-[14px] font-bold text-red1">${fmt(g.monto)}</div></label>`;
-  }).join('');
-}
-
-function markCarryByMode(mode){
-  document.querySelectorAll('.carry-item').forEach(chk => {
-    const id = Number(chk.dataset.id);
-    const g = state.gastos.find(x => x.id === id);
-    if(!g) return;
-    if(mode === 'all') chk.checked = true;
-    else chk.checked = g.tipo === mode;
-  });
-}
-
-function clearCarrySelection(){
-  document.querySelectorAll('.carry-item').forEach(chk => chk.checked = false);
-}
-
-function carrySelectedExpenses(){
-  const nextM = nextMonthIndex(curM);
-  const nextY = curM === 11 ? curY + 1 : curY;
-  const selectedIds = Array.from(document.querySelectorAll('.carry-item:checked')).map(x => Number(x.dataset.id));
-  if(!selectedIds.length){ alert('Selecciona al menos un gasto.'); return; }
-
-  let created = 0;
-  selectedIds.forEach(id => {
-    const g = state.gastos.find(x => x.id === id);
-    if(!g) return;
-
-    const exists = state.gastos.some(x => (x.anio ?? curY) === nextY && x.mes === nextM && x.desc === g.desc && x.cat === g.cat && x.tipo === g.tipo && x.monto === g.monto);
-    if(exists) return;
-
-    state.gastos.push({
-      ...g,
-      id: nid++,
-      mes: nextM,
-      anio: nextY,
-      origenMes: g.mes,
-      origenAnio: g.anio ?? curY
-    });
-    created++;
-  });
-
-  save();
-  updateAll();
-  closeCarryModal();
-  toast(created ? `Se copiaron ${created} gasto(s) a ${monthName(nextM)} ${nextY}` : 'No hubo nuevos gastos para copiar');
-}
-
-function fillMonthsSelect(selectId, selected = curM){
-  const sel=document.getElementById(selectId);
-  if(!sel) return;
-  sel.innerHTML=MS.map((m,i)=>`<option value="${i}" ${i===selected?'selected':''}>${m}</option>`).join('');
-}
-
-function getFilteredNotes(){
-  const filter=document.getElementById('note-cat-filter')?.value||'';
-  let list=(state.anotaciones || []);
-  if(filter) list=list.filter(n=>n.cat===filter);
-  return list;
-}
-
-function renderNotes(){
-  const fcat=document.getElementById('note-cat-filter');
-  if(fcat){
-    const cur=fcat.value;
-    fcat.innerHTML='<option value="">Todas las categorías</option>'+state.categorias.map(c=>`<option value="${c}"${c===cur?' selected':''}>${c}</option>`).join('');
-  }
-  const list=getFilteredNotes();
-  const total=list.reduce((s,n)=>s+n.monto,0);
-  const totalFooter=document.getElementById('notes-total-footer');
-  if(totalFooter) totalFooter.textContent=fmt(total);
-  const el=document.getElementById('notes-list');
-  if(!el) return;
-  if(!list.length){
-    el.innerHTML='<div class="px-10 py-10 text-center text-text3"><div class="mb-2.5 text-[32px]">📝</div>No tienes anotaciones pendientes</div>';
-    return;
-  }
-  el.innerHTML=list.map(n=>{
-    const s=cs(n.cat);
-    const noteTag=n.tipo==='cuotas' ? `<span class="ml-1.5 rounded-full bg-bluebg px-2 py-0.5 text-[10px] font-bold text-bluetx">Cuotas</span>` : n.tipo==='recurrente' ? `<span class="ml-1.5 rounded-full bg-appbg px-2 py-0.5 text-[10px] font-bold text-text2">Recurrente</span>` : `<span class="ml-1.5 rounded-full bg-appbg px-2 py-0.5 text-[10px] font-bold text-text2">Pendiente</span>`;
-    return `<div class="grid grid-cols-[1fr_auto_auto_auto_auto_auto] items-center gap-3 border-b border-appbg2 px-5 py-3 transition hover:bg-appbg/60"><div class="min-w-0 flex items-center gap-2"><div class="truncate text-[14px] font-semibold text-text1">${n.desc}${noteTag}</div><span class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold leading-none" style="background:${s.bg};color:${s.tx}"><span class="h-1.5 w-1.5 rounded-full" style="background:${s.bar}"></span>${n.cat}</span></div><div class="whitespace-nowrap text-[12px] text-text3">día ${n.dia}</div><div class="whitespace-nowrap font-heading text-[15px] font-bold text-accent">${fmt(n.monto)}</div><button class="rounded-full border border-borderc bg-white px-2.5 py-1 text-[11px] leading-none text-text2 shadow-soft transition hover:border-accent hover:text-accent" onclick="openMoveNoteModal(${n.id})">Mes</button><button class="rounded-md border-0 bg-transparent px-1.5 py-0.5 text-[16px] leading-none text-text3 transition hover:bg-bluebg hover:text-accent" onclick="editNote(${n.id})">✎</button><button class="rounded-md border-0 bg-transparent px-1.5 py-0.5 text-[20px] leading-none text-text3 transition hover:bg-redbg hover:text-red1" onclick="delNote(${n.id})">×</button></div>`;
-  }).join('');
-}
-
-function toggleNoteQ(){
-  document.getElementById('note-qfields').classList.toggle('hidden', document.getElementById('note-tipo').value!=='cuotas');
-}
-
-function openNoteModal(){
-  editingNoteId = null;
-  document.getElementById('note-mh').textContent='Agregar anotación';
-  const sel=document.getElementById('note-cat');
-  sel.innerHTML=state.categorias.map(c=>`<option>${c}</option>`).join('');
-  document.getElementById('note-desc').value='';
-  document.getElementById('note-monto').value='';
-  document.getElementById('note-dia').value=15;
-  document.getElementById('note-tipo').value='unico';
-  document.getElementById('note-cuotas').value='';
-  document.getElementById('note-cuotaact').value=1;
-  toggleNoteQ();
-  const overlay=document.getElementById('overlay-note');
-  overlay.classList.remove('hidden');
-  overlay.classList.add('flex');
-  setTimeout(()=>document.getElementById('note-desc').focus(),50);
-}
-
-function closeNoteModal(){
-  const overlay=document.getElementById('overlay-note');
-  overlay.classList.add('hidden');
-  overlay.classList.remove('flex');
-}
-
-function maybeCloseNote(e){ if(e.target===document.getElementById('overlay-note')) closeNoteModal(); }
-
-function saveNote(){
-  const desc=document.getElementById('note-desc').value.trim();
-  const monto=parseFloat(document.getElementById('note-monto').value);
-  const cat=document.getElementById('note-cat').value;
-  const dia=parseInt(document.getElementById('note-dia').value)||15;
-  const tipo=document.getElementById('note-tipo').value;
-  const cuotas=tipo==='cuotas'?(parseInt(document.getElementById('note-cuotas').value)||0):0;
-  const cuotaAct=tipo==='cuotas'?(parseInt(document.getElementById('note-cuotaact').value)||1):1;
-  if(!desc){ alert('Escribe una descripción.'); return; }
-  if(!monto || monto<=0){ alert('Ingresa un monto válido.'); return; }
-  if(tipo==='cuotas'&&cuotas<1){ alert('Ingresa el número total de cuotas.'); return; }
-  if(editingNoteId !== null){
-    const n=(state.anotaciones||[]).find(x=>x.id===editingNoteId);
-    if(!n) return;
-    n.desc=desc; n.monto=monto; n.cat=cat; n.dia=dia; n.tipo=tipo; n.cuotas=cuotas; n.cuotaAct=cuotaAct;
-    if(tipo!=='cuotas'){ n.cuotas=0; n.cuotaAct=1; }
-    save(); renderNotes(); closeNoteModal(); toast('Anotación actualizada ✓');
-    return;
-  }
-  state.anotaciones = state.anotaciones || [];
-  const nextId=(state.anotaciones.reduce((max,x)=>Math.max(max,x.id||0),0))+1;
-  state.anotaciones.push({ id: nextId, desc, monto, cat, dia, tipo, cuotas, cuotaAct, creadoMes: curM, creadoAnio: curY });
-  save(); renderNotes(); closeNoteModal(); toast('Anotación agregada ✓');
-}
-
-function editNote(id){
-  const n=(state.anotaciones||[]).find(x=>x.id===id);
-  if(!n) return;
-  editingNoteId=id;
-  document.getElementById('note-mh').textContent='Editar anotación';
-  const sel=document.getElementById('note-cat');
-  sel.innerHTML=state.categorias.map(c=>`<option ${c===n.cat?'selected':''}>${c}</option>`).join('');
-  document.getElementById('note-desc').value=n.desc;
-  document.getElementById('note-monto').value=n.monto;
-  document.getElementById('note-dia').value=n.dia;
-  document.getElementById('note-tipo').value=n.tipo;
-  document.getElementById('note-cuotas').value=n.tipo==='cuotas' ? n.cuotas : '';
-  document.getElementById('note-cuotaact').value=n.tipo==='cuotas' ? n.cuotaAct : 1;
-  toggleNoteQ();
-  const overlay=document.getElementById('overlay-note');
-  overlay.classList.remove('hidden');
-  overlay.classList.add('flex');
-}
-
-function delNote(id){
-  if(!confirm('¿Eliminar esta anotación?')) return;
-  state.anotaciones=(state.anotaciones||[]).filter(x=>x.id!==id);
-  save(); renderNotes(); toast('Anotación eliminada');
-}
-
-function noteToExpense(note, mesDestino){
-  return { id: nid++, desc: note.desc, monto: note.monto, cat: note.cat, dia: note.dia, tipo: note.tipo, cuotas: note.tipo==='cuotas' ? note.cuotas : 0, cuotaAct: note.tipo==='cuotas' ? note.cuotaAct : 1, mes: mesDestino, anio: curY, origenMes: mesDestino, origenAnio: curY };
-}
-
-function openMoveNoteModal(id){
-  const note=(state.anotaciones||[]).find(x=>x.id===id);
-  if(!note) return;
-  movingNoteId=id;
-  document.getElementById('note-move-title').textContent=`${note.desc} · ${fmt(note.monto)}`;
-  fillMonthsSelect('note-move-month', curM);
-  document.getElementById('note-move-action').value='move';
-  const overlay=document.getElementById('overlay-note-move');
-  overlay.classList.remove('hidden');
-  overlay.classList.add('flex');
-}
-
-function closeNoteMoveModal(){
-  const overlay=document.getElementById('overlay-note-move');
-  overlay.classList.add('hidden');
-  overlay.classList.remove('flex');
-}
-
-function maybeCloseNoteMove(e){ if(e.target===document.getElementById('overlay-note-move')) closeNoteMoveModal(); }
-
-function confirmMoveNote(){
-  const note=(state.anotaciones||[]).find(x=>x.id===movingNoteId);
-  if(!note) return;
-  const mesDestino=parseInt(document.getElementById('note-move-month').value,10);
-  const action=document.getElementById('note-move-action').value;
-  const exists=state.gastos.some(g => g.desc===note.desc && g.cat===note.cat && g.dia===note.dia && g.tipo===note.tipo && g.monto===note.monto && g.mes===mesDestino && (g.anio ?? curY)===curY);
-  if(!exists) state.gastos.push(noteToExpense(note, mesDestino));
-  if(action==='move') state.anotaciones=(state.anotaciones||[]).filter(x=>x.id!==movingNoteId);
-  save(); updateAll(); renderNotes(); closeNoteMoveModal(); toast(action==='move' ? `Anotación enviada a ${MS[mesDestino]}` : `Anotación copiada a ${MS[mesDestino]}`);
-}
-
-function openBulkMoveNotesModal(){
-  fillMonthsSelect('bulk-note-month', curM);
-  document.getElementById('bulk-note-action').value='move';
-  const listEl=document.getElementById('bulk-notes-list');
-  const list=(state.anotaciones||[]);
-  if(!listEl) return;
-  listEl.innerHTML=!list.length ? '<div class="px-4 py-6 text-center text-[13px] text-text3">No tienes anotaciones para enviar.</div>' : list.map(n=>`<label class="flex cursor-pointer items-center gap-3 border-b border-appbg2 px-4 py-3 last:border-b-0 hover:bg-appbg"><input type="checkbox" class="bulk-note-item h-4 w-4" data-id="${n.id}"><div class="min-w-0 flex-1"><div class="truncate text-[13px] font-semibold text-text1">${n.desc}</div><div class="text-[11px] text-text3">${n.cat} · día ${n.dia}</div></div><div class="whitespace-nowrap font-heading text-[14px] font-bold text-accent">${fmt(n.monto)}</div></label>`).join('');
-  const overlay=document.getElementById('overlay-note-bulk');
-  overlay.classList.remove('hidden');
-  overlay.classList.add('flex');
-}
-
-function closeBulkMoveNotesModal(){
-  const overlay=document.getElementById('overlay-note-bulk');
-  overlay.classList.add('hidden');
-  overlay.classList.remove('flex');
-}
-
-function maybeCloseBulkMoveNotes(e){ if(e.target===document.getElementById('overlay-note-bulk')) closeBulkMoveNotesModal(); }
-function markAllNotesBulk(value){ document.querySelectorAll('.bulk-note-item').forEach(chk => chk.checked = value); }
-
-function confirmBulkMoveNotes(){
-  const ids=Array.from(document.querySelectorAll('.bulk-note-item:checked')).map(x=>Number(x.dataset.id));
-  if(!ids.length){ alert('Selecciona al menos una anotación.'); return; }
-  const mesDestino=parseInt(document.getElementById('bulk-note-month').value,10);
-  const action=document.getElementById('bulk-note-action').value;
-  let created=0;
-  ids.forEach(id => {
-    const note=(state.anotaciones||[]).find(x=>x.id===id);
-    if(!note) return;
-    const exists=state.gastos.some(g => g.desc===note.desc && g.cat===note.cat && g.dia===note.dia && g.tipo===note.tipo && g.monto===note.monto && g.mes===mesDestino && (g.anio ?? curY)===curY);
-    if(!exists){ state.gastos.push(noteToExpense(note, mesDestino)); created++; }
-  });
-  if(action==='move') state.anotaciones=(state.anotaciones||[]).filter(n => !ids.includes(n.id));
-  save(); updateAll(); renderNotes(); closeBulkMoveNotesModal(); toast(created ? `${created} anotación(es) enviadas a ${MS[mesDestino]}` : 'No hubo nuevas anotaciones para enviar');
-}
-
-function prestamoSaldo(p){
-  return Math.max((p.montoTotal || 0) - (p.montoPagado || 0), 0);
-}
-
-function prestamoEstado(p){
-  const saldo = prestamoSaldo(p);
-  if(saldo <= 0) return 'pagado';
-  if((p.montoPagado || 0) > 0) return 'parcial';
-  return 'pendiente';
-}
-
-function openPrestamoModal(){
-  editingPrestamoId = null;
-  document.getElementById('prestamo-mh').textContent='Agregar préstamo';
-  document.getElementById('prestamo-tipo').value='por_cobrar';
-  document.getElementById('prestamo-persona').value='';
-  document.getElementById('prestamo-desc').value='';
-  document.getElementById('prestamo-monto').value='';
-  document.getElementById('prestamo-abonado').value='0';
-  document.getElementById('prestamo-fecha').value='';
-  document.getElementById('prestamo-vencimiento').value='';
-  document.getElementById('prestamo-notas').value='';
-  const overlay=document.getElementById('overlay-prestamo');
-  overlay.classList.remove('hidden');
-  overlay.classList.add('flex');
-}
-
-function closePrestamoModal(){
-  const overlay=document.getElementById('overlay-prestamo');
-  overlay.classList.add('hidden');
-  overlay.classList.remove('flex');
-}
-
-function maybeClosePrestamo(e){ if(e.target===document.getElementById('overlay-prestamo')) closePrestamoModal(); }
-
-function savePrestamo(){
-  const tipo=document.getElementById('prestamo-tipo').value;
-  const persona=document.getElementById('prestamo-persona').value.trim();
-  const desc=document.getElementById('prestamo-desc').value.trim();
-  const montoTotal=parseFloat(document.getElementById('prestamo-monto').value);
-  const montoPagado=parseFloat(document.getElementById('prestamo-abonado').value)||0;
-  const fecha=document.getElementById('prestamo-fecha').value;
-  const vencimiento=document.getElementById('prestamo-vencimiento').value;
-  const notas=document.getElementById('prestamo-notas').value.trim();
-  if(!persona){ alert('Escribe la persona.'); return; }
-  if(!desc){ alert('Escribe una descripción.'); return; }
-  if(!montoTotal || montoTotal <= 0){ alert('Ingresa un monto válido.'); return; }
-  if(montoPagado < 0 || montoPagado > montoTotal){ alert('El abonado inicial no es válido.'); return; }
-
-  const payload = { tipo, persona, desc, montoTotal, montoPagado, fecha, vencimiento, notas };
-  if(editingPrestamoId !== null){
-    const p=(state.prestamos||[]).find(x=>x.id===editingPrestamoId);
-    if(!p) return;
-    Object.assign(p, payload);
-    p.historial = p.historial || [];
-    save(); updateAll(); closePrestamoModal(); toast('Préstamo actualizado ✓');
-    return;
-  }
-
-  state.prestamos = state.prestamos || [];
-  const nextId=(state.prestamos.reduce((max,x)=>Math.max(max,x.id||0),0))+1;
-  state.prestamos.push({ id: nextId, ...payload, historial: [] });
-  save(); updateAll(); closePrestamoModal(); toast('Préstamo agregado ✓');
-}
-
-function editPrestamo(id){
-  const p=(state.prestamos||[]).find(x=>x.id===id);
-  if(!p) return;
-  editingPrestamoId = id;
-  document.getElementById('prestamo-mh').textContent='Editar préstamo';
-  document.getElementById('prestamo-tipo').value=p.tipo;
-  document.getElementById('prestamo-persona').value=p.persona;
-  document.getElementById('prestamo-desc').value=p.desc;
-  document.getElementById('prestamo-monto').value=p.montoTotal;
-  document.getElementById('prestamo-abonado').value=p.montoPagado || 0;
-  document.getElementById('prestamo-fecha').value=p.fecha || '';
-  document.getElementById('prestamo-vencimiento').value=p.vencimiento || '';
-  document.getElementById('prestamo-notas').value=p.notas || '';
-  const overlay=document.getElementById('overlay-prestamo');
-  overlay.classList.remove('hidden');
-  overlay.classList.add('flex');
-}
-
-function delPrestamo(id){
-  if(!confirm('¿Eliminar este préstamo?')) return;
-  state.prestamos=(state.prestamos||[]).filter(x=>x.id!==id);
-  save(); updateAll(); toast('Préstamo eliminado');
-}
-
-function openAbonoModal(id){
-  const p=(state.prestamos||[]).find(x=>x.id===id);
-  if(!p) return;
-  editingAbonoRef = null;
-  abonoPrestamoId = id;
-  document.getElementById('abono-title').textContent=`${p.persona} · saldo ${fmt(prestamoSaldo(p))}`;
-  document.getElementById('abono-monto').value='';
-  fillMonthsSelect('abono-month', curM);
-  document.getElementById('abono-impacto').value='ninguno';
-  document.getElementById('abono-nota').value='';
-  const overlay=document.getElementById('overlay-abono');
-  overlay.classList.remove('hidden');
-  overlay.classList.add('flex');
-}
-
-function closeAbonoModal(){
-  const overlay=document.getElementById('overlay-abono');
-  overlay.classList.add('hidden');
-  overlay.classList.remove('flex');
-  editingAbonoRef = null;
-}
-
-function maybeCloseAbono(e){ if(e.target===document.getElementById('overlay-abono')) closeAbonoModal(); }
-
-function saveAbono(){
-  if(editingAbonoRef){
-    saveAbonoEdit();
-    return;
-  }
-  const p=(state.prestamos||[]).find(x=>x.id===abonoPrestamoId);
-  if(!p) return;
-  const monto=parseFloat(document.getElementById('abono-monto').value);
-  const mes=parseInt(document.getElementById('abono-month').value,10);
-  const impacto=document.getElementById('abono-impacto').value;
-  const nota=document.getElementById('abono-nota').value.trim();
-  const saldo=prestamoSaldo(p);
-  if(!monto || monto<=0){ alert('Ingresa un monto válido.'); return; }
-  if(monto > saldo){ alert('El abono supera el saldo pendiente.'); return; }
-
-  const historialId = (p.historial || []).reduce((max,h)=>Math.max(max,h.id||0),0) + 1;
-  const hist = { id: historialId, fecha: new Date().toISOString(), monto, mes, impacto, nota, linkedType: null, linkedId: null };
-
-  p.montoPagado = (p.montoPagado || 0) + monto;
-  p.historial = p.historial || [];
-  p.historial.push(hist);
-
-  if(impacto === 'mes'){
-    if(p.tipo === 'por_pagar'){
-      const nuevoGasto = { id:nid++, desc:`Abono préstamo - ${p.persona}`, monto, cat:'Personal', dia:15, tipo:'unico', cuotas:0, cuotaAct:1, mes, anio:curY, origenMes:mes, origenAnio:curY, abonoPrestamoId: historialId, prestamoId: p.id };
-      state.gastos.push(nuevoGasto);
-      hist.linkedType = 'gasto';
-      hist.linkedId = nuevoGasto.id;
-    } else {
-      state.ingresosExtra = state.ingresosExtra || [];
-      const nextId=(state.ingresosExtra.reduce((max,x)=>Math.max(max,x.id||0),0))+1;
-      const nuevoIngreso = { id: nextId, desc:`Devolución préstamo - ${p.persona}`, monto, mes, anio:curY, abonoPrestamoId: historialId, prestamoId: p.id };
-      state.ingresosExtra.push(nuevoIngreso);
-      hist.linkedType = 'ingreso';
-      hist.linkedId = nextId;
-    }
-  }
-
-  save(); updateAll(); closeAbonoModal(); toast('Abono registrado ✓');
-}
-
-function revertPrestamoAbonoByLinkedRecord(linkedType, linkedId){
-  for(const p of (state.prestamos || [])){
-    const hist = (p.historial || []).find(h => h.linkedType === linkedType && h.linkedId === linkedId);
-    if(hist){
-      p.montoPagado = Math.max((p.montoPagado || 0) - (hist.monto || 0), 0);
-      p.historial = (p.historial || []).filter(h => h.id !== hist.id);
-      return true;
-    }
-  }
-  return false;
-}
-
-function removePrestamoHistoryLink(prestamoId, historialId){
-  const p = (state.prestamos || []).find(x => x.id === prestamoId);
-  if(!p) return false;
-  const hist = (p.historial || []).find(h => h.id === historialId);
-  if(!hist) return false;
-  p.montoPagado = Math.max((p.montoPagado || 0) - (hist.monto || 0), 0);
-  p.historial = (p.historial || []).filter(h => h.id !== historialId);
-  return true;
-}
-
-function openEditAbono(prestamoId, historialId){
-  const p=(state.prestamos||[]).find(x=>x.id===prestamoId);
-  const hist=(p?.historial||[]).find(h=>h.id===historialId);
-  if(!p || !hist) return;
-  editingAbonoRef = { prestamoId, historialId };
-  abonoPrestamoId = prestamoId;
-  document.getElementById('abono-title').textContent=`Editar abono · ${p.persona}`;
-  document.getElementById('abono-monto').value=hist.monto;
-  fillMonthsSelect('abono-month', hist.mes ?? curM);
-  document.getElementById('abono-impacto').value=hist.impacto || 'ninguno';
-  document.getElementById('abono-nota').value=hist.nota || '';
-  const overlay=document.getElementById('overlay-abono');
-  overlay.classList.remove('hidden');
-  overlay.classList.add('flex');
-}
-
-function removeAbono(prestamoId, historialId){
-  const p=(state.prestamos||[]).find(x=>x.id===prestamoId);
-  const hist=(p?.historial||[]).find(h=>h.id===historialId);
-  if(!p || !hist) return;
-  if(!confirm('¿Eliminar este abono?')) return;
-  if(hist.linkedType === 'gasto' && hist.linkedId){
-    state.gastos = state.gastos.filter(g => g.id !== hist.linkedId);
-  }
-  if(hist.linkedType === 'ingreso' && hist.linkedId){
-    state.ingresosExtra = (state.ingresosExtra || []).filter(x => x.id !== hist.linkedId);
-  }
-  p.montoPagado = Math.max((p.montoPagado || 0) - (hist.monto || 0), 0);
-  p.historial = (p.historial || []).filter(h => h.id !== historialId);
-  save(); updateAll(); toast('Abono eliminado');
-}
-
-function saveAbonoEdit(){
-  if(!editingAbonoRef) return;
-  const p=(state.prestamos||[]).find(x=>x.id===editingAbonoRef.prestamoId);
-  const hist=(p?.historial||[]).find(h=>h.id===editingAbonoRef.historialId);
-  if(!p || !hist) return;
-  const monto=parseFloat(document.getElementById('abono-monto').value);
-  const mes=parseInt(document.getElementById('abono-month').value,10);
-  const impacto=document.getElementById('abono-impacto').value;
-  const nota=document.getElementById('abono-nota').value.trim();
-  const saldoSinEste = Math.max((p.montoTotal || 0) - ((p.montoPagado || 0) - (hist.monto || 0)), 0);
-  if(!monto || monto<=0){ alert('Ingresa un monto válido.'); return; }
-  if(monto > saldoSinEste){ alert('El abono supera el saldo disponible.'); return; }
-
-  if(hist.linkedType === 'gasto' && hist.linkedId){
-    state.gastos = state.gastos.filter(g => g.id !== hist.linkedId);
-  }
-  if(hist.linkedType === 'ingreso' && hist.linkedId){
-    state.ingresosExtra = (state.ingresosExtra || []).filter(x => x.id !== hist.linkedId);
-  }
-
-  p.montoPagado = Math.max((p.montoPagado || 0) - (hist.monto || 0), 0);
-  hist.monto = monto;
-  hist.mes = mes;
-  hist.impacto = impacto;
-  hist.nota = nota;
-  hist.linkedType = null;
-  hist.linkedId = null;
-  p.montoPagado = (p.montoPagado || 0) + monto;
-
-  if(impacto === 'mes'){
-    if(p.tipo === 'por_pagar'){
-      const nuevoGasto = { id:nid++, desc:`Abono préstamo - ${p.persona}`, monto, cat:'Personal', dia:15, tipo:'unico', cuotas:0, cuotaAct:1, mes, anio:curY, origenMes:mes, origenAnio:curY, abonoPrestamoId: hist.id, prestamoId: p.id };
-      state.gastos.push(nuevoGasto);
-      hist.linkedType = 'gasto';
-      hist.linkedId = nuevoGasto.id;
-    } else {
-      state.ingresosExtra = state.ingresosExtra || [];
-      const nextId=(state.ingresosExtra.reduce((max,x)=>Math.max(max,x.id||0),0))+1;
-      const nuevoIngreso = { id: nextId, desc:`Devolución préstamo - ${p.persona}`, monto, mes, anio:curY, abonoPrestamoId: hist.id, prestamoId: p.id };
-      state.ingresosExtra.push(nuevoIngreso);
-      hist.linkedType = 'ingreso';
-      hist.linkedId = nextId;
-    }
-  }
-
-  save(); updateAll(); closeAbonoModal(); toast('Abono actualizado ✓');
-}
-
-function renderPrestamos(){
-  const list=(state.prestamos||[]);
-  const cobrar=list.filter(p=>p.tipo==='por_cobrar');
-  const pagar=list.filter(p=>p.tipo==='por_pagar');
-  const totalCobrar=cobrar.reduce((s,p)=>s+prestamoSaldo(p),0);
-  const totalPagar=pagar.reduce((s,p)=>s+prestamoSaldo(p),0);
-  const neto=totalCobrar-totalPagar;
-
-  const elCobrar=document.getElementById('prestamos-cobrar');
-  const elPagar=document.getElementById('prestamos-pagar');
-  if(elCobrar) elCobrar.textContent=fmt(totalCobrar);
-  if(elPagar) elPagar.textContent=fmt(totalPagar);
-
-  function renderList(items, targetId, emptyText){
-    const el=document.getElementById(targetId);
-    if(!el) return;
-    if(!items.length){
-      el.innerHTML=`<div class="px-8 py-10 text-center text-text3">${emptyText}</div>`;
-      return;
-    }
-    el.innerHTML=items.map(p=>{
-      const saldo=prestamoSaldo(p);
-      const estado=prestamoEstado(p);
-      const badge=estado==='pagado' ? 'bg-greenbg text-greentx' : estado==='parcial' ? 'bg-bluebg text-bluetx' : 'bg-appbg text-text2';
-      const historial=(p.historial||[]).slice().reverse().slice(0,5);
-      const historialHtml=historial.length
-        ? `<div class="mt-3 rounded-smapp border border-borderc bg-appbg/60 p-3"><div class="mb-2 text-[11px] font-bold uppercase tracking-[0.06em] text-text3">Últimos abonos</div><div class="space-y-2">${historial.map(h=>`<div class="flex items-start justify-between gap-3 text-[12px]"><div class="min-w-0 flex-1"><div class="font-semibold text-text1">${new Date(h.fecha).toLocaleDateString('es-PE')}</div><div class="text-text3">${MS[h.mes]||'-'} · ${h.impacto==='mes' ? 'impacta mes' : 'solo control'}${h.nota ? ' · ' + h.nota : ''}</div></div><div class="flex items-center gap-2"><div class="whitespace-nowrap font-heading font-bold ${p.tipo==='por_cobrar'?'text-greentx':'text-red1'}">${fmt(h.monto)}</div><button class="rounded-md border-0 bg-transparent px-1 py-0.5 text-[14px] leading-none text-text3 transition hover:bg-bluebg hover:text-accent" onclick="openEditAbono(${p.id},${h.id})">✎</button><button class="rounded-md border-0 bg-transparent px-1 py-0.5 text-[16px] leading-none text-text3 transition hover:bg-redbg hover:text-red1" onclick="removeAbono(${p.id},${h.id})">×</button></div></div>`).join('')}</div></div>`
-        : `<div class="mt-3 rounded-smapp border border-dashed border-borderc bg-appbg/40 px-3 py-2 text-[12px] text-text3">Aún no hay abonos registrados.</div>`;
-      return `<div class="border-b border-appbg2 px-5 py-4 last:border-b-0 hover:bg-appbg/40 transition"><div class="mb-2 flex items-start justify-between gap-3"><div class="min-w-0"><div class="truncate font-heading text-[15px] font-bold text-text1">${p.persona}</div><div class="text-[13px] text-text2">${p.desc}</div></div><div class="shrink-0 text-right"><div class="font-heading text-[15px] font-bold ${p.tipo==='por_cobrar'?'text-bluetx':'text-red1'}">${fmt(saldo)}</div><div class="mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${badge}">${estado}</div></div></div><div class="mb-3 grid grid-cols-2 gap-2 text-[12px] text-text2"><div>Total: <strong class="text-text1">${fmt(p.montoTotal)}</strong></div><div>Abonado: <strong class="text-text1">${fmt(p.montoPagado||0)}</strong></div><div>Fecha: <strong class="text-text1">${p.fecha||'-'}</strong></div><div>Vence: <strong class="text-text1">${p.vencimiento||'-'}</strong></div></div><div class="flex flex-wrap items-center justify-between gap-2"><div class="text-[12px] text-text3 truncate">${p.notas||'Sin notas'}</div><div class="flex flex-wrap items-center gap-2"><button class="rounded-smapp border border-borderc bg-white px-3 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="openAbonoModal(${p.id})">Abono</button><button class="rounded-smapp border border-borderc bg-white px-3 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="editPrestamo(${p.id})">Editar</button><button class="rounded-smapp border border-borderc bg-white px-3 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-red1 hover:text-red1" onclick="delPrestamo(${p.id})">Eliminar</button></div></div>${historialHtml}</div>`;
-    }).join('');
-  }
-
-  renderList(cobrar, 'prestamos-lista-cobrar', 'No tienes préstamos por cobrar');
-  renderList(pagar, 'prestamos-lista-pagar', 'No tienes préstamos por pagar');
-}
-
-function renderCats(){
-  const el=document.getElementById('catgrid');
-  if(!el)return;
-  rYears('ybtns-cats');
-  rMonths('mbtns-cats');
-  el.innerHTML=state.categorias.map(cat=>{
-    const s=cs(cat);
-    const gs=state.gastos.filter(g=>g.cat===cat && g.mes===curM && (g.anio ?? curY)===curY);
-    const tot=gs.reduce((s,g)=>s+g.monto,0);
-    return `<div class="rounded-app border px-4 py-4 shadow-soft" style="background:#fff;border-color:${s.bar}40"><div class="mb-2 flex items-center justify-between"><div class="h-[26px] w-[26px] rounded-full" style="background:${s.bar}"></div><button class="rounded-md border-0 bg-transparent px-1.5 py-0.5 text-lg leading-none text-text3 transition hover:bg-redbg hover:text-red1" onclick="delCat('${cat}')">×</button></div><div class="font-heading text-sm font-bold">${cat}</div><div class="text-xs text-text3">${gs.length} gasto${gs.length!==1?'s':''} en ${MS[curM]}</div><div class="mt-1 font-heading text-[15px] font-bold text-red1">${fmt(tot)}</div></div>`;
-  }).join('');
-}
-
-function addCat(){
-  const n=prompt('Nombre de la nueva categoría:');
-  if(!n||!n.trim())return;
-  if(state.categorias.includes(n.trim())){alert('Esa categoría ya existe.');return;}
-  state.categorias.push(n.trim());
-  save();updateAll();toast('Categoría creada ✓');
-}
-
-function delCat(cat){
-  if(state.gastos.some(g=>g.cat===cat)){alert('Esta categoría tiene gastos. Primero elimínalos.');return;}
-  if(!confirm(`¿Eliminar "${cat}"?`))return;
-  state.categorias=state.categorias.filter(c=>c!==cat);
-  save();updateAll();toast('Categoría eliminada');
-}
-
-function toggleQ(){
-  document.getElementById('qfields').classList.toggle('hidden', document.getElementById('ftipo').value!=='cuotas');
-}
-function renderExtraList(){
-  const el=document.getElementById('extra-list');
-  if(!el)return;
-  const list=extrasDelMes();
-  if(!list.length){
-    el.innerHTML='<div class="text-center text-[12px] text-text3">No tienes ingresos adicionales registrados para este mes.</div>';
-    return;
-  }
-  el.innerHTML=list.map(x => `<div class="flex items-center justify-between gap-3 border-b border-borderc py-2 last:border-b-0"><div class="min-w-0"><div class="truncate text-[13px] font-semibold text-text1">${x.desc}</div><div class="text-[11px] text-text3">${MS[x.mes]}</div></div><div class="flex items-center gap-3"><div class="text-[12px] font-bold text-greentx">${fmt(x.monto)}</div><button class="rounded-md border-0 bg-transparent px-1 py-0.5 text-[14px] leading-none text-text3 transition hover:bg-bluebg hover:text-accent" onclick="editExtra(${x.id})">✎</button><button class="rounded-md border-0 bg-transparent px-1 py-0.5 text-[18px] leading-none text-text3 transition hover:bg-redbg hover:text-red1" onclick="delExtra(${x.id})">×</button></div></div>`).join('');
-}
-
-function fillExtraMonths(){
-  const sel=document.getElementById('extra-mes');
-  if(!sel)return;
-  sel.innerHTML=MS.map((m,i)=>`<option value="${i}" ${i===curM?'selected':''}>${m}</option>`).join('');
-}
-
-function openExtraModal(){
-  editId = null;
-  editMode = 'extra';
-  fillExtraMonths();
-  document.getElementById('extra-desc').value='';
-  document.getElementById('extra-monto').value='';
-  document.getElementById('extra-mes').value=String(curM);
-  renderExtraList();
-  const overlay=document.getElementById('overlay-extra');
-  overlay.classList.remove('hidden');
-  overlay.classList.add('flex');
-  setTimeout(()=>document.getElementById('extra-desc').focus(),50);
-}
-
-function editExtra(id){
-  const extra = (state.ingresosExtra || []).find(x => x.id === id);
-  if(!extra) return;
-  editId = id;
-  editMode = 'extra';
-  fillExtraMonths();
-  document.getElementById('extra-desc').value=extra.desc;
-  document.getElementById('extra-monto').value=extra.monto;
-  document.getElementById('extra-mes').value=String(extra.mes ?? curM);
-  renderExtraList();
-  const overlay=document.getElementById('overlay-extra');
-  overlay.classList.remove('hidden');
-  overlay.classList.add('flex');
-  setTimeout(()=>document.getElementById('extra-desc').focus(),50);
-}
-
-function closeExtraModal(){
-  const overlay=document.getElementById('overlay-extra');
-  overlay.classList.add('hidden');
-  overlay.classList.remove('flex');
-}
-
-function maybeCloseExtra(e){ if(e.target===document.getElementById('overlay-extra')) closeExtraModal(); }
-
-function saveExtra(){
-  const desc=document.getElementById('extra-desc').value.trim();
-  const monto=parseFloat(document.getElementById('extra-monto').value);
-  const mes=parseInt(document.getElementById('extra-mes').value,10);
-  if(!desc){ alert('Escribe una descripción.'); return; }
-  if(!monto || monto<=0){ alert('Ingresa un monto válido.'); return; }
-
-  if(editId !== null && editMode === 'extra'){
-    const extra = (state.ingresosExtra || []).find(x => x.id === editId);
-    if(!extra) return;
-    if(extra.prestamoId && extra.abonoPrestamoId){
-      const okSync = syncPrestamoFromLinkedIncomeEdit(extra, { desc, monto, mes });
-      if(!okSync) return;
-    }
-    extra.desc = desc;
-    extra.monto = monto;
-    extra.mes = mes;
-    save();
-    renderExtraList();
-    updateAll();
-    document.getElementById('extra-desc').value='';
-    document.getElementById('extra-monto').value='';
-    closeExtraModal();
-    toast('Ingreso adicional actualizado ✓');
-    return;
-  }
-
-  state.ingresosExtra = state.ingresosExtra || [];
-  const nextId = (state.ingresosExtra.reduce((max,x)=>Math.max(max,x.id||0),0)) + 1;
-  state.ingresosExtra.push({ id: nextId, desc, monto, mes, anio: curY });
-  save();
-  renderExtraList();
-  updateAll();
-  document.getElementById('extra-desc').value='';
-  document.getElementById('extra-monto').value='';
-  toast('Ingreso adicional agregado ✓');
-}
-
-function syncPrestamoFromLinkedIncomeEdit(extraActual, nuevo){
-  const p = (state.prestamos || []).find(x => x.id === extraActual.prestamoId);
-  if(!p) return true;
-  const hist = (p.historial || []).find(h => h.id === extraActual.abonoPrestamoId);
-  if(!hist) return true;
-
-  const montoAnterior = Number(hist.monto || 0);
-  const nuevoMonto = Number(nuevo.monto || 0);
-  const saldoSinEste = Math.max((p.montoTotal || 0) - ((p.montoPagado || 0) - montoAnterior), 0);
-  if(nuevoMonto > saldoSinEste){
-    alert('El nuevo monto del ingreso supera el saldo disponible del préstamo.');
-    return false;
-  }
-
-  p.montoPagado = Math.max((p.montoPagado || 0) - montoAnterior, 0) + nuevoMonto;
-  hist.monto = nuevoMonto;
-  hist.mes = typeof nuevo.mes === 'number' ? nuevo.mes : hist.mes;
-  if(!hist.nota){
-    hist.nota = nuevo.desc || hist.nota;
-  }
-  if(hist.linkedType === 'ingreso' && hist.linkedId === extraActual.id){
-    hist.linkedId = extraActual.id;
-  }
-  return true;
-}
-
-function delExtra(id){
-  const extra = (state.ingresosExtra || []).find(x => x.id === id);
-  if(extra?.prestamoId && extra?.abonoPrestamoId){
-    removePrestamoHistoryLink(extra.prestamoId, extra.abonoPrestamoId);
-  } else if(extra?.abonoPrestamoId){
-    revertPrestamoAbonoByLinkedRecord('ingreso', id);
-  }
-  state.ingresosExtra = (state.ingresosExtra || []).filter(x => x.id !== id);
-  save();
-  renderExtraList();
-  updateAll();
-}
-
-function clearExtrasMonth(){
-  const list=extrasDelMes();
-  if(!list.length){ toast('No hay adicionales para limpiar'); return; }
-  if(!confirm('¿Eliminar todos los ingresos adicionales de este mes?')) return;
-  state.ingresosExtra = (state.ingresosExtra || []).filter(x => !(x.mes === curM && (x.anio ?? curY) === curY));
-  save();
-  updateAll();
-  renderExtraList();
-  toast('Adicionales del mes eliminados');
-}
-
-function openModal(){
-  editId = null;
-  editMode = 'gasto';
-  document.getElementById('mh').textContent='Agregar gasto';
-  const sel=document.getElementById('fcatModal');
-  sel.innerHTML=state.categorias.map(c=>`<option>${c}</option>`).join('');
-  document.getElementById('fdesc').value='';
-  document.getElementById('fmonto').value='';
-  document.getElementById('fdia').value=15;
-  document.getElementById('ftipo').value='unico';
-  document.getElementById('fcuotas').value='';
-  document.getElementById('fcuotaact').value=1;
-  toggleQ();
-  const overlay=document.getElementById('overlay');
-  overlay.classList.remove('hidden');
-  overlay.classList.add('flex');
-  setTimeout(()=>document.getElementById('fdesc').focus(),50);
-}
-
-function editG(id){
-  const g = state.gastos.find(x => x.id === id);
-  if(!g) return;
-  editId = id;
-  editMode = 'gasto';
-  document.getElementById('mh').textContent='Editar gasto';
-  const sel=document.getElementById('fcatModal');
-  sel.innerHTML=state.categorias.map(c=>`<option ${c===g.cat?'selected':''}>${c}</option>`).join('');
-  document.getElementById('fdesc').value=g.desc;
-  document.getElementById('fmonto').value=g.monto;
-  document.getElementById('fdia').value=g.dia;
-  document.getElementById('ftipo').value=g.tipo;
-  document.getElementById('fcuotas').value=g.tipo==='cuotas' ? g.cuotas : '';
-  document.getElementById('fcuotaact').value=g.tipo==='cuotas' ? g.cuotaAct : 1;
-  toggleQ();
-  const overlay=document.getElementById('overlay');
-  overlay.classList.remove('hidden');
-  overlay.classList.add('flex');
-  setTimeout(()=>document.getElementById('fdesc').focus(),50);
-}
-function closeModal(){
-  const overlay=document.getElementById('overlay');
-  overlay.classList.add('hidden');
-  overlay.classList.remove('flex');
-}
-function maybeClose(e){if(e.target===document.getElementById('overlay'))closeModal();}
-
-function saveG(){
-  const desc=document.getElementById('fdesc').value.trim();
-  const m=parseFloat(document.getElementById('fmonto').value);
-  const cat=document.getElementById('fcatModal').value;
-  const dia=parseInt(document.getElementById('fdia').value)||15;
-  const tipo=document.getElementById('ftipo').value;
-  const cuotas=tipo==='cuotas'?(parseInt(document.getElementById('fcuotas').value)||0):0;
-  const cuotaAct=tipo==='cuotas'?(parseInt(document.getElementById('fcuotaact').value)||1):1;
-  if(!desc){alert('Escribe una descripción.');return;}
-  if(!m||m<=0){alert('Ingresa un monto válido.');return;}
-  if(tipo==='cuotas'&&cuotas<1){alert('Ingresa el número total de cuotas.');return;}
-
-  if(editId !== null && editMode === 'gasto'){
-    const g = state.gastos.find(x => x.id === editId);
-    if(!g) return;
-
-    if(g.prestamoId && g.abonoPrestamoId){
-      const okSync = syncPrestamoFromLinkedExpenseEdit(g, { desc, monto: m, cat, dia, tipo, cuotas, cuotaAct });
-      if(!okSync) return;
-    }
-
-    g.desc = desc;
-    g.monto = m;
-    g.cat = cat;
-    g.dia = dia;
-    g.tipo = tipo;
-    g.cuotas = cuotas;
-    g.cuotaAct = cuotaAct;
-    if(tipo !== 'cuotas'){
-      g.cuotas = 0;
-      g.cuotaAct = 1;
-    }
-    closeModal();save();updateAll();toast('Gasto actualizado ✓');
-    return;
-  }
-
-  state.gastos.push({id:nid++,desc,monto:m,cat,dia,tipo,cuotas,cuotaAct,mes:curM,anio:curY,origenMes:curM,origenAnio:curY});
-  closeModal();save();updateAll();toast('Gasto agregado ✓');
-}
-
-function syncPrestamoFromLinkedExpenseEdit(gastoActual, nuevo){
-  const p = (state.prestamos || []).find(x => x.id === gastoActual.prestamoId);
-  if(!p) return true;
-  const hist = (p.historial || []).find(h => h.id === gastoActual.abonoPrestamoId);
-  if(!hist) return true;
-
-  const montoAnterior = Number(hist.monto || 0);
-  const nuevoMonto = Number(nuevo.monto || 0);
-  const saldoSinEste = Math.max((p.montoTotal || 0) - ((p.montoPagado || 0) - montoAnterior), 0);
-  if(nuevoMonto > saldoSinEste){
-    alert('El nuevo monto del gasto supera el saldo disponible del préstamo.');
-    return false;
-  }
-
-  p.montoPagado = Math.max((p.montoPagado || 0) - montoAnterior, 0) + nuevoMonto;
-  hist.monto = nuevoMonto;
-  hist.mes = typeof gastoActual.mes === 'number' ? gastoActual.mes : hist.mes;
-  if(!hist.nota){
-    hist.nota = nuevo.desc || hist.nota;
-  }
-  if(hist.linkedType === 'gasto' && hist.linkedId === gastoActual.id){
-    hist.linkedId = gastoActual.id;
-  }
-  return true;
-}
-
-
-let tt;
-function toast(msg){
-  const el=document.getElementById('toast');
-  el.textContent=msg;
-  el.classList.remove('translate-y-[60px]','opacity-0');
-  clearTimeout(tt);
-  tt=setTimeout(()=>el.classList.add('translate-y-[60px]','opacity-0'),2500);
-}
-
-function excelMoney(value){ return Number(value || 0); }
-
-function excelMonthName(index){ return MS[typeof index === 'number' ? index : curM] || MS[curM]; }
-
-function excelPeriodText(month, year){ return `${excelMonthName(month)} ${year}`; }
-
-function getVisibleLoans(){
-  return {
-    cobrar: (state.prestamos || []).filter(p => p.tipo === 'por_cobrar'),
-    pagar: (state.prestamos || []).filter(p => p.tipo === 'por_pagar')
-  };
-}
-
-function getDashboardCategorySummary(){
-  const bycat={};
-  active().forEach(g=>{ bycat[g.cat]=(bycat[g.cat]||0)+g.monto; });
-  return Object.entries(bycat)
-    .sort((a,b)=>b[1]-a[1])
-    .map(([cat,monto])=>({ categoria: cat, monto, porcentaje: total()>0 ? Number(((monto/total())*100).toFixed(2)) : 0 }));
-}
-
-function normalizeSheetName(name){
-  return String(name || '').trim().toLowerCase();
-}
-
-function rowValuesToRecord(row, headers){
-  const record = {};
-  headers.forEach((header, idx) => {
-    if(!header) return;
-    const raw = row.getCell(idx).value;
-    record[header] = raw?.result ?? raw ?? '';
-  });
-  return record;
-}
-
-function getSheetHeaders(sheet){
-  const headerRow = sheet.getRow(1);
-  const headers = [];
-  headerRow.eachCell((cell, colNumber) => {
-    headers[colNumber] = String(cell.value || '').trim().toLowerCase();
-  });
-  return headers;
-}
-
-function readStructuredSheet(workbook, name){
-  const sheet = workbook.getWorksheet(name);
-  if(!sheet) return [];
-  const headers = getSheetHeaders(sheet);
-  const rows = [];
-  for(let rowNumber = 2; rowNumber <= sheet.rowCount; rowNumber++){
-    const row = sheet.getRow(rowNumber);
-    const record = rowValuesToRecord(row, headers);
-    const hasValue = Object.values(record).some(v => String(v ?? '').trim() !== '');
-    if(hasValue) rows.push(record);
-  }
-  return rows;
-}
-
-function parseDashboardTable(sheet, startRow, headersExpected){
-  const headers = headersExpected.map(h => String(sheet.getCell(startRow, h.col).value || '').trim().toLowerCase());
-  const wanted = headersExpected.map(h => h.key);
-  if(JSON.stringify(headers) !== JSON.stringify(wanted)) return [];
-  const rows = [];
-  let rowNumber = startRow + 1;
-  while(rowNumber <= sheet.rowCount){
-    const values = headersExpected.map(def => String(sheet.getCell(rowNumber, def.col).value ?? '').trim());
-    const allBlank = values.every(v => !v);
-    if(allBlank) break;
-    const record = {};
-    headersExpected.forEach(def => {
-      const raw = sheet.getCell(rowNumber, def.col).value;
-      record[def.key] = raw?.result ?? raw ?? '';
-    });
-    rows.push(record);
-    rowNumber++;
-  }
-  return rows;
-}
-
-function parseImportSections(sheet){
-  const sections = [];
-  let row = 1;
-  while(row <= sheet.rowCount){
-    const title = String(sheet.getCell(`A${row}`).value || '').trim();
-    if(title && row >= 4){
-      const headerRow = sheet.getRow(row + 1);
-      const headers = [];
-      let col = 1;
-      while(col <= 20){
-        const header = String(headerRow.getCell(col).value || '').trim().toLowerCase();
-        if(!header) break;
-        headers[col] = header;
-        col++;
-      }
-      if(headers.filter(Boolean).length){
-        const records = [];
-        let dataRow = row + 2;
-        while(dataRow <= sheet.rowCount){
-          const currentRow = sheet.getRow(dataRow);
-          const firstCell = String(currentRow.getCell(1).value || '').trim();
-          const secondCell = String(currentRow.getCell(2).value || '').trim();
-          if(!firstCell && !secondCell) break;
-          const record = {};
-          headers.forEach((header, idx) => {
-            if(!header) return;
-            const raw = currentRow.getCell(idx).value;
-            record[header] = raw?.result ?? raw ?? '';
-          });
-          records.push(record);
-          dataRow++;
-        }
-        sections.push({ title: title.toLowerCase(), records });
-        row = dataRow + 1;
-        continue;
-      }
-    }
-    row++;
-  }
-  return sections;
-}
-
-function textKey(value){
-  return String(value || '').trim().toLowerCase();
-}
-
-function sameDateText(a,b){
-  return textKey(a) === textKey(b);
-}
-
-function existsExpenseLike(collection, item){
-  return collection.some(g =>
-    textKey(g.desc) === textKey(item.desc) &&
-    textKey(g.cat) === textKey(item.cat) &&
-    Number(g.dia) === Number(item.dia) &&
-    textKey(g.tipo) === textKey(item.tipo) &&
-    Number(g.monto) === Number(item.monto) &&
-    Number(g.mes) === Number(item.mes) &&
-    Number(g.anio ?? curY) === Number(item.anio)
-  );
-}
-
-function existsAdditionalLike(collection, item){
-  return collection.some(x =>
-    textKey(x.desc) === textKey(item.desc) &&
-    Number(x.monto) === Number(item.monto) &&
-    Number(x.mes) === Number(item.mes) &&
-    Number(x.anio ?? curY) === Number(item.anio)
-  );
-}
-
-function existsLoanLike(collection, item){
-  return collection.some(p =>
-    textKey(p.tipo) === textKey(item.tipo) &&
-    textKey(p.persona) === textKey(item.persona) &&
-    textKey(p.desc) === textKey(item.desc) &&
-    Number(p.montoTotal) === Number(item.montoTotal) &&
-    sameDateText(p.fecha || '', item.fecha || '') &&
-    sameDateText(p.vencimiento || '', item.vencimiento || '')
-  );
-}
-
-function existsLoanPaymentLike(historial, item){
-  return historial.some(h =>
-    Number(h.monto) === Number(item.monto) &&
-    Number(typeof h.mes === 'number' ? h.mes : parseMonthValue(h.mes)) === Number(item.mes) &&
-    textKey(h.impacto || 'ninguno') === textKey(item.impacto || 'ninguno') &&
-    textKey(h.nota || '') === textKey(item.nota || '') &&
-    sameDateText((h.fecha || '').slice(0,10), item.fecha || '')
-  );
-}
-
-function existsCategoryLike(collection, name){
-  return collection.some(c => textKey(c) === textKey(name));
-}
-
-function ensureCategory(value){
-  const raw = String(value || '').trim();
-  if(!raw) return 'Personal';
-  const existing = (state.categorias || []).find(c => textKey(c) === textKey(raw));
-  if(existing) return existing;
-  state.categorias = state.categorias || [];
-  state.categorias.push(raw);
-  return raw;
-}
-
-function normalizeExpenseType(value){
-  const txt = textKey(value);
-  if(['cuotas','cuota'].includes(txt)) return 'cuotas';
-  if(['recurrente','fijo','mensual'].includes(txt)) return 'recurrente';
-  if(['unico','único','solo este mes','un solo mes'].includes(txt)) return 'unico';
-  return 'unico';
-}
-
-function parseMonthValue(value){
-  if(typeof value === 'number' && value >= 0 && value <= 11) return value;
-  const num = Number(value);
-  if(Number.isFinite(num) && num >= 0 && num <= 11) return num;
-  const txt = String(value || '').trim().toLowerCase();
-  if(!txt) return curM;
-  const idxLong = MS.findIndex(m => m.toLowerCase() === txt);
-  if(idxLong >= 0) return idxLong;
-  const idxShort = MSH.findIndex(m => m.toLowerCase() === txt);
-  if(idxShort >= 0) return idxShort;
-  return curM;
-}
-
-function parseYearValue(value){
-  const y = parseInt(value, 10);
-  if(Number.isNaN(y)) return curY;
-  return Math.min(2100, Math.max(2000, y));
-}
-
-async function exportExcel(){
-  if(typeof ExcelJS === 'undefined' || typeof saveAs === 'undefined'){
-    alert('No se pudieron cargar las librerías de Excel.');
-    return;
-  }
-
-  const sueldoBase=parseFloat(document.getElementById('sueldo').value)||0;
-  const extras=extrasDelMes();
-  const totalExtra=totalExtras();
-  const ingresos=totalIngresos();
-  const gastosActivos=active();
-  const gastosVisibles=getFilteredActiveExpenses();
-  const totalGastos=total();
-  const disponible=ingresos-totalGastos;
-  const pct=ingresos>0?(totalGastos/ingresos):0;
-  const cuotasActivas=state.gastos.filter(g=>g.tipo==='cuotas' && (g.anio ?? curY)===curY && g.cuotaAct<=g.cuotas && g.mes<=curM);
-  const categoriasResumen=getDashboardCategorySummary();
-  const notas=(state.anotaciones||[]);
-  const loans=getVisibleLoans();
-
-  const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'ChatGPT';
-  workbook.created = new Date();
-  workbook.modified = new Date();
-
-  const moneyFmt = '"S/" #,##0.00';
-  const pctFmt = '0.00%';
-  const thinBorder = { top:{style:'thin',color:{argb:'FFE4E8F0'}}, left:{style:'thin',color:{argb:'FFE4E8F0'}}, bottom:{style:'thin',color:{argb:'FFE4E8F0'}}, right:{style:'thin',color:{argb:'FFE4E8F0'}} };
-
-  function fill(cell, argb){ cell.fill = { type:'pattern', pattern:'solid', fgColor:{ argb } }; }
-  function styleTableHeader(row, argb='FF3F6FD8'){
-    row.font = { bold:true, color:{argb:'FFFFFFFF'} };
-    row.alignment = { vertical:'middle', horizontal:'center' };
-    row.eachCell(c => { fill(c,argb); c.border = thinBorder; });
-  }
-  function styleBodyRow(row){ row.eachCell(c => { c.border = thinBorder; c.alignment = { vertical:'middle', horizontal:'left' }; }); }
-  function setCurrency(cell){ cell.numFmt = moneyFmt; }
-
-  const ws = workbook.addWorksheet('Dashboard', { views:[{ state:'frozen', ySplit:3, xSplit:0 }] });
-  ws.columns = Array.from({length:14}, (_,i)=>({ width: i===5 ? 4 : 18 }));
-  ws.properties.defaultRowHeight = 22;
-
-  ws.mergeCells('A1:H1');
-  ws.getCell('A1').value = 'Mis Finanzas';
-  ws.getCell('A1').font = { bold:true, size:18, color:{argb:'FF182033'} };
-  ws.getCell('A1').alignment = { vertical:'middle', horizontal:'left' };
-
-  ws.mergeCells('A2:C2');
-  ws.getCell('A2').value = `Dashboard · ${excelPeriodText(curM, curY)}`;
-  ws.getCell('A2').font = { size:11, color:{argb:'FF5F6B85'} };
-
-  ws.getCell('J1').value = 'Año'; ws.getCell('J2').value = curY;
-  ws.getCell('K1').value = 'Mes'; ws.getCell('K2').value = excelMonthName(curM);
-  ws.getCell('L1').value = 'Sueldo base'; ws.getCell('L2').value = sueldoBase; setCurrency(ws.getCell('L2'));
-  ['J1','K1','L1'].forEach(ref => { ws.getCell(ref).font={bold:true,size:11,color:{argb:'FF5F6B85'}}; });
-  ['J2','K2','L2'].forEach(ref => { ws.getCell(ref).font={bold:true,size:12,color:{argb:'FF182033'}}; ws.getCell(ref).border=thinBorder; fill(ws.getCell(ref),'FFFFFFFF'); });
-
-  const cards = [
-    { title:'Sueldo base', value:sueldoBase, color:'FFEEFaf4', text:'FF1F6F50', range:['A4','B5'] },
-    { title:'Adicionales', value:totalExtra, color:'FFEEF3FF', text:'FF244CAA', range:['C4','D5'] },
-    { title:'Total ingresos', value:ingresos, color:'FFEEFaf4', text:'FF1F6F50', range:['E4','F5'] },
-    { title:'Total gastos', value:totalGastos, color:'FFFFF3F3', text:'FFDC5A5A', range:['G4','H5'] },
-    { title:'Te queda', value:disponible, color:disponible>=0?'FFEEF3FF':'FFFFF3F3', text:disponible>=0?'FF244CAA':'FFDC5A5A', range:['J4','L5'] }
-  ];
-
-  cards.forEach(card => {
-    const [from,to] = card.range;
-    ws.mergeCells(`${from}:${to}`);
-    const topLeft = ws.getCell(from);
-    topLeft.value = `${card.title}
-${typeof card.value === 'number' ? new Intl.NumberFormat('es-PE',{style:'currency',currency:'PEN'}).format(card.value) : card.value}`;
-    topLeft.font = { bold:true, size:14, color:{argb:card.text} };
-    topLeft.alignment = { vertical:'middle', horizontal:'center', wrapText:true };
-    fill(topLeft, card.color);
-    const master = ws.getCell(from);
-    master.border = { top:{style:'thin',color:{argb:'FFE4E8F0'}}, left:{style:'thin',color:{argb:'FFE4E8F0'}}, bottom:{style:'thin',color:{argb:'FFE4E8F0'}}, right:{style:'thin',color:{argb:'FFE4E8F0'}} };
-  });
-
-  ws.mergeCells('A7:F7'); ws.getCell('A7').value='Resumen de mis gastos'; ws.getCell('A7').font={bold:true,size:12};
-  ws.mergeCells('A8:F8'); ws.getCell('A8').value=pct; ws.getCell('A8').numFmt=pctFmt; ws.getCell('A8').font={bold:true,size:16,color:{argb:pct>=1?'FFDC5A5A':'FF3F6FD8'}}; ws.getCell('A8').alignment={horizontal:'center'};
-  ws.mergeCells('A9:F9'); ws.getCell('A9').value=`${new Intl.NumberFormat('es-PE',{style:'currency',currency:'PEN'}).format(totalGastos)} gastado · ${disponible >= 0 ? new Intl.NumberFormat('es-PE',{style:'currency',currency:'PEN'}).format(disponible)+' disponible' : 'Te pasaste '+new Intl.NumberFormat('es-PE',{style:'currency',currency:'PEN'}).format(Math.abs(disponible))}`;
-  ws.getCell('A9').alignment={horizontal:'center'}; ws.getCell('A9').font={size:11,color:{argb:'FF5F6B85'}};
-
-  function makeProgressBarDataUrl(percent){
-    const width=520, height=24;
-    const c=document.createElement('canvas'); c.width=width; c.height=height;
-    const ctx=c.getContext('2d');
-    ctx.fillStyle='#eef2f7'; ctx.beginPath(); ctx.roundRect(0,0,width,height,12); ctx.fill();
-    const fillWidth = Math.max(0, Math.min(1, percent))*width;
-    ctx.fillStyle = percent >= 1 ? '#dc5a5a' : percent >= .8 ? '#d4a63f' : '#2f9e6f';
-    ctx.beginPath(); ctx.roundRect(0,0,fillWidth,height,12); ctx.fill();
-    return c.toDataURL('image/png');
-  }
-  const progressImageId = workbook.addImage({ base64: makeProgressBarDataUrl(pct), extension:'png' });
-  ws.addImage(progressImageId, 'A10:F11');
-
-  ws.mergeCells('H7:L7'); ws.getCell('H7').value='Distribución por categoría'; ws.getCell('H7').font={bold:true,size:12};
-  const donutCanvas=document.getElementById('donut');
-  if(donutCanvas){
-    const donutImageId=workbook.addImage({ base64: donutCanvas.toDataURL('image/png'), extension:'png' });
-    ws.addImage(donutImageId, { tl:{ col:7.2, row:7.6 }, ext:{ width:220, height:220 } });
-  }
-  ws.getCell('K15').value='Categoría'; ws.getCell('L15').value='%'; ws.getCell('M15').value='Monto';
-  styleTableHeader(ws.getRow(15));
-  (categoriasResumen.length ? categoriasResumen : [{categoria:'Sin datos',porcentaje:0,monto:0}]).forEach((item, idx) => {
-    const row = ws.getRow(16+idx);
-    row.getCell(11).value=item.categoria;
-    row.getCell(12).value=item.porcentaje/100; row.getCell(12).numFmt=pctFmt;
-    row.getCell(13).value=item.monto; setCurrency(row.getCell(13));
-    styleBodyRow(row);
-  });
-
-  ws.getCell('A14').value='Lista de gastos'; ws.getCell('A14').font={bold:true,size:12};
-  ['Descripción','Categoría','Día','Tipo','Monto','Mes','Año'].forEach((v,i)=>ws.getCell(15,1+i).value=v);
-  styleTableHeader(ws.getRow(15));
-  (gastosVisibles.length ? gastosVisibles : [{desc:'Sin datos',cat:'',dia:'',tipo:'',monto:0,mes:curM,anio:curY}]).forEach((g, idx) => {
-    const row = ws.getRow(16+idx);
-    row.getCell(1).value=g.desc; row.getCell(2).value=g.cat; row.getCell(3).value=g.dia; row.getCell(4).value=g.tipo;
-    row.getCell(5).value=g.monto; setCurrency(row.getCell(5)); row.getCell(6).value=excelMonthName(g.mes); row.getCell(7).value=g.anio ?? curY;
-    styleBodyRow(row);
-  });
-
-  const startComp = Math.max(26, 18 + Math.max(gastosVisibles.length, categoriasResumen.length));
-  ws.getCell(`A${startComp}`).value='Compromisos'; ws.getCell(`A${startComp}`).font={bold:true,size:12};
-  ws.getCell(`A${startComp+1}`).value='Cuotas activas'; ws.getCell(`B${startComp+1}`).value=cuotasActivas.reduce((s,g)=>s+g.monto,0); setCurrency(ws.getCell(`B${startComp+1}`));
-  ws.getCell(`D${startComp+1}`).value='Me deben'; ws.getCell(`E${startComp+1}`).value=loans.cobrar.reduce((s,p)=>s+prestamoSaldo(p),0); setCurrency(ws.getCell(`E${startComp+1}`));
-  ws.getCell(`G${startComp+1}`).value='Debo'; ws.getCell(`H${startComp+1}`).value=loans.pagar.reduce((s,p)=>s+prestamoSaldo(p),0); setCurrency(ws.getCell(`H${startComp+1}`));
-  ['A','D','G'].forEach(col => ws.getCell(`${col}${startComp+1}`).font={bold:true,color:{argb:'FF5F6B85'}});
-
-  ['Descripción','Categoría','Monto','Cuota actual','Total cuotas'].forEach((v,i)=>ws.getCell(startComp+3,1+i).value=v);
-  styleTableHeader(ws.getRow(startComp+3), 'FFB7791F');
-  (cuotasActivas.length ? cuotasActivas.slice(0,10) : [{desc:'Sin datos',cat:'',monto:0,cuotaAct:'',cuotas:''}]).forEach((g,idx)=>{
-    const row=ws.getRow(startComp+4+idx);
-    row.getCell(1).value=g.desc; row.getCell(2).value=g.cat; row.getCell(3).value=g.monto; setCurrency(row.getCell(3)); row.getCell(4).value=g.cuotaAct; row.getCell(5).value=g.cuotas; styleBodyRow(row);
-  });
-
-  const startLoans = startComp + 16;
-  ws.getCell(`A${startLoans}`).value='Préstamos'; ws.getCell(`A${startLoans}`).font={bold:true,size:12};
-  ['Tipo','Persona','Descripción','Saldo','Fecha','Vencimiento'].forEach((v,i)=>ws.getCell(startLoans+1,1+i).value=v);
-  styleTableHeader(ws.getRow(startLoans+1));
-  ((state.prestamos||[]).length ? (state.prestamos||[]).slice(0,12) : [{tipo:'',persona:'Sin datos',desc:'',montoTotal:0,montoPagado:0,fecha:'',vencimiento:''}]).forEach((p,idx)=>{
-    const row=ws.getRow(startLoans+2+idx);
-    row.getCell(1).value=p.tipo; row.getCell(2).value=p.persona; row.getCell(3).value=p.desc; row.getCell(4).value=prestamoSaldo(p); setCurrency(row.getCell(4)); row.getCell(5).value=p.fecha || ''; row.getCell(6).value=p.vencimiento || ''; styleBodyRow(row);
-  });
-
-  const startNotes = startLoans + 16;
-  ws.getCell(`A${startNotes}`).value='Anotaciones'; ws.getCell(`A${startNotes}`).font={bold:true,size:12};
-  ws.getCell(`A${startNotes+1}`).value='Total anotado'; ws.getCell(`B${startNotes+1}`).value=notas.reduce((s,n)=>s+n.monto,0); setCurrency(ws.getCell(`B${startNotes+1}`));
-  ['Descripción','Categoría','Monto','Día','Tipo'].forEach((v,i)=>ws.getCell(startNotes+3,1+i).value=v);
-  styleTableHeader(ws.getRow(startNotes+3), 'FF3F6FD8');
-  (notas.length ? notas.slice(0,10) : [{desc:'Sin datos',cat:'',monto:0,dia:'',tipo:''}]).forEach((n,idx)=>{
-    const row=ws.getRow(startNotes+4+idx);
-    row.getCell(1).value=n.desc; row.getCell(2).value=n.cat; row.getCell(3).value=n.monto; setCurrency(row.getCell(3)); row.getCell(4).value=n.dia; row.getCell(5).value=n.tipo; styleBodyRow(row);
-  });
-
-    function addHiddenJsonSheet(name, rows){
-    const hidden = workbook.addWorksheet(name);
-    if(rows.length){
-      hidden.addRow(Object.keys(rows[0]));
-      styleTableHeader(hidden.getRow(1), 'FF3F6FD8');
-      rows.forEach(r => hidden.addRow(Object.keys(rows[0]).map(k => r[k])));
-    } else {
-      hidden.addRow(['sin_datos']);
-    }
-    hidden.state = 'veryHidden';
-    return hidden;
-  }
-
-  addHiddenJsonSheet('config_data', [{ clave:'anio_actual', valor:curY }, { clave:'mes_actual', valor:curM }, { clave:'sueldo_base', valor:sueldoBase }]);
-  addHiddenJsonSheet('gastos_data', (state.gastos||[]).map(g => ({ id:g.id, descripcion:g.desc, categoria:g.cat, dia_pago:g.dia, tipo:g.tipo, monto:g.monto, mes:g.mes, anio:g.anio ?? curY, origen_mes:g.origenMes, origen_anio:g.origenAnio ?? (g.anio ?? curY), cuota_actual:g.cuotaAct, total_cuotas:g.cuotas })));
-  addHiddenJsonSheet('adicionales_data', (state.ingresosExtra||[]).map(x => ({ id:x.id, descripcion:x.desc, monto:x.monto, mes:x.mes, anio:x.anio ?? curY })));
-  addHiddenJsonSheet('anotaciones_data', (state.anotaciones||[]).map(n => ({ id:n.id, descripcion:n.desc, categoria:n.cat, dia:n.dia, tipo:n.tipo, monto:n.monto, creado_mes:n.creadoMes ?? curM, creado_anio:n.creadoAnio ?? curY, cuota_actual:n.cuotaAct ?? 1, total_cuotas:n.cuotas ?? 0 })));
-  addHiddenJsonSheet('cuotas_data', cuotasActivas.map(g => ({ id:g.id, descripcion:g.desc, categoria:g.cat, monto:g.monto, cuota_actual:g.cuotaAct, total_cuotas:g.cuotas, dia_pago:g.dia, mes:g.mes, anio:g.anio ?? curY })));
-  addHiddenJsonSheet('prestamos_data', (state.prestamos||[]).map(p => ({ prestamo_id:p.id, tipo:p.tipo, persona:p.persona, descripcion:p.desc, monto_total:p.montoTotal, monto_pagado:p.montoPagado, fecha:p.fecha || '', vencimiento:p.vencimiento || '', notas:p.notas || '' })));
-  addHiddenJsonSheet('abonos_prestamos_data', (state.prestamos||[]).flatMap(p => (p.historial||[]).map(h => ({ prestamo_id:p.id, abono_id:h.id, fecha_abono:h.fecha || '', mes:h.mes, monto:h.monto, impacto:h.impacto || '', nota:h.nota || '' }))));
-    addHiddenJsonSheet('categorias_data', (state.categorias||[]).map(c => ({ nombre_categoria:c, estado:'activo' })));
-
-  const wsImport = workbook.addWorksheet('Importar', { views:[{ state:'frozen', ySplit:3, xSplit:0 }] });
-  wsImport.columns = Array.from({length:12}, ()=>({ width:18 }));
-  wsImport.properties.defaultRowHeight = 22;
-
-  wsImport.mergeCells('A1:F1');
-  wsImport.getCell('A1').value='Importación a la web';
-  wsImport.getCell('A1').font={ bold:true, size:18, color:{argb:'FF182033'} };
-  wsImport.getCell('A2').value='Esta hoja contiene la data exportada de cada sección. Puedes editarla y reimportarla. Para filas nuevas o modificadas, usa IMPORTAR = SI.';
-  wsImport.getCell('A2').font={ size:11, color:{argb:'FF5F6B85'} };
-
-  const importSections = [
-    {
-      title:'Gastos', startRow:4,
-      headers:['importar','descripcion','categoria','dia_pago','tipo','monto','mes','anio','cuota_actual','total_cuotas'],
-      rows:(state.gastos||[]).map(g => ['NO', g.desc, g.cat, g.dia, g.tipo, g.monto, excelMonthName(g.mes), g.anio ?? curY, g.tipo==='cuotas' ? g.cuotaAct : '', g.tipo==='cuotas' ? g.cuotas : ''])
-    },
-    {
-      title:'Adicionales', startRow:0,
-      headers:['importar','descripcion','monto','mes','anio'],
-      rows:(state.ingresosExtra||[]).map(x => ['NO', x.desc, x.monto, excelMonthName(x.mes), x.anio ?? curY])
-    },
-    {
-      title:'Anotaciones', startRow:0,
-      headers:['importar','descripcion','categoria','dia_pago','tipo','monto','mes','anio','cuota_actual','total_cuotas'],
-      rows:(state.anotaciones||[]).map(n => ['NO', n.desc, n.cat, n.dia, n.tipo, n.monto, excelMonthName(n.creadoMes ?? curM), n.creadoAnio ?? curY, n.tipo==='cuotas' ? (n.cuotaAct ?? 1) : '', n.tipo==='cuotas' ? (n.cuotas ?? 0) : ''])
-    },
-    {
-      title:'Préstamos', startRow:0,
-      headers:['importar','tipo','persona','descripcion','monto_total','monto_pagado','fecha','vencimiento','notas'],
-      rows:(state.prestamos||[]).map(p => ['NO', p.tipo, p.persona, p.desc, p.montoTotal, p.montoPagado || 0, p.fecha || '', p.vencimiento || '', p.notas || ''])
-    },
-    {
-      title:'Abonos de préstamos', startRow:0,
-      headers:['importar','prestamo_id','tipo_prestamo','persona','descripcion_prestamo','fecha_abono','mes','anio','monto','impacto','nota'],
-      rows:(state.prestamos||[]).flatMap(p => (p.historial||[]).map(h => ['NO', p.id, p.tipo, p.persona, p.desc, h.fecha ? new Date(h.fecha).toISOString().slice(0,10) : '', excelMonthName(typeof h.mes==='number' ? h.mes : curM), h.fecha ? new Date(h.fecha).getFullYear() : curY, h.monto || 0, h.impacto || 'ninguno', h.nota || '']))
-    },
-    {
-      title:'Categorías', startRow:0,
-      headers:['importar','nombre_categoria'],
-      rows:(state.categorias||[]).map(c => ['NO', c])
-    }
-  ];
-
-  let currentRow = 4;
-  importSections.forEach(section => {
-    wsImport.getCell(`A${currentRow}`).value=section.title;
-    wsImport.getCell(`A${currentRow}`).font={bold:true,size:12,color:{argb:'FF182033'}};
-    section.headers.forEach((h,i)=>wsImport.getCell(currentRow+1,1+i).value=h);
-    styleTableHeader(wsImport.getRow(currentRow+1), 'FF3F6FD8');
-
-    const rows = section.rows.length ? section.rows : [new Array(section.headers.length).fill('')];
-    rows.forEach((vals, idx) => {
-      const row = wsImport.getRow(currentRow+2+idx);
-      vals.forEach((v,i)=>row.getCell(1+i).value=v);
-      styleBodyRow(row);
-    });
-
-    currentRow += rows.length + 4;
-  });
-
-  const buffer = await workbook.xlsx.writeBuffer();
-  saveAs(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `mis_finanzas_${MSH[curM].toLowerCase()}_${curY}.xlsx`);
-}
-
-async function handleExcelImport(event){
-  const file = event.target.files?.[0];
-  if(!file) return;
-  if(typeof ExcelJS === 'undefined'){
-    alert('No se pudo cargar la librería de Excel.');
-    return;
-  }
-
-  try{
-    const buffer = await file.arrayBuffer();
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(buffer);
-
-    const gastosData = readStructuredSheet(workbook, 'gastos_data');
-    const adicionalesData = readStructuredSheet(workbook, 'adicionales_data');
-    const anotacionesData = readStructuredSheet(workbook, 'anotaciones_data');
-    const prestamosData = readStructuredSheet(workbook, 'prestamos_data');
-    const abonosData = readStructuredSheet(workbook, 'abonos_prestamos_data');
-    const categoriasData = readStructuredSheet(workbook, 'categorias_data');
-    const configData = readStructuredSheet(workbook, 'config_data');
-
-    const importSheet = workbook.getWorksheet('Importar');
-    const importSections = importSheet ? parseImportSections(importSheet) : [];
-    const hasImportMarks = importSections.some(section => section.records.some(r => textKey(r.importar) === 'si'));
-
-    if(categoriasData.length){
-      state.categorias = categoriasData.map(x => String(x.nombre_categoria || '').trim()).filter(Boolean);
-    }
-
-    if(configData.length){
-      const yearCfg = configData.find(x => String(x.clave).trim() === 'anio_actual');
-      const monthCfg = configData.find(x => String(x.clave).trim() === 'mes_actual');
-      const sueldoCfg = configData.find(x => String(x.clave).trim() === 'sueldo_base');
-      if(yearCfg) curY = parseYearValue(yearCfg.valor);
-      if(monthCfg) curM = parseMonthValue(Number(monthCfg.valor));
-      if(sueldoCfg) document.getElementById('sueldo').value = Number(sueldoCfg.valor || 0);
-    }
-
-    let importedSomething = false;
-
-    if(!hasImportMarks && (gastosData.length || adicionalesData.length || anotacionesData.length || prestamosData.length || abonosData.length)){
-      if(gastosData.length){
-        state.gastos = gastosData.map((g, idx) => ({
-          id: Number(g.id || idx + 1),
-          desc: String(g.descripcion || '').trim(),
-          cat: ensureCategory(g.categoria),
-          dia: parseInt(g.dia_pago, 10) || 1,
-          tipo: normalizeExpenseType(g.tipo),
-          monto: Number(g.monto || 0),
-          mes: parseMonthValue(Number.isFinite(Number(g.mes)) ? Number(g.mes) : g.mes),
-          anio: parseYearValue(g.anio),
-          origenMes: parseMonthValue(Number.isFinite(Number(g.origen_mes)) ? Number(g.origen_mes) : g.origen_mes),
-          origenAnio: parseYearValue(g.origen_anio),
-          cuotaAct: parseInt(g.cuota_actual, 10) || 1,
-          cuotas: parseInt(g.total_cuotas, 10) || 0
-        })).filter(g => g.desc && g.monto > 0);
-        nid = Math.max(...state.gastos.map(g => g.id), 49) + 1;
-        importedSomething = true;
-      }
-
-      if(adicionalesData.length){
-        state.ingresosExtra = adicionalesData.map((x, idx) => ({
-          id: Number(x.id || idx + 1),
-          desc: String(x.descripcion || '').trim(),
-          monto: Number(x.monto || 0),
-          mes: parseMonthValue(Number.isFinite(Number(x.mes)) ? Number(x.mes) : x.mes),
-          anio: parseYearValue(x.anio)
-        })).filter(x => x.desc && x.monto > 0);
-        importedSomething = true;
-      }
-
-      if(anotacionesData.length){
-        state.anotaciones = anotacionesData.map((n, idx) => ({
-          id: Number(n.id || idx + 1),
-          desc: String(n.descripcion || '').trim(),
-          cat: ensureCategory(n.categoria),
-          dia: parseInt(n.dia, 10) || 1,
-          tipo: normalizeExpenseType(n.tipo),
-          monto: Number(n.monto || 0),
-          creadoMes: parseMonthValue(Number.isFinite(Number(n.creado_mes)) ? Number(n.creado_mes) : n.creado_mes),
-          creadoAnio: parseYearValue(n.creado_anio),
-          cuotaAct: parseInt(n.cuota_actual, 10) || 1,
-          cuotas: parseInt(n.total_cuotas, 10) || 0
-        })).filter(n => n.desc && n.monto > 0);
-        importedSomething = true;
-      }
-
-      if(prestamosData.length){
-        state.prestamos = prestamosData.map((p, idx) => ({
-          id: Number(p.prestamo_id || idx + 1),
-          tipo: String(p.tipo || '').trim(),
-          persona: String(p.persona || '').trim(),
-          desc: String(p.descripcion || '').trim(),
-          montoTotal: Number(p.monto_total || 0),
-          montoPagado: Number(p.monto_pagado || 0),
-          fecha: String(p.fecha || '').trim(),
-          vencimiento: String(p.vencimiento || '').trim(),
-          notas: String(p.notas || '').trim(),
-          historial: []
-        })).filter(p => p.tipo && p.persona && p.desc && p.montoTotal > 0);
-        importedSomething = true;
-      }
-
-      if(abonosData.length && state.prestamos.length){
-        abonosData.forEach(a => {
-          const prestamo = state.prestamos.find(p => p.id === Number(a.prestamo_id));
-          if(!prestamo) return;
-          prestamo.historial = prestamo.historial || [];
-          prestamo.historial.push({
-            id: Number(a.abono_id || (prestamo.historial.length + 1)),
-            fecha: String(a.fecha_abono || '').trim() || new Date().toISOString(),
-            mes: parseMonthValue(Number.isFinite(Number(a.mes)) ? Number(a.mes) : a.mes),
-            monto: Number(a.monto || 0),
-            impacto: String(a.impacto || 'ninguno').trim() || 'ninguno',
-            nota: String(a.nota || '').trim(),
-            linkedType: null,
-            linkedId: null
-          });
-        });
-        importedSomething = true;
-      }
-
-      if(importedSomething){
-        save();
-        updateAll();
-        toast('Se importó la información estructurada del Excel');
-        return;
-      }
-    }
-
-    if(importSheet) {
-      const sections = importSections;
-      let nuevos = 0;
-
-      const gastosSection = sections.find(s => s.title === 'gastos');
-      if(gastosSection){
-        gastosSection.records
-          .filter(r => textKey(r.importar) === 'si')
-          .forEach(record => {
-            const item = {
-              desc: String(record.descripcion || '').trim(),
-              cat: ensureCategory(record.categoria),
-              dia: parseInt(record.dia_pago, 10) || 1,
-              tipo: normalizeExpenseType(record.tipo),
-              monto: Number(record.monto || 0),
-              mes: parseMonthValue(record.mes),
-              anio: parseYearValue(record.anio),
-              cuotaAct: textKey(record.tipo) === 'cuotas' ? (parseInt(record.cuota_actual, 10) || 1) : 1,
-              cuotas: textKey(record.tipo) === 'cuotas' ? (parseInt(record.total_cuotas, 10) || 1) : 0
-            };
-            if(!item.desc || item.monto <= 0) return;
-            if(existsExpenseLike(state.gastos, item)) return;
-            state.gastos.push({ id:nid++, ...item, origenMes:item.mes, origenAnio:item.anio });
-            nuevos++;
-          });
-      }
-
-      const adicionalesSection = sections.find(s => s.title === 'adicionales');
-      if(adicionalesSection){
-        adicionalesSection.records
-          .filter(r => textKey(r.importar) === 'si')
-          .forEach(record => {
-            const item = {
-              desc: String(record.descripcion || '').trim(),
-              monto: Number(record.monto || 0),
-              mes: parseMonthValue(record.mes),
-              anio: parseYearValue(record.anio)
-            };
-            if(!item.desc || item.monto <= 0) return;
-            if(existsAdditionalLike(state.ingresosExtra || [], item)) return;
-            const nextId=(state.ingresosExtra.reduce((max,x)=>Math.max(max,x.id||0),0))+1;
-            state.ingresosExtra.push({ id:nextId, ...item });
-            nuevos++;
-          });
-      }
-
-      const anotacionesSection = sections.find(s => s.title === 'anotaciones');
-      if(anotacionesSection){
-        anotacionesSection.records
-          .filter(r => textKey(r.importar) === 'si')
-          .forEach(record => {
-            const item = {
-              desc: String(record.descripcion || '').trim(),
-              cat: ensureCategory(record.categoria),
-              dia: parseInt(record.dia_pago, 10) || 1,
-              tipo: normalizeExpenseType(record.tipo),
-              monto: Number(record.monto || 0),
-              creadoMes: parseMonthValue(record.mes),
-              creadoAnio: parseYearValue(record.anio),
-              cuotaAct: textKey(record.tipo) === 'cuotas' ? (parseInt(record.cuota_actual, 10) || 1) : 1,
-              cuotas: textKey(record.tipo) === 'cuotas' ? (parseInt(record.total_cuotas, 10) || 1) : 0
-            };
-            if(!item.desc || item.monto <= 0) return;
-            const exists = (state.anotaciones || []).some(n =>
-              textKey(n.desc) === textKey(item.desc) &&
-              textKey(n.cat) === textKey(item.cat) &&
-              Number(n.dia) === Number(item.dia) &&
-              textKey(n.tipo) === textKey(item.tipo) &&
-              Number(n.monto) === Number(item.monto) &&
-              Number(n.creadoMes ?? curM) === Number(item.creadoMes) &&
-              Number(n.creadoAnio ?? curY) === Number(item.creadoAnio)
-            );
-            if(exists) return;
-            const nextId=(state.anotaciones.reduce((max,x)=>Math.max(max,x.id||0),0))+1;
-            state.anotaciones.push({ id:nextId, ...item });
-            nuevos++;
-          });
-      }
-
-      const prestamosSection = sections.find(s => s.title === 'préstamos' || s.title === 'prestamos');
-      if(prestamosSection){
-        prestamosSection.records
-          .filter(r => textKey(r.importar) === 'si')
-          .forEach(record => {
-            const item = {
-              tipo: String(record.tipo || '').trim(),
-              persona: String(record.persona || '').trim(),
-              desc: String(record.descripcion || '').trim(),
-              montoTotal: Number(record.monto_total || 0),
-              montoPagado: Number(record.monto_pagado || 0),
-              fecha: String(record.fecha || '').trim(),
-              vencimiento: String(record.vencimiento || '').trim(),
-              notas: String(record.notas || '').trim()
-            };
-            if(!item.tipo || !item.persona || !item.desc || item.montoTotal <= 0) return;
-            if(existsLoanLike(state.prestamos || [], item)) return;
-            const nextId=((state.prestamos||[]).reduce((max,x)=>Math.max(max,x.id||0),0))+1;
-            state.prestamos.push({ id:nextId, ...item, montoPagado:Math.min(Math.max(item.montoPagado,0),item.montoTotal), historial:[] });
-            nuevos++;
-          });
-      }
-
-      const abonosSection = sections.find(s => s.title === 'abonos de préstamos' || s.title === 'abonos de prestamos');
-      if(abonosSection){
-        abonosSection.records
-          .filter(r => textKey(r.importar) === 'si')
-          .forEach(record => {
-            const prestamoIdRaw = parseInt(record.prestamo_id, 10);
-            let prestamo = !Number.isNaN(prestamoIdRaw) ? (state.prestamos||[]).find(p => p.id === prestamoIdRaw) : null;
-            if(!prestamo){
-              prestamo = (state.prestamos || []).find(p =>
-                textKey(p.tipo) === textKey(record.tipo_prestamo) &&
-                textKey(p.persona) === textKey(record.persona) &&
-                textKey(p.desc) === textKey(record.descripcion_prestamo)
-              ) || null;
-            }
-            if(!prestamo) return;
-            const item = {
-              fecha: String(record.fecha_abono || '').trim(),
-              mes: parseMonthValue(record.mes),
-              monto: Number(record.monto || 0),
-              impacto: String(record.impacto || 'ninguno').trim() || 'ninguno',
-              nota: String(record.nota || '').trim()
-            };
-            if(item.monto <= 0) return;
-            if(existsLoanPaymentLike(prestamo.historial || [], item)) return;
-            const historialId=((prestamo.historial||[]).reduce((max,h)=>Math.max(max,h.id||0),0))+1;
-            prestamo.montoPagado = Math.min((prestamo.montoPagado || 0) + item.monto, prestamo.montoTotal || ((prestamo.montoPagado || 0) + item.monto));
-            prestamo.historial = prestamo.historial || [];
-            prestamo.historial.push({ id:historialId, fecha:item.fecha || new Date().toISOString(), mes:item.mes, monto:item.monto, impacto:item.impacto, nota:item.nota, linkedType:null, linkedId:null });
-            nuevos++;
-          });
-      }
-
-      const categoriasSection = sections.find(s => s.title === 'categorías' || s.title === 'categorias');
-      if(categoriasSection){
-        categoriasSection.records
-          .filter(r => textKey(r.importar) === 'si')
-          .forEach(record => {
-            const nombre = String(record.nombre_categoria || '').trim();
-            if(!nombre) return;
-            if(existsCategoryLike(state.categorias || [], nombre)) return;
-            state.categorias.push(nombre);
-            nuevos++;
-          });
-      }
-
-      if(nuevos){
-        save();
-        updateAll();
-        toast(`Se importaron ${nuevos} registro(s) desde la hoja Importar`);
-        return;
-      }
-    }
-
-    alert('No se encontró información importable en el Excel.');
-  } catch (error) {
-    console.error(error);
-    alert('No se pudo importar el Excel. Revisa que sea un archivo válido y con el formato esperado.');
-  }
-}
-
-function triggerExcelImport(){
-  const input = document.getElementById('excel-import');
-  if(!input) return;
-  input.value = '';
-  input.click();
-}
-
-function updateAll(){
-  rYears('ybtns1');
+function updateAll() {
+  syncYearInputs();
   rMonths('mbtns1');
+  rMonths('mbtns-cats');
+  fillCategorySelectors();
   updateInicio();
   renderGastos();
   renderNotes();
@@ -2617,8 +1103,1006 @@ function updateAll(){
   renderCats();
 }
 
-load();
-updateAll();
+function openModal() {
+  editMode = 'gasto';
+  editId = null;
+  document.getElementById('mh').textContent = 'Agregar gasto';
+  document.getElementById('fdesc').value = '';
+  document.getElementById('fmonto').value = '';
+  document.getElementById('fcatModal').value = state.categorias[0] || '';
+  document.getElementById('fdia').value = 15;
+  document.getElementById('ftipo').value = 'unico';
+  document.getElementById('fcuotas').value = '';
+  document.getElementById('fcuotaact').value = 1;
+  toggleQ();
+  showOverlay('overlay');
+}
+
+function closeModal() {
+  hideOverlay('overlay');
+  editId = null;
+}
+
+function openExtraModal() {
+  document.getElementById('extra-desc').value = '';
+  document.getElementById('extra-monto').value = '';
+  fillMonthOptions('extra-mes');
+  renderExtraList();
+  showOverlay('overlay-extra');
+}
+
+function closeExtraModal() {
+  hideOverlay('overlay-extra');
+}
+
+function openCarryModal() {
+  carrySelection = new Set();
+  document.getElementById('carry-summary').textContent = '';
+  refreshCarryList();
+  showOverlay('overlay-carry');
+}
+
+function closeCarryModal() {
+  hideOverlay('overlay-carry');
+}
+
+function refreshCarryList() {
+  const carryContainer = document.getElementById('carry-list');
+  if (!carryContainer) return;
+  const items = active();
+  if (!items.length) {
+    carryContainer.innerHTML = '<div class="p-4 text-sm text-text2">No hay gastos activos para copiar.</div>';
+    document.getElementById('carry-summary').textContent = '';
+    return;
+  }
+  carryContainer.innerHTML = items.map(g => {
+    const activeClass = carrySelection.has(g.id) ? 'bg-accent/10 border-accent' : 'bg-white border-borderc';
+    return `<label class="group mb-2 flex cursor-pointer items-center justify-between rounded-lg border px-3 py-3 transition ${activeClass}"><span><strong>${g.desc}</strong> · ${g.cat}<br><span class="text-[12px] text-text3">${MS[g.mes]} ${g.anio} · ${g.tipo}</span></span><input type="checkbox" ${carrySelection.has(g.id) ? 'checked' : ''} onchange="toggleCarryItem(${g.id})"></label>`;
+  }).join('');
+  updateCarrySummary();
+}
+
+function toggleCarryItem(id) {
+  if (carrySelection.has(id)) carrySelection.delete(id);
+  else carrySelection.add(id);
+  refreshCarryList();
+}
+
+function updateCarrySummary() {
+  const selected = Array.from(carrySelection).map(id => state.gastos.find(g => g.id === id)).filter(Boolean);
+  const total = selected.reduce((sum, g) => sum + g.monto, 0);
+  const months = selected.length ? selected.map(g => `${MS[g.mes]} ${g.anio}`) : [];
+  document.getElementById('carry-summary').textContent = selected.length ? `${selected.length} gasto(s) seleccionados · Total ${fmt(total)}` : 'Selecciona gastos para copiar al siguiente mes.';
+}
+
+function markCarryByMode(mode) {
+  carrySelection = new Set();
+  active().forEach(g => {
+    if (mode === 'all') carrySelection.add(g.id);
+    if (mode === 'recurrente' && g.tipo === 'recurrente') carrySelection.add(g.id);
+    if (mode === 'cuotas' && g.tipo === 'cuotas') carrySelection.add(g.id);
+  });
+  refreshCarryList();
+}
+
+function clearCarrySelection() {
+  carrySelection = new Set();
+  refreshCarryList();
+}
+
+async function carrySelectedExpenses() {
+  if (!currentUser) { alert('Primero inicia sesión.'); return; }
+  const selected = Array.from(carrySelection).map(id => state.gastos.find(g => g.id === id)).filter(Boolean);
+  if (!selected.length) { alert('Selecciona al menos un gasto.'); return; }
+  const nextM = curM === 11 ? 0 : curM + 1;
+  const nextY = curM === 11 ? curY + 1 : curY;
+  const payloads = selected.map(g => ({
+    user_id: currentUser.id,
+    descripcion: g.desc,
+    categoria: g.cat,
+    dia_pago: g.dia,
+    tipo: g.tipo,
+    monto: g.monto,
+    mes: nextM,
+    anio: nextY,
+    origen_mes: g.mes,
+    origen_anio: g.anio,
+    cuota_actual: g.cuotaAct,
+    total_cuotas: g.cuotas
+  }));
+  const { error } = await supabaseClient.from('gastos').insert(payloads);
+  if (error) { alert(error.message); return; }
+  await loadCloudData();
+  updateAll();
+  closeCarryModal();
+  toast('Gastos copiados al siguiente mes');
+}
+
+function toggleQ() {
+  const tipo = document.getElementById('ftipo').value;
+  document.getElementById('qfields').classList.toggle('hidden', tipo !== 'cuotas');
+}
+
+function openNoteModal() {
+  editingNoteId = null;
+  document.getElementById('note-mh').textContent = 'Agregar anotación';
+  document.getElementById('note-desc').value = '';
+  document.getElementById('note-monto').value = '';
+  document.getElementById('note-cat').value = state.categorias[0] || '';
+  document.getElementById('note-dia').value = 15;
+  document.getElementById('note-tipo').value = 'unico';
+  document.getElementById('note-cuotas').value = '';
+  document.getElementById('note-cuotaact').value = 1;
+  toggleNoteQ();
+  showOverlay('overlay-note');
+}
+
+function closeNoteModal() {
+  hideOverlay('overlay-note');
+  editingNoteId = null;
+}
+
+function toggleNoteQ() {
+  const tipo = document.getElementById('note-tipo').value;
+  document.getElementById('note-qfields').classList.toggle('hidden', tipo !== 'cuotas');
+}
+
+function openNoteMoveModal(id) {
+  movingNoteId = id;
+  const note = state.anotaciones.find(n => n.id === id);
+  if (!note) return;
+  document.getElementById('note-move-title').textContent = `Enviar "${note.desc}" a un mes`;
+  fillMonthOptions('note-move-month');
+  document.getElementById('note-move-action').value = 'move';
+  showOverlay('overlay-note-move');
+}
+
+function closeNoteMoveModal() {
+  hideOverlay('overlay-note-move');
+  movingNoteId = null;
+}
+
+function openBulkMoveNotesModal() {
+  noteBulkSelection = new Set();
+  fillMonthOptions('bulk-note-month');
+  document.getElementById('bulk-note-action').value = 'move';
+  renderBulkNoteList();
+  showOverlay('overlay-note-bulk');
+}
+
+function closeBulkMoveNotesModal() {
+  hideOverlay('overlay-note-bulk');
+  noteBulkSelection = new Set();
+}
+
+function renderBulkNoteList() {
+  const list = document.getElementById('bulk-notes-list');
+  if (!list) return;
+  if (!state.anotaciones.length) {
+    list.innerHTML = '<div class="p-4 text-sm text-text2">No hay anotaciones para mover.</div>';
+    return;
+  }
+  list.innerHTML = state.anotaciones.map(note => {
+    const checked = noteBulkSelection.has(note.id) ? 'checked' : '';
+    return `<label class="mb-2 flex cursor-pointer items-center gap-2 rounded-smapp border border-borderc bg-white px-3 py-2"><input type="checkbox" ${checked} onchange="toggleBulkNote(${note.id})"><span class="text-[13px] text-text1">${note.desc} · ${fmt(note.monto)} · ${MS[note.creadoMes]} ${note.creadoAnio}</span></label>`;
+  }).join('');
+}
+
+function toggleBulkNote(id) {
+  if (noteBulkSelection.has(id)) noteBulkSelection.delete(id);
+  else noteBulkSelection.add(id);
+  renderBulkNoteList();
+}
+
+function markAllNotesBulk(all) {
+  noteBulkSelection = new Set();
+  if (all) state.anotaciones.forEach(note => noteBulkSelection.add(note.id));
+  renderBulkNoteList();
+}
+
+async function confirmBulkMoveNotes() {
+  if (!currentUser) { alert('Primero inicia sesión.'); return; }
+  const selected = Array.from(noteBulkSelection).map(id => state.anotaciones.find(n => n.id === id)).filter(Boolean);
+  if (!selected.length) { alert('Selecciona anotaciones.'); return; }
+  const targetMonth = parseInt(document.getElementById('bulk-note-month').value, 10);
+  const action = document.getElementById('bulk-note-action').value;
+  const targetYear = curY;
+  const inserts = selected.map(note => ({
+    user_id: currentUser.id,
+    descripcion: note.desc,
+    categoria: note.cat,
+    dia_pago: note.dia,
+    tipo: note.tipo,
+    monto: note.monto,
+    mes: targetMonth,
+    anio: targetYear,
+    origen_mes: note.creadoMes,
+    origen_anio: note.creadoAnio,
+    cuota_actual: note.cuotaAct,
+    total_cuotas: note.cuotas
+  }));
+  const { error: insertError } = await supabaseClient.from('gastos').insert(inserts);
+  if (insertError) { alert(insertError.message); return; }
+  if (action === 'move') {
+    const ids = selected.map(note => note.id);
+    const { error: deleteError } = await supabaseClient.from('anotaciones').delete().in('id', ids);
+    if (deleteError) { alert(deleteError.message); return; }
+  }
+  await loadCloudData();
+  updateAll();
+  closeBulkMoveNotesModal();
+  toast('Anotaciones procesadas');
+}
+
+async function confirmMoveNote() {
+  if (!currentUser || movingNoteId === null) return;
+  const note = state.anotaciones.find(n => n.id === movingNoteId);
+  if (!note) return;
+  const targetMonth = parseInt(document.getElementById('note-move-month').value, 10);
+  const action = document.getElementById('note-move-action').value;
+  const payload = {
+    user_id: currentUser.id,
+    descripcion: note.desc,
+    categoria: note.cat,
+    dia_pago: note.dia,
+    tipo: note.tipo,
+    monto: note.monto,
+    mes: targetMonth,
+    anio: curY,
+    origen_mes: note.creadoMes,
+    origen_anio: note.creadoAnio,
+    cuota_actual: note.cuotaAct,
+    total_cuotas: note.cuotas
+  };
+  const { error: insertError } = await supabaseClient.from('gastos').insert(payload);
+  if (insertError) { alert(insertError.message); return; }
+  if (action === 'move') {
+    const { error: deleteError } = await supabaseClient.from('anotaciones').delete().eq('id', movingNoteId);
+    if (deleteError) { alert(deleteError.message); return; }
+  }
+  await loadCloudData();
+  updateAll();
+  closeNoteMoveModal();
+  toast('Anotación enviada');
+}
+
+function openPrestamoModal() {
+  editingPrestamoId = null;
+  document.getElementById('prestamo-mh').textContent = 'Agregar préstamo';
+  document.getElementById('prestamo-tipo').value = 'por_cobrar';
+  document.getElementById('prestamo-persona').value = '';
+  document.getElementById('prestamo-desc').value = '';
+  document.getElementById('prestamo-monto').value = '';
+  document.getElementById('prestamo-abonado').value = '0';
+  document.getElementById('prestamo-fecha').value = '';
+  document.getElementById('prestamo-vencimiento').value = '';
+  document.getElementById('prestamo-notas').value = '';
+  showOverlay('overlay-prestamo');
+}
+
+function closePrestamoModal() {
+  hideOverlay('overlay-prestamo');
+  editingPrestamoId = null;
+}
+
+function openAbonoModal(id) {
+  abonoPrestamoId = id;
+  editingAbonoRef = null;
+  const p = state.prestamos.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('abono-title').textContent = `Registrar abono - ${p.persona}`;
+  document.getElementById('abono-monto').value = '';
+  document.getElementById('abono-month').value = curM;
+  fillMonthOptions('abono-month');
+  document.getElementById('abono-impacto').value = 'ninguno';
+  document.getElementById('abono-nota').value = '';
+  showOverlay('overlay-abono');
+}
+
+function closeAbonoModal() {
+  hideOverlay('overlay-abono');
+  abonoPrestamoId = null;
+  editingAbonoRef = null;
+}
+
+function renderGastos() {
+  fillCategorySelectors();
+  const filter = document.getElementById('fcat')?.value || '';
+  const list = document.getElementById('glist');
+  if (!list) return;
+  const items = active().filter(g => !filter || g.cat === filter);
+  if (!items.length) {
+    list.innerHTML = '<div class="p-4 text-sm text-text2">No hay gastos para este mes.</div>';
+    return;
+  }
+  list.innerHTML = items.map(g => `
+    <div class="grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-3 border-b border-appbg2 px-5 py-3 transition hover:bg-appbg">
+      <div class="min-w-0 flex items-center gap-2">
+        <div class="truncate text-[14px] font-semibold text-text1">${g.desc}<span class="ml-1.5 rounded-full bg-appbg px-2 py-0.5 text-[10px] font-bold text-text2">${g.tipo}</span></div>
+        <span class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold leading-none" style="background:${cs(g.cat).bg};color:${cs(g.cat).tx}"><span class="h-1.5 w-1.5 rounded-full" style="background:${cs(g.cat).bar}"></span>${g.cat}</span>
+      </div>
+      <div class="whitespace-nowrap text-[12px] text-text3">día ${g.dia}</div>
+      <div class="whitespace-nowrap font-heading text-[15px] font-bold text-red1">${fmt(g.monto)}</div>
+      <button class="rounded-md border-0 bg-transparent px-1.5 py-0.5 text-[16px] leading-none text-text3 transition hover:bg-bluebg hover:text-accent" onclick="editG(${g.id})">✎</button>
+      <button class="rounded-md border-0 bg-transparent px-1.5 py-0.5 text-[20px] leading-none text-text3 transition hover:bg-redbg hover:text-red1" onclick="delG(${g.id})">×</button>
+    </div>
+  `).join('');
+}
+
+async function saveG() {
+  if (!currentUser) { alert('Primero inicia sesión.'); return; }
+  const desc = document.getElementById('fdesc').value.trim();
+  const monto = parseFloat(document.getElementById('fmonto').value);
+  const cat = document.getElementById('fcatModal').value;
+  const dia = parseInt(document.getElementById('fdia').value, 10) || 15;
+  const tipo = document.getElementById('ftipo').value;
+  const cuotas = tipo === 'cuotas' ? (parseInt(document.getElementById('fcuotas').value, 10) || 0) : 0;
+  const cuotaAct = tipo === 'cuotas' ? (parseInt(document.getElementById('fcuotaact').value, 10) || 1) : 1;
+  if (!desc || !monto || monto <= 0) { alert('Datos inválidos'); return; }
+  if (tipo === 'cuotas' && cuotas < 1) { alert('Ingresa total de cuotas'); return; }
+  const existing = editId !== null ? state.gastos.find(g => g.id === editId) : null;
+  const payload = {
+    user_id: currentUser.id,
+    descripcion: desc,
+    categoria: cat,
+    dia_pago: dia,
+    tipo,
+    monto,
+    mes: curM,
+    anio: curY,
+    origen_mes: existing ? existing.origenMes : curM,
+    origen_anio: existing ? existing.origenAnio : curY,
+    cuota_actual: cuotaAct,
+    total_cuotas: cuotas
+  };
+  let error;
+  if (editId !== null) {
+    ({ error } = await supabaseClient.from('gastos').update(payload).eq('id', editId));
+  } else {
+    ({ error } = await supabaseClient.from('gastos').insert(payload));
+  }
+  if (error) { alert(error.message); return; }
+  await loadCloudData();
+  updateAll();
+  closeModal();
+  toast(editId !== null ? 'Gasto actualizado' : 'Gasto agregado');
+  editId = null;
+}
+
+async function editG(id) {
+  const gasto = state.gastos.find(g => g.id === id);
+  if (!gasto) return;
+  editId = id;
+  document.getElementById('mh').textContent = 'Editar gasto';
+  document.getElementById('fdesc').value = gasto.desc;
+  document.getElementById('fmonto').value = gasto.monto;
+  document.getElementById('fcatModal').value = gasto.cat;
+  document.getElementById('fdia').value = gasto.dia;
+  document.getElementById('ftipo').value = gasto.tipo;
+  document.getElementById('fcuotas').value = gasto.cuotas || '';
+  document.getElementById('fcuotaact').value = gasto.cuotaAct || 1;
+  toggleQ();
+  showOverlay('overlay');
+}
+
+async function delG(id) {
+  if (!currentUser) return;
+  if (!confirm('¿Eliminar este gasto?')) return;
+  const { error } = await supabaseClient.from('gastos').delete().eq('id', id);
+  if (error) { alert(error.message); return; }
+  await loadCloudData();
+  updateAll();
+  toast('Gasto eliminado');
+}
+
+async function saveExtra() {
+  if (!currentUser) { alert('Primero inicia sesión.'); return; }
+  const desc = document.getElementById('extra-desc').value.trim();
+  const monto = parseFloat(document.getElementById('extra-monto').value);
+  const mes = parseInt(document.getElementById('extra-mes').value, 10);
+  if (!desc || !monto || monto <= 0) { alert('Datos inválidos'); return; }
+  const { error } = await supabaseClient.from('ingresos_extra').insert({
+    user_id: currentUser.id,
+    descripcion: desc,
+    monto,
+    mes,
+    anio: curY
+  });
+  if (error) { alert(error.message); return; }
+  await loadCloudData();
+  updateAll();
+  renderExtraList();
+  toast('Ingreso adicional guardado');
+}
+
+function drawDonut(sorted, total, income) {
+  const canvas = document.getElementById('donut');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const width = canvas.width;
+  const height = canvas.height;
+  const centerX = width / 2;
+  const centerY = height / 2;
+  const radius = Math.min(width, height) / 2 - 15;
+  ctx.clearRect(0, 0, width, height);
+  let start = -Math.PI / 2;
+  if (!sorted.length || total <= 0) {
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    ctx.fillStyle = '#f3f4f6';
+    ctx.fill();
+  } else {
+    sorted.forEach(([cat, value]) => {
+      const slice = (value / total) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.arc(centerX, centerY, radius, start, start + slice);
+      ctx.closePath();
+      ctx.fillStyle = cs(cat).bar;
+      ctx.fill();
+      start += slice;
+    });
+  }
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, radius * 0.55, 0, Math.PI * 2);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+  const legend = document.getElementById('dlegend');
+  if (!legend) return;
+  const centerTotal = document.getElementById('donut-total');
+  if (centerTotal) {
+    centerTotal.textContent = fmt(total);
+  }
+  if (!sorted.length) {
+    legend.innerHTML = '<div class="text-[12px] text-text3">Sin gastos registrados todavía.</div>';
+    return;
+  }
+  legend.innerHTML = sorted.map(([cat, value]) => `
+    <div class="grid gap-2 rounded-[14px] border border-borderc bg-appbg px-3 py-2 text-[12px] text-text2">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <span class="h-2.5 w-2.5 rounded-full" style="background:${cs(cat).bar}"></span>
+          <span class="font-semibold text-text1">${cat}</span>
+        </div>
+        <span class="font-semibold text-text1">${fmt(value)}</span>
+      </div>
+      <div class="text-xs text-text3">${Math.round((value / total) * 100)}%</div>
+    </div>
+  `).join('');
+}
+
+function renderNotes() {
+  fillCategorySelectors();
+  const filter = document.getElementById('note-cat-filter')?.value || '';
+  const container = document.getElementById('notes-list');
+  if (!container) return;
+  const items = state.anotaciones.filter(n => !filter || n.cat === filter);
+  if (!items.length) {
+    container.innerHTML = '<div class="p-4 text-sm text-text2">No hay anotaciones para este mes.</div>';
+    document.getElementById('notes-total-footer').textContent = fmt(0);
+    return;
+  }
+  container.innerHTML = items.map(note => `
+    <div class="border-b border-borderc px-5 py-4 last:border-none">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div class="font-semibold text-text1">${note.desc}</div>
+          <div class="mt-1 text-[12px] text-text3">${note.cat} · Día ${note.dia} · ${note.tipo}</div>
+        </div>
+        <div class="text-right">
+          <div class="font-heading text-lg font-bold text-accent">${fmt(note.monto)}</div>
+          <div class="mt-2 flex gap-2 text-[12px]">
+            <button class="text-accent" onclick="editNote(${note.id})">Editar</button>
+            <button class="text-blue1" onclick="openNoteMoveModal(${note.id})">Enviar</button>
+            <button class="text-red1" onclick="delNote(${note.id})">Eliminar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('notes-total-footer').textContent = fmt(items.reduce((sum, n) => sum + n.monto, 0));
+}
+
+function editNote(id) {
+  const note = state.anotaciones.find(n => n.id === id);
+  if (!note) return;
+  editingNoteId = id;
+  document.getElementById('note-mh').textContent = 'Editar anotación';
+  document.getElementById('note-desc').value = note.desc;
+  document.getElementById('note-monto').value = note.monto;
+  document.getElementById('note-cat').value = note.cat;
+  document.getElementById('note-dia').value = note.dia;
+  document.getElementById('note-tipo').value = note.tipo;
+  document.getElementById('note-cuotas').value = note.cuotas || '';
+  document.getElementById('note-cuotaact').value = note.cuotaAct || 1;
+  toggleNoteQ();
+  showOverlay('overlay-note');
+}
+
+function renderPrestamos() {
+  const cuotasLista = document.getElementById('qlist');
+  if (cuotasLista) {
+    const items = active().filter(g => g.tipo === 'cuotas');
+    cuotasLista.innerHTML = items.length ? items.map(g => `
+      <div class="mb-3 rounded-[16px] border border-borderc bg-white p-4">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <div class="font-semibold text-text1">${g.desc}</div>
+            <div class="text-[12px] text-text3">${g.cat} · Cuota ${g.cuotaAct}/${g.cuotas}</div>
+          </div>
+          <div class="font-heading text-lg font-bold text-red1">${fmt(g.monto)}</div>
+        </div>
+      </div>
+    `).join('') : '<div class="p-4 text-sm text-text2">No hay cuotas activas.</div>';
+  }
+  const cobrar = document.getElementById('prestamos-lista-cobrar');
+  const pagar = document.getElementById('prestamos-lista-pagar');
+  if (cobrar) {
+    const items = state.prestamos.filter(p => p.tipo === 'por_cobrar');
+    cobrar.innerHTML = items.length ? items.map(p => `
+      <div class="mb-3 rounded-[16px] border border-borderc bg-white p-4">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <div class="font-semibold text-text1">${p.persona}</div>
+            <div class="text-[12px] text-text3">${p.desc}</div>
+          </div>
+          <div class="text-right">
+            <div class="font-heading text-lg font-bold text-bluetx">${fmt(prestamoSaldo(p))}</div>
+            <button class="mt-2 text-[12px] text-accent" onclick="openAbonoModal(${p.id})">Registrar abono</button>
+          </div>
+        </div>
+      </div>
+    `).join('') : '<div class="p-4 text-sm text-text2">No hay préstamos por cobrar.</div>';
+  }
+  if (pagar) {
+    const items = state.prestamos.filter(p => p.tipo === 'por_pagar');
+    pagar.innerHTML = items.length ? items.map(p => `
+      <div class="mb-3 rounded-[16px] border border-borderc bg-white p-4">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <div class="font-semibold text-text1">${p.persona}</div>
+            <div class="text-[12px] text-text3">${p.desc}</div>
+          </div>
+          <div class="text-right">
+            <div class="font-heading text-lg font-bold text-[#b7791f]">${fmt(prestamoSaldo(p))}</div>
+            <button class="mt-2 text-[12px] text-accent" onclick="openAbonoModal(${p.id})">Registrar abono</button>
+          </div>
+        </div>
+      </div>
+    `).join('') : '<div class="p-4 text-sm text-text2">No hay préstamos por pagar.</div>';
+  }
+}
+
+function renderCompromisosResumen() {
+  const cuotaTotal = active().filter(g => g.tipo === 'cuotas').reduce((sum,g)=>sum+g.monto,0);
+  const cobrarTotal = state.prestamos.filter(p => p.tipo === 'por_cobrar').reduce((sum,p)=>sum + prestamoSaldo(p), 0);
+  const pagarTotal = state.prestamos.filter(p => p.tipo === 'por_pagar').reduce((sum,p)=>sum + prestamoSaldo(p), 0);
+  document.getElementById('compromisos-cuotas-total').textContent = fmt(cuotaTotal);
+  document.getElementById('prestamos-cobrar').textContent = fmt(cobrarTotal);
+  document.getElementById('prestamos-pagar').textContent = fmt(pagarTotal);
+}
+
+function renderCuotas() {
+  renderPrestamos();
+}
+
+function renderCats() {
+  const grid = document.getElementById('catgrid');
+  if (!grid) return;
+  if (!state.categorias.length) {
+    grid.innerHTML = '<div class="p-4 text-sm text-text2">No tienes categorías definidas.</div>';
+    return;
+  }
+  grid.innerHTML = state.categorias.map(cat => {
+    const count = state.gastos.filter(g => g.cat === cat).length;
+    return `<div class="rounded-[18px] border border-borderc bg-white p-4 shadow-soft">
+      <div class="font-semibold text-text1">${cat}</div>
+      <div class="mt-2 text-[12px] text-text3">${count} gasto(s)</div>
+    </div>`;
+  }).join('');
+}
+
+function toast(message) {
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = message;
+  el.style.opacity = '1';
+  el.style.transform = 'translateY(0)';
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(60px)';
+  }, 2500);
+}
+
+async function addCat() {
+  if (!currentUser) { alert('Primero inicia sesión.'); return; }
+  const name = prompt('Nombre de nueva categoría');
+  if (!name) return;
+  const trimmed = name.trim();
+  if (!trimmed) { alert('Nombre inválido'); return; }
+  if (state.categorias.includes(trimmed)) { alert('La categoría ya existe.'); return; }
+  const { error } = await supabaseClient.from('categorias').insert({ user_id: currentUser.id, nombre: trimmed });
+  if (error) { alert(error.message); return; }
+  await loadCloudData();
+  updateAll();
+  toast('Categoría agregada');
+}
+
+function triggerExcelImport() {
+  document.getElementById('excel-import').click();
+}
+
+async function handleExcelImport(event) {
+  if (!currentUser) { alert('Primero inicia sesión.'); return; }
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    const data = e.target.result;
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(data);
+    const sheet = workbook.worksheets[0];
+    const headers = sheet.getRow(1).values.map(v => String(v || '').trim().toLowerCase());
+    const rows = [];
+    sheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) return;
+      const values = row.values;
+      const item = {
+        descripcion: values[headers.indexOf('descripcion') + 1] || '',
+        categoria: values[headers.indexOf('categoria') + 1] || '',
+        dia_pago: parseInt(values[headers.indexOf('dia_pago') + 1], 10) || 15,
+        tipo: values[headers.indexOf('tipo') + 1] || 'unico',
+        monto: parseFloat(values[headers.indexOf('monto') + 1]) || 0,
+        mes: parseInt(values[headers.indexOf('mes') + 1], 10) || curM,
+        anio: parseInt(values[headers.indexOf('anio') + 1], 10) || curY,
+        total_cuotas: parseInt(values[headers.indexOf('total_cuotas') + 1], 10) || 0,
+        cuota_actual: parseInt(values[headers.indexOf('cuota_actual') + 1], 10) || 1
+      };
+      if (item.descripcion && item.monto > 0) rows.push(item);
+    });
+    if (!rows.length) { alert('No se encontraron datos válidos en el archivo.'); return; }
+    const payloads = rows.map(item => ({
+      user_id: currentUser?.id || null,
+      descripcion: item.descripcion,
+      categoria: item.categoria,
+      dia_pago: item.dia_pago,
+      tipo: item.tipo,
+      monto: item.monto,
+      mes: item.mes,
+      anio: item.anio,
+      origen_mes: item.mes,
+      origen_anio: item.anio,
+      cuota_actual: item.cuota_actual,
+      total_cuotas: item.total_cuotas
+    }));
+    const { error } = await supabaseClient.from('gastos').insert(payloads);
+    if (error) { alert(error.message); return; }
+    await loadCloudData();
+    updateAll();
+    toast('Excel importado');
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function exportExcel() {
+  const workbook = new ExcelJS.Workbook();
+  const gastosSheet = workbook.addWorksheet('Gastos');
+  gastosSheet.addRow(['descripcion', 'categoria', 'dia_pago', 'tipo', 'monto', 'mes', 'anio', 'total_cuotas', 'cuota_actual']);
+  state.gastos.forEach(g => {
+    gastosSheet.addRow([g.desc, g.cat, g.dia, g.tipo, g.monto, g.mes, g.anio, g.cuotas, g.cuotaAct]);
+  });
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  saveAs(blob, `finanzas-${curY}-${curM+1}.xlsx`);
+}
+
+// ==================== FUNCIONES PARA ANOTACIONES ====================
+async function saveNote() {
+  if (!currentUser) { alert('Primero inicia sesión.'); return; }
+  const desc = document.getElementById('note-desc').value.trim();
+  const monto = parseFloat(document.getElementById('note-monto').value);
+  const cat = document.getElementById('note-cat').value;
+  const dia = parseInt(document.getElementById('note-dia').value)||15;
+  const tipo = document.getElementById('note-tipo').value;
+  const cuotas = tipo==='cuotas' ? (parseInt(document.getElementById('note-cuotas').value)||0) : 0;
+  const cuotaAct = tipo==='cuotas' ? (parseInt(document.getElementById('note-cuotaact').value)||1) : 1;
+  if(!desc || !monto || monto<=0){ alert('Datos inválidos'); return; }
+  if(tipo==='cuotas' && cuotas<1){ alert('Ingresa total de cuotas'); return; }
+
+  const payload = {
+    user_id: currentUser.id,
+    descripcion: desc,
+    categoria: cat,
+    dia_pago: dia,
+    tipo,
+    monto,
+    mes: curM,
+    anio: curY,
+    creado_mes: curM,
+    creado_anio: curY,
+    cuota_actual: cuotaAct,
+    total_cuotas: cuotas
+  };
+
+  let error;
+  if (editingNoteId !== null) {
+    ({ error } = await supabaseClient.from('anotaciones').update(payload).eq('id', editingNoteId));
+  } else {
+    ({ error } = await supabaseClient.from('anotaciones').insert(payload));
+  }
+  if (error) { alert(error.message); return; }
+
+  await loadCloudData();
+  updateAll();
+  closeNoteModal();
+  toast(editingNoteId ? 'Anotación actualizada' : 'Anotación agregada');
+  editingNoteId = null;
+}
+
+async function delNote(id) {
+  if (!currentUser) return;
+  if (!confirm('¿Eliminar esta anotación?')) return;
+  const { error } = await supabaseClient.from('anotaciones').delete().eq('id', id);
+  if (error) { alert(error.message); return; }
+  await loadCloudData();
+  updateAll();
+  toast('Anotación eliminada');
+}
+
+// ==================== FUNCIONES PARA PRÉSTAMOS ====================
+function prestamoSaldo(p){ return Math.max((p.montoTotal||0) - (p.montoPagado||0), 0); }
+
+async function savePrestamo() {
+  if (!currentUser) { alert('Primero inicia sesión.'); return; }
+  const tipo = document.getElementById('prestamo-tipo').value;
+  const persona = document.getElementById('prestamo-persona').value.trim();
+  const desc = document.getElementById('prestamo-desc').value.trim();
+  const montoTotal = parseFloat(document.getElementById('prestamo-monto').value);
+  const montoPagado = parseFloat(document.getElementById('prestamo-abonado').value)||0;
+  const fecha = document.getElementById('prestamo-fecha').value;
+  const vencimiento = document.getElementById('prestamo-vencimiento').value;
+  const notas = document.getElementById('prestamo-notas').value.trim();
+  if(!persona || !desc || !montoTotal || montoTotal<=0){ alert('Datos inválidos'); return; }
+  if(montoPagado<0 || montoPagado>montoTotal){ alert('Abonado inicial no válido'); return; }
+
+  const payload = {
+    user_id: currentUser.id,
+    tipo,
+    persona,
+    descripcion: desc,
+    monto_total: montoTotal,
+    monto_pagado: montoPagado,
+    fecha: fecha || null,
+    vencimiento: vencimiento || null,
+    notas: notas || null
+  };
+
+  let error;
+  if (editingPrestamoId !== null) {
+    ({ error } = await supabaseClient.from('prestamos').update(payload).eq('id', editingPrestamoId));
+  } else {
+    ({ error } = await supabaseClient.from('prestamos').insert(payload));
+  }
+  if (error) { alert(error.message); return; }
+
+  await loadCloudData();
+  updateAll();
+  closePrestamoModal();
+  toast(editingPrestamoId ? 'Préstamo actualizado' : 'Préstamo agregado');
+  editingPrestamoId = null;
+}
+
+async function delPrestamo(id) {
+  if (!currentUser) return;
+  if (!confirm('¿Eliminar este préstamo y todos sus abonos?')) return;
+  const { error } = await supabaseClient.from('prestamos').delete().eq('id', id);
+  if (error) { alert(error.message); return; }
+  await loadCloudData();
+  updateAll();
+  toast('Préstamo eliminado');
+}
+
+// ==================== ABONOS DE PRÉSTAMOS ====================
+async function saveAbono() {
+  if (!currentUser) { alert('Primero inicia sesión.'); return; }
+  if (editingAbonoRef) { await saveAbonoEdit(); return; }
+
+  const p = state.prestamos.find(x => x.id === abonoPrestamoId);
+  if (!p) return;
+  const monto = parseFloat(document.getElementById('abono-monto').value);
+  const mes = parseInt(document.getElementById('abono-month').value,10);
+  const impacto = document.getElementById('abono-impacto').value;
+  const nota = document.getElementById('abono-nota').value.trim();
+  const saldo = prestamoSaldo(p);
+  if(!monto || monto<=0 || monto>saldo){ alert('Monto inválido'); return; }
+
+  // Insertar abono
+  const { data: abonoData, error: abonoError } = await supabaseClient
+    .from('abonos_prestamos')
+    .insert({
+      user_id: currentUser.id,
+      prestamo_id: p.id,
+      fecha: new Date().toISOString().slice(0,10),
+      mes,
+      monto,
+      impacto,
+      nota,
+      linked_type: null,
+      linked_id: null
+    })
+    .select('id')
+    .single();
+  if (abonoError) { alert(abonoError.message); return; }
+  const abonoId = abonoData.id;
+
+  // Actualizar monto pagado del préstamo
+  const nuevoPagado = (p.montoPagado||0) + monto;
+  const { error: updateError } = await supabaseClient
+    .from('prestamos')
+    .update({ monto_pagado: nuevoPagado })
+    .eq('id', p.id);
+  if (updateError) { alert(updateError.message); return; }
+
+  // Crear registro vinculado si impacto = 'mes'
+  if (impacto === 'mes') {
+    if (p.tipo === 'por_pagar') {
+      const { data: gastoData, error: gastoError } = await supabaseClient
+        .from('gastos')
+        .insert({
+          user_id: currentUser.id,
+          descripcion: `Abono préstamo - ${p.persona}`,
+          categoria: 'Personal',
+          dia_pago: 15,
+          tipo: 'unico',
+          monto,
+          mes,
+          anio: curY,
+          origen_mes: mes,
+          origen_anio: curY,
+          cuota_actual: 1,
+          total_cuotas: 0
+        })
+        .select('id')
+        .single();
+      if (!gastoError && gastoData) {
+        await supabaseClient.from('abonos_prestamos').update({ linked_type: 'gasto', linked_id: gastoData.id }).eq('id', abonoId);
+      }
+    } else {
+      const { data: ingresoData, error: ingresoError } = await supabaseClient
+        .from('ingresos_extra')
+        .insert({
+          user_id: currentUser.id,
+          descripcion: `Devolución préstamo - ${p.persona}`,
+          monto,
+          mes,
+          anio: curY
+        })
+        .select('id')
+        .single();
+      if (!ingresoError && ingresoData) {
+        await supabaseClient.from('abonos_prestamos').update({ linked_type: 'ingreso', linked_id: ingresoData.id }).eq('id', abonoId);
+      }
+    }
+  }
+
+  await loadCloudData();
+  updateAll();
+  closeAbonoModal();
+  toast('Abono registrado');
+}
+
+async function saveAbonoEdit() {
+  if (!editingAbonoRef) return;
+  const p = state.prestamos.find(x => x.id === editingAbonoRef.prestamoId);
+  const hist = p?.historial.find(h => h.id === editingAbonoRef.historialId);
+  if (!p || !hist) return;
+
+  const monto = parseFloat(document.getElementById('abono-monto').value);
+  const mes = parseInt(document.getElementById('abono-month').value,10);
+  const impacto = document.getElementById('abono-impacto').value;
+  const nota = document.getElementById('abono-nota').value.trim();
+  const saldoSinEste = Math.max((p.montoTotal||0) - ((p.montoPagado||0) - (hist.monto||0)), 0);
+  if(!monto || monto<=0 || monto>saldoSinEste){ alert('Monto inválido'); return; }
+
+  // Eliminar registros vinculados antiguos
+  if (hist.linkedType === 'gasto' && hist.linkedId) {
+    await supabaseClient.from('gastos').delete().eq('id', hist.linkedId);
+  } else if (hist.linkedType === 'ingreso' && hist.linkedId) {
+    await supabaseClient.from('ingresos_extra').delete().eq('id', hist.linkedId);
+  }
+
+  // Actualizar abono
+  const { error: abonoError } = await supabaseClient
+    .from('abonos_prestamos')
+    .update({
+      monto,
+      mes,
+      impacto,
+      nota,
+      linked_type: null,
+      linked_id: null
+    })
+    .eq('id', hist.id);
+  if (abonoError) { alert(abonoError.message); return; }
+
+  // Recalcular monto pagado del préstamo
+  const nuevoPagado = (p.montoPagado||0) - (hist.monto||0) + monto;
+  await supabaseClient.from('prestamos').update({ monto_pagado: nuevoPagado }).eq('id', p.id);
+
+  // Crear nuevo vínculo si impacto = 'mes'
+  if (impacto === 'mes') {
+    if (p.tipo === 'por_pagar') {
+      const { data: gastoData, error: gastoError } = await supabaseClient
+        .from('gastos')
+        .insert({
+          user_id: currentUser.id,
+          descripcion: `Abono préstamo - ${p.persona}`,
+          categoria: 'Personal',
+          dia_pago: 15,
+          tipo: 'unico',
+          monto,
+          mes,
+          anio: curY,
+          origen_mes: mes,
+          origen_anio: curY,
+          cuota_actual: 1,
+          total_cuotas: 0
+        })
+        .select('id')
+        .single();
+      if (!gastoError && gastoData) {
+        await supabaseClient.from('abonos_prestamos').update({ linked_type: 'gasto', linked_id: gastoData.id }).eq('id', hist.id);
+      }
+    } else {
+      const { data: ingresoData, error: ingresoError } = await supabaseClient
+        .from('ingresos_extra')
+        .insert({
+          user_id: currentUser.id,
+          descripcion: `Devolución préstamo - ${p.persona}`,
+          monto,
+          mes,
+          anio: curY
+        })
+        .select('id')
+        .single();
+      if (!ingresoError && ingresoData) {
+        await supabaseClient.from('abonos_prestamos').update({ linked_type: 'ingreso', linked_id: ingresoData.id }).eq('id', hist.id);
+      }
+    }
+  }
+
+  await loadCloudData();
+  updateAll();
+  closeAbonoModal();
+  toast('Abono actualizado');
+}
+
+async function removeAbono(prestamoId, historialId) {
+  if (!currentUser) return;
+  const p = state.prestamos.find(x => x.id === prestamoId);
+  const hist = p?.historial.find(h => h.id === historialId);
+  if (!p || !hist) return;
+  if (!confirm('¿Eliminar este abono?')) return;
+
+  if (hist.linkedType === 'gasto' && hist.linkedId) {
+    await supabaseClient.from('gastos').delete().eq('id', hist.linkedId);
+  } else if (hist.linkedType === 'ingreso' && hist.linkedId) {
+    await supabaseClient.from('ingresos_extra').delete().eq('id', hist.linkedId);
+  }
+
+  await supabaseClient.from('abonos_prestamos').delete().eq('id', historialId);
+  const nuevoPagado = Math.max((p.montoPagado||0) - (hist.monto||0), 0);
+  await supabaseClient.from('prestamos').update({ monto_pagado: nuevoPagado }).eq('id', prestamoId);
+
+  await loadCloudData();
+  updateAll();
+  toast('Abono eliminado');
+}
+
+// Inicializar
+initAuth();
 </script>
+
 </body>
 </html>
