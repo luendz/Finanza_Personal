@@ -1416,45 +1416,64 @@ function renderPrestamos() {
       const pct = g.cuotas > 0 ? ((done / g.cuotas) * 100).toFixed(0) : 0;
       const faltan = Math.max(g.cuotas - g.cuotaAct + 1, 0);
       return `
-      <div class="mb-3 rounded-[16px] border border-[#eadfca] bg-white px-5 py-4 shadow-soft">
-        <div class="mb-2.5 flex items-start justify-between gap-3">
-          <div>
-            <div class="font-heading text-[15px] font-bold text-text1">${g.desc}</div>
-            <div class="mt-1.5">
-              <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold" style="background:${style.bg};color:${style.tx}">
-                <span class="h-1.5 w-1.5 rounded-full" style="background:${style.bar}"></span>${g.cat}
-              </span>
+      <div class="group mb-3 overflow-hidden rounded-[16px] border border-[#eadfca] bg-gradient-to-br from-white to-[#fefcfa] px-5 py-4 shadow-soft transition hover:shadow-md hover:-translate-y-0.5">
+        <div class="mb-2 flex items-start justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-[#b7791f]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+            </svg>
+            <div>
+              <div class="font-heading text-[14px] font-bold text-text1">${g.desc}</div>
+              <div class="mt-1">
+                <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold" style="background:${style.bg};color:${style.tx}">
+                  <span class="h-1 w-1 rounded-full" style="background:${style.bar}"></span>${g.cat}
+                </span>
+              </div>
             </div>
           </div>
           <div class="shrink-0 text-right">
-            <div class="font-heading text-[17px] font-bold text-[#b7791f]">${fmt(g.monto)}<span class="text-xs font-normal text-text3">/mes</span></div>
-            <div class="mt-0.5 text-[11px] text-text3">Cuota ${g.cuotaAct} de ${g.cuotas}</div>
+            <div class="font-heading text-[16px] font-bold text-[#b7791f]">${fmt(g.monto)}<span class="text-xs font-normal text-text3">/mes</span></div>
+            <div class="text-[10px] text-text3">Cuota ${g.cuotaAct} de ${g.cuotas}</div>
           </div>
         </div>
-        <div class="my-2 h-2.5 overflow-hidden rounded-full bg-appbg2">
+        <div class="my-1.5 h-2 overflow-hidden rounded-full bg-appbg2">
           <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${style.bar}"></div>
         </div>
-        <div class="mb-2.5 flex justify-between text-[11px] text-text3">
+        <div class="mb-2 flex justify-between text-[10px] text-text3">
           <span>Pagado: ${fmt(g.monto * done)}</span>
           <span>${pct}% completado</span>
           <span>Falta: ${fmt(g.monto * Math.max(g.cuotas - done, 0))}</span>
         </div>
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <div class="text-xs text-text2">Faltan <strong class="text-text1">${faltan} cuotas</strong> · Dia <strong class="text-text1">${g.dia}</strong></div>
-          <div class="flex items-center gap-2">
-            <button class="rounded-[7px] border border-borderc bg-white px-2.5 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="registerCuota(${g.id})">Registrar cuota</button>
-            <button class="rounded-[7px] border border-borderc bg-white px-2.5 py-1 text-[11px] font-heading font-bold transition ${g.cuotaAct > 1 ? 'text-text2 hover:border-red1 hover:text-red1' : 'cursor-not-allowed text-text3 opacity-60'}" onclick="undoCuota(${g.id})" ${g.cuotaAct > 1 ? '' : 'disabled'}>Deshacer cuota</button>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="text-xs text-text2">Faltan <strong class="text-text1">${faltan} cuotas</strong> · Día <strong class="text-text1">${g.dia}</strong></div>
+          <div class="flex items-center gap-1.5">
+            <button class="rounded-[6px] border border-accent bg-accent px-2 py-0.5 text-[10px] font-heading font-bold text-white transition hover:-translate-y-0.5 hover:brightness-95" onclick="registerCuota(${g.id})">
+              <svg class="inline w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              Registrar
+            </button>
+            <button class="rounded-[7px] border border-borderc bg-white px-2.5 py-1 text-[11px] font-heading font-bold transition ${g.cuotaAct > 1 ? 'text-text2 hover:border-red1 hover:text-red1' : 'cursor-not-allowed text-text3 opacity-60'}" onclick="undoCuota(${g.id})" ${g.cuotaAct > 1 ? '' : 'disabled'}>
+              <svg class="inline w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
+              </svg>
+              Deshacer
+            </button>
           </div>
         </div>
       </div>
       `;
-    }).join('') : '<div class="p-4 text-sm text-text2">No hay cuotas activas.</div>';
+    }).join('') : '<div class="p-4 text-center text-text3"><div class="text-[40px] mb-2">💳</div><div class="text-sm">No hay cuotas activas.</div><div class="mt-2 text-xs text-text3">Agrega una cuota para empezar a financiar tus compras.</div></div>';
   }
   function renderPrestamoList(items, targetId, emptyText) {
     const container = document.getElementById(targetId);
     if (!container) return;
     if (!items.length) {
-      container.innerHTML = `<div class="px-8 py-10 text-center text-text3">${emptyText}</div>`;
+      container.innerHTML = `<div class="px-6 py-8 text-center text-text3">
+        <div class="text-[36px] mb-2">${targetId === 'prestamos-lista-cobrar' ? '<svg class="w-8 h-8 text-bluebg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>' : '<svg class="w-8 h-8 text-[#eadfca]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path></svg>'}</div>
+        <div class="text-sm font-medium">${emptyText}</div>
+        <div class="mt-1 text-xs text-text3">Agrega un préstamo para empezar a controlar tus finanzas.</div>
+      </div>`;
       return;
     }
     container.innerHTML = items.map(p => {
@@ -1465,14 +1484,21 @@ function renderPrestamos() {
       const amountColor = p.tipo === 'por_cobrar' ? 'text-bluetx' : 'text-[#b7791f]';
       const progressColor = p.tipo === 'por_cobrar' ? '#3f6fd8' : '#d29a2f';
       const badgeClass = estado === 'pagado' ? 'bg-greenbg text-greentx' : estado === 'parcial' ? 'bg-bluebg text-bluetx' : 'bg-appbg text-text2';
-      const cardBorder = p.tipo === 'por_cobrar' ? 'border-[#dbe5f3] shadow-[0_10px_24px_rgba(63,111,216,0.08)]' : 'border-[#eadfca] shadow-[0_10px_24px_rgba(210,154,47,0.10)]';
+      const cardBorder = p.tipo === 'por_cobrar' ? 'border-[#dbe5f3] shadow-[0_8px_20px_rgba(63,111,216,0.12)]' : 'border-[#eadfca] shadow-[0_8px_20px_rgba(210,154,47,0.12)]';
       const cardAccent = p.tipo === 'por_cobrar' ? 'bg-[linear-gradient(180deg,#3f6fd8_0%,#7ea0ea_100%)]' : 'bg-[linear-gradient(180deg,#d29a2f_0%,#e8be67_100%)]';
+      const icon = p.tipo === 'por_cobrar' ? '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>' : '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path></svg>';
+      const remainingPct = 100 - pct;
+      const remainingColor = p.tipo === 'por_cobrar' ? '#dbeafe' : '#fef3c7';
+      const progressBarHtml = `<div class="mb-2 h-2.5 overflow-hidden rounded-full bg-appbg2 relative">
+        <div class="absolute inset-0 rounded-full opacity-30" style="background: repeating-linear-gradient(45deg, transparent, transparent 3px, ${remainingColor} 3px, ${remainingColor} 6px)"></div>
+        <div class="relative h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${progressColor}"></div>
+      </div>`;
       const historial = (p.historial || []).slice().reverse().slice(0, 5);
       const historialHtml = historial.length
-        ? `<div class="mt-4 rounded-[14px] border border-borderc bg-appbg/70 p-3"><div class="mb-2 text-[11px] font-bold uppercase tracking-[0.06em] text-text3">Ultimos abonos</div><div class="space-y-2">${historial.map(h => `<div class="rounded-[12px] bg-white px-3 py-2"><div class="flex items-start justify-between gap-3 text-[12px]"><div class="min-w-0 flex-1"><div class="font-semibold text-text1">${new Date(h.fecha).toLocaleDateString('es-PE')}</div><div class="text-text3">${MS[h.mes] || '-'} · ${h.impacto === 'mes' ? 'impacta mes' : 'solo control'}${h.nota ? ' · ' + h.nota : ''}</div></div><div class="flex items-center gap-2"><div class="whitespace-nowrap font-heading font-bold ${p.tipo === 'por_cobrar' ? 'text-greentx' : 'text-red1'}">${fmt(h.monto)}</div><button class="rounded-md border-0 bg-transparent px-1 py-0.5 text-[14px] leading-none text-text3 transition hover:bg-bluebg hover:text-accent" onclick="openEditAbono(${p.id},${h.id})">✎</button><button class="rounded-md border-0 bg-transparent px-1 py-0.5 text-[16px] leading-none text-text3 transition hover:bg-redbg hover:text-red1" onclick="removeAbono(${p.id},${h.id})">×</button></div></div></div>`).join('')}</div></div>`
-        : `<div class="mt-4 rounded-[14px] border border-dashed border-borderc bg-appbg/40 px-3 py-2 text-[12px] text-text3">Aun no hay abonos registrados.</div>`;
+        ? `<div class="mt-3 rounded-[12px] border border-borderc bg-appbg/70 p-2.5"><div class="mb-1.5 text-[10px] font-bold uppercase tracking-[0.06em] text-text3">Últimos abonos</div><div class="space-y-1.5">${historial.map(h => `<div class="rounded-[10px] bg-white px-2.5 py-1.5"><div class="flex items-start justify-between gap-2 text-[11px]"><div class="min-w-0 flex-1"><div class="font-semibold text-text1">${new Date(h.fecha).toLocaleDateString('es-PE')}</div><div class="text-text3">${MS[h.mes] || '-'} · ${h.impacto === 'mes' ? 'impacta mes' : 'solo control'}${h.nota ? ' · ' + h.nota : ''}</div></div><div class="flex items-center gap-1.5"><div class="whitespace-nowrap font-heading font-bold ${p.tipo === 'por_cobrar' ? 'text-greentx' : 'text-red1'}">${fmt(h.monto)}</div><button class="rounded-md border-0 bg-transparent px-1 py-0.5 text-[12px] leading-none text-text3 transition hover:bg-bluebg hover:text-accent" onclick="openEditAbono(${p.id},${h.id})"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button><button class="rounded-md border-0 bg-transparent px-1 py-0.5 text-[14px] leading-none text-text3 transition hover:bg-redbg hover:text-red1" onclick="removeAbono(${p.id},${h.id})"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button></div></div></div>`).join('')}</div></div>`
+        : `<div class="mt-3 rounded-[12px] border border-dashed border-borderc bg-appbg/40 px-2.5 py-1.5 text-[11px] text-text3">Aún no hay abonos registrados.</div>`;
 
-      return `<div class="mb-4 overflow-hidden rounded-[18px] border bg-white ${cardBorder}"><div class="flex"><div class="w-1.5 shrink-0 ${cardAccent}"></div><div class="flex-1 px-5 py-4"><div class="mb-3 flex items-start justify-between gap-3"><div class="min-w-0"><div class="truncate font-heading text-[15px] font-bold text-text1">${p.persona}</div><div class="mt-0.5 text-[13px] text-text2">${p.desc}</div></div><div class="shrink-0 text-right"><div class="font-heading text-[15px] font-bold ${amountColor}">${fmt(saldo)}</div><div class="mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${badgeClass}">${estado}</div></div></div><div class="rounded-[14px] border border-borderc bg-appbg/45 px-3 py-3"><div class="mb-3 h-2.5 overflow-hidden rounded-full bg-white"><div class="h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${progressColor}"></div></div><div class="mb-3 flex justify-between text-[11px] text-text3"><span>Total: ${fmt(p.montoTotal)}</span><span>${pct}% abonado</span><span>Abonado: ${fmt(abonado)}</span></div><div class="grid grid-cols-2 gap-2 text-[12px] text-text2"><div>Fecha: <strong class="text-text1">${p.fecha || '-'}</strong></div><div>Vence: <strong class="text-text1">${p.vencimiento || '-'}</strong></div></div></div><div class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-appbg2 pt-3"><div class="max-w-[55%] text-[12px] text-text3">${p.notas || 'Sin notas'}</div><div class="flex flex-wrap items-center gap-2"><button class="rounded-smapp border border-borderc bg-white px-3 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="openAbonoModal(${p.id})">Abono</button><button class="rounded-smapp border border-borderc bg-white px-3 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="editPrestamo(${p.id})">Editar</button><button class="rounded-smapp border border-borderc bg-white px-3 py-1 text-[11px] font-heading font-bold text-text2 transition hover:border-red1 hover:text-red1" onclick="delPrestamo(${p.id})">Eliminar</button></div></div>${historialHtml}</div></div></div>`;
+      return `<div class="group mb-3 overflow-hidden rounded-[16px] border bg-white ${cardBorder} transition hover:shadow-lg hover:-translate-y-0.5"><div class="flex"><div class="w-1.5 shrink-0 ${cardAccent}"></div><div class="flex-1 px-4 py-3"><div class="mb-2.5 flex items-start justify-between gap-3"><div class="min-w-0 flex items-center gap-2"><span class="text-[16px]">${icon}</span><div><div class="truncate font-heading text-[14px] font-bold text-text1">${p.persona}</div><div class="text-[12px] text-text2">${p.desc}</div></div></div><div class="shrink-0 text-right"><div class="font-heading text-[14px] font-bold ${amountColor}">${fmt(saldo)}</div><div class="mt-0.5 inline-flex rounded-full px-1.5 py-0.5 text-[9px] font-bold ${badgeClass}">${estado}</div></div></div><div class="rounded-[12px] border border-borderc bg-appbg/45 px-2.5 py-2">${progressBarHtml}<div class="mb-2 flex justify-between text-[10px] text-text3"><span>Total: ${fmt(p.montoTotal)}</span><span>${pct}% abonado</span><span class="text-text2">Falta: ${fmt(p.montoTotal - abonado)} (${remainingPct}%)</span></div><div class="grid grid-cols-2 gap-1.5 text-[11px] text-text2"><div>Fecha: <strong class="text-text1">${p.fecha || '-'}</strong></div><div>Vence: <strong class="text-text1">${p.vencimiento || '-'}</strong></div></div></div><div class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-appbg2 pt-2.5"><div class="max-w-[55%] text-[11px] text-text3">${p.notas || 'Sin notas'}</div><div class="flex flex-wrap items-center gap-1.5"><button class="rounded-[6px] border border-borderc bg-white px-2 py-0.5 text-[10px] font-heading font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="openAbonoModal(${p.id})"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>Abono</button><button class="rounded-[6px] border border-borderc bg-white px-2 py-0.5 text-[10px] font-heading font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="editPrestamo(${p.id})"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>Editar</button><button class="rounded-[6px] border border-borderc bg-white px-2 py-0.5 text-[10px] font-heading font-bold text-text2 transition hover:border-red1 hover:text-red1" onclick="delPrestamo(${p.id})"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>Eliminar</button></div></div>${historialHtml}</div></div></div>`;
     }).join('');
   }
 
@@ -1968,3 +1994,18 @@ async function removeAbono(prestamoId, historialId) {
 
 // Inicializar
 initAuth();
+
+// Función principal de actualización de UI
+function updateAll() {
+  updateInicio();
+  renderGastosPaymentSummary(active());
+  renderGastos();
+  renderCats();
+  renderNotes();
+  renderCuotas();
+  renderCompromisosResumen();
+  syncYearInputs();
+  syncSueldoInput();
+  rMonths('month-nav');
+  rMonths('month-nav-cats');
+}
