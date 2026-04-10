@@ -1,0 +1,27 @@
+.nav-tab.active {
+  border-color: #3f6fd8;
+  color: #3f6fd8;
+}
+
+.month-btn {
+  border: 1px solid #e4e8f0;
+  background: #ffffff;
+  color: #5f6b85;
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.month-btn:hover {
+  border-color: #3f6fd8;
+  color: #3f6fd8;
+}
+
+.month-btn.active {
+  border-color: #3f6fd8;
+  background: #3f6fd8;
+  color: #ffffff;
+}
