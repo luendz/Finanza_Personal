@@ -1436,10 +1436,18 @@ function renderCats() {
     return;
   }
   grid.innerHTML = state.categorias.map(cat => {
-    const count = state.gastos.filter(g => g.cat === cat).length;
-    return `<div class="rounded-[18px] border border-borderc bg-white p-4 shadow-soft">
-      <div class="font-semibold text-text1">${cat}</div>
-      <div class="mt-2 text-[12px] text-text3">${count} gasto(s)</div>
+    const count = active().filter(g => g.cat === cat).length;
+    return `<div class="group overflow-hidden rounded-[18px] border border-borderc bg-white p-4 shadow-soft transition hover:-translate-y-0.5 hover:border-accent">
+      <div class="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <div class="font-semibold text-text1">${cat}</div>
+          <div class="mt-2 text-[12px] text-text3">${count} gasto(s)</div>
+        </div>
+        <div class="flex items-center gap-2 opacity-80 transition group-hover:opacity-100">
+          <button class="rounded-full border border-borderc bg-appbg px-2.5 py-1 text-[12px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="editCat('${encodeURIComponent(cat)}')" title="Editar categoría">✎</button>
+          <button class="rounded-full border border-redbg bg-redbg/10 px-2.5 py-1 text-[12px] font-bold text-red1 transition hover:bg-redbg/20" onclick="deleteCat('${encodeURIComponent(cat)}')" title="Eliminar categoría">🗑</button>
+        </div>
+      </div>
     </div>`;
   }).join('');
 }
@@ -1469,6 +1477,52 @@ async function addCat() {
   await loadCloudData();
   updateAll();
   toast('Categoría agregada');
+}
+
+async function editCat(encodedName) {
+  const name = decodeURIComponent(encodedName);
+  if (!currentUser) { alert('Primero inicia sesión.'); return; }
+  const newName = prompt('Renombrar categoría', name);
+  if (!newName) return;
+  const trimmed = newName.trim();
+  if (!trimmed) { alert('Nombre inválido'); return; }
+  if (trimmed === name) return;
+  if (state.categorias.includes(trimmed)) { alert('Ya existe otra categoría con ese nombre.'); return; }
+
+  const { error: catError } = await supabaseClient.from('categorias').update({ nombre: trimmed }).eq('user_id', currentUser.id).eq('nombre', name);
+  if (catError) { alert(catError.message); return; }
+
+  const updates = [
+    supabaseClient.from('gastos').update({ categoria: trimmed }).eq('user_id', currentUser.id).eq('categoria', name),
+    supabaseClient.from('anotaciones').update({ categoria: trimmed }).eq('user_id', currentUser.id).eq('categoria', name)
+  ];
+  const results = await Promise.all(updates);
+  const failed = results.find(r => r.error);
+  if (failed) { alert(failed.error.message); return; }
+
+  await loadCloudData();
+  updateAll();
+  toast('Categoría renombrada');
+}
+
+async function deleteCat(encodedName) {
+  const name = decodeURIComponent(encodedName);
+  if (!currentUser) { alert('Primero inicia sesión.'); return; }
+
+  const linkedGastos = state.gastos.filter(g => g.cat === name).length;
+  const linkedNotas = state.anotaciones.filter(n => n.cat === name).length;
+  if (linkedGastos || linkedNotas) {
+    alert(`No se puede eliminar la categoría porque está en uso por ${linkedGastos} gasto(s) y ${linkedNotas} anotación(es).`);
+    return;
+  }
+  if (!confirm(`¿Eliminar la categoría “${name}”? Esta acción no se puede deshacer.`)) return;
+
+  const { error } = await supabaseClient.from('categorias').delete().eq('user_id', currentUser.id).eq('nombre', name);
+  if (error) { alert(error.message); return; }
+
+  await loadCloudData();
+  updateAll();
+  toast('Categoría eliminada');
 }
 
 function triggerExcelImport() {
