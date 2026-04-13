@@ -32,19 +32,19 @@ function renderGastosPaymentSummary(items) {
   const totalGastos = totals.pagado + totals.pendiente + totals.vencido;
 
   summary.innerHTML = `
-    <div class="rounded-[14px] border border-[#d8ead8] bg-[#f5fbf5] px-4 py-3">
+    <div class="rounded-[14px] border border-borderc bg-white px-4 py-3">
       <div class="text-[11px] font-bold uppercase tracking-[0.06em] text-text3">Pagado</div>
-      <div class="mt-1 font-heading text-[20px] font-bold text-green1">${fmt(totals.pagado)}</div>
+      <div class="mt-1 font-heading text-[20px] font-bold text-bluetx">${fmt(totals.pagado)}</div>
     </div>
-    <div class="rounded-[14px] border border-[#eadfca] bg-[#fffaf1] px-4 py-3">
+    <div class="rounded-[14px] border border-borderc bg-white px-4 py-3">
       <div class="text-[11px] font-bold uppercase tracking-[0.06em] text-text3">Pendiente</div>
       <div class="mt-1 font-heading text-[20px] font-bold text-[#b7791f]">${fmt(totals.pendiente)}</div>
     </div>
-    <div class="rounded-[14px] border border-[#f1d3d3] bg-[#fff5f5] px-4 py-3">
+    <div class="rounded-[14px] border border-borderc bg-white px-4 py-3">
       <div class="text-[11px] font-bold uppercase tracking-[0.06em] text-text3">Vencido</div>
-      <div class="mt-1 font-heading text-[20px] font-bold text-red1">${fmt(totals.vencido)}</div>
+      <div class="mt-1 font-heading text-[20px] font-bold text-[#8a4a10]">${fmt(totals.vencido)}</div>
     </div>
-    <div class="rounded-[14px] border border-[#dbe5f3] bg-white px-4 py-3">
+    <div class="rounded-[14px] border border-[#f1d3d3] bg-[#fff5f5] px-4 py-3">
       <div class="text-[11px] font-bold uppercase tracking-[0.06em] text-text3">Total gastos</div>
       <div class="mt-1 font-heading text-[20px] font-bold text-red1">${fmt(totalGastos)}</div>
     </div>

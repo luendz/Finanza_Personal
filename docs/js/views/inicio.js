@@ -212,6 +212,8 @@ function updateInicio() {
   if (!inicioSub) return;
 
   inicioSub.textContent = `Tu resumen de ${MS[runtime.curM]} ${runtime.curY}`;
+  const sueldoDisplay = document.getElementById('sueldo-display');
+  if (sueldoDisplay) sueldoDisplay.textContent = fmt(sueldoBase);
   document.getElementById('cextra').textContent = fmt(extras);
   document.getElementById('cextrasub').textContent = `${extrasDelMes().length} ingreso(s) extra este mes`;
   document.getElementById('cing').textContent = fmt(ingresos);
@@ -238,8 +240,10 @@ function updateInicio() {
   progressFill.className = `h-full rounded-full transition-all duration-500 ${pct >= 100 ? 'bg-red1' : pct >= 80 ? 'bg-[#e8b84b]' : 'bg-green1'}`;
 
   document.getElementById('ppct').textContent = `${pct.toFixed(0)}%`;
-  document.getElementById('pleft').textContent = `${fmt(gastos)} gastado`;
-  document.getElementById('pright').textContent = resta >= 0 ? `${fmt(resta)} disponible` : `Te pasaste ${fmt(Math.abs(resta))}`;
+  document.getElementById('pleft').innerHTML = `<span class="text-text2">Gastado</span> <span class="font-semibold text-red1">${fmt(gastos)}</span>`;
+  document.getElementById('pright').innerHTML = resta >= 0
+    ? `<span class="text-bluetx">Disponible</span> <span class="font-semibold text-bluetx">${fmt(resta)}</span>`
+    : `<span class="text-red1">Exceso</span> <span class="font-semibold text-red1">${fmt(Math.abs(resta))}</span>`;
 
   const byCategory = {};
   items.forEach(gasto => {
