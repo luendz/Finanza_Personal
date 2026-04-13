@@ -49,6 +49,15 @@
   display: none;
 }
 
+.mobile-gasto-meta {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.mobile-gasto-meta::-webkit-scrollbar {
+  display: none;
+}
+
 @media (max-width: 768px) {
   body {
     line-height: 1.45;

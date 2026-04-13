@@ -115,33 +115,35 @@ function renderGastos() {
     const toggleBtnClass = isPaid
       ? 'text-green1 hover:bg-greenbg hover:text-green1'
       : 'text-text3 hover:bg-greenbg hover:text-green1';
-    const mobileCategoryChip = `<span class="inline-flex max-w-full items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold leading-none" style="background:${style.bg};color:${style.tx}" title="${gasto.cat}"><span class="h-1.5 w-1.5 shrink-0 rounded-full" style="background:${style.bar}"></span><span class="truncate">${gasto.cat}</span></span>`;
-    const mobileTypeChip = `<span class="inline-flex min-h-[28px] items-center rounded-full bg-appbg px-2.5 text-[11px] font-bold leading-none text-text2" title="${statusDetail}">${typeLabel}</span>`;
-    const mobileDayChip = `<span class="inline-flex min-h-[28px] items-center rounded-full border border-borderc bg-white px-2.5 text-[11px] font-bold leading-none text-text3">${dayLabel}</span>`;
-    const mobileStatusChip = `<span class="inline-flex min-h-[28px] items-center rounded-full border px-2.5 text-[11px] font-bold leading-none ${statusClass}" title="${statusDetail}">${status.label}</span>`;
-    const mobileActionBtnBase = 'inline-flex h-9 w-9 items-center justify-center rounded-full border border-borderc bg-white text-[16px] leading-none transition';
+    const mobileCategoryChip = `<span class="inline-flex h-6 max-w-[126px] shrink-0 items-center gap-1 rounded-full px-2 text-[10px] font-bold leading-none whitespace-nowrap" style="background:${style.bg};color:${style.tx}" title="${gasto.cat}"><span class="h-1.5 w-1.5 shrink-0 rounded-full" style="background:${style.bar}"></span><span class="truncate">${gasto.cat}</span></span>`;
+    const mobileTypeChip = `<span class="inline-flex h-6 shrink-0 items-center rounded-full bg-appbg px-2 text-[10px] font-bold leading-none whitespace-nowrap text-text2" title="${statusDetail}">${typeLabel}</span>`;
+    const mobileDayChip = `<span class="inline-flex h-6 shrink-0 items-center rounded-full border border-borderc bg-white px-2 text-[10px] font-bold leading-none whitespace-nowrap text-text3">${dayLabel}</span>`;
+    const mobileStatusChip = `<span class="inline-flex h-6 shrink-0 items-center rounded-full border px-2 text-[10px] font-bold leading-none whitespace-nowrap ${statusClass}" title="${statusDetail}">${status.label}</span>`;
+    const mobileActionBtnBase = 'inline-flex h-8 w-8 items-center justify-center rounded-full border border-borderc bg-white text-[14px] leading-none transition';
     const mobileToggleBtnClass = isPaid
       ? `${mobileActionBtnBase} text-green1 hover:border-green1 hover:bg-greenbg hover:text-green1`
       : `${mobileActionBtnBase} text-text3 hover:border-green1 hover:bg-greenbg hover:text-green1`;
 
     return `
-      <div class="border-b border-appbg2 px-4 py-4 transition hover:bg-appbg md:px-5 md:py-3">
+      <div class="border-b border-appbg2 px-4 py-3.5 transition hover:bg-appbg md:px-5 md:py-3">
         <div class="md:hidden">
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0 flex-1">
               <div class="truncate text-[15px] font-semibold ${isPaid ? 'text-text2 line-through' : 'text-text1'}" title="${gasto.desc}">${gasto.desc}</div>
-              <div class="mt-2 flex flex-wrap gap-2">
-                ${mobileTypeChip}
-                ${mobileDayChip}
-                ${mobileCategoryChip}
-                ${mobileStatusChip}
+              <div class="mobile-gasto-meta mt-2 flex items-center gap-1.5 overflow-x-auto pb-0.5 pr-1">
+                <div class="flex min-w-max items-center gap-1.5">
+                  ${mobileTypeChip}
+                  ${mobileDayChip}
+                  ${mobileCategoryChip}
+                  ${mobileStatusChip}
+                </div>
               </div>
             </div>
             <div class="shrink-0 text-right">
-              <div class="whitespace-nowrap font-heading text-[17px] font-bold ${amountClass}">${fmt(gasto.monto)}</div>
+              <div class="whitespace-nowrap font-heading text-[16px] font-bold ${amountClass}">${fmt(gasto.monto)}</div>
             </div>
           </div>
-          <div class="mt-3 flex items-center justify-end gap-2">
+          <div class="mt-2.5 flex items-center justify-end gap-1.5">
             <button class="${mobileToggleBtnClass}" onclick="${toggleHandler}" title="${toggleLabel}" aria-label="${toggleLabel}">&#10003;</button>
             <button class="${mobileActionBtnBase} text-text3 hover:border-accent hover:bg-bluebg hover:text-accent" onclick="editG(${gasto.id})" title="Editar gasto" aria-label="Editar gasto">&#9998;</button>
             <button class="${mobileActionBtnBase} text-text3 hover:border-red1 hover:bg-redbg hover:text-red1" onclick="delG(${gasto.id})" title="Eliminar gasto" aria-label="Eliminar gasto">&times;</button>
