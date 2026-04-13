@@ -25,3 +25,115 @@
   background: #3f6fd8;
   color: #ffffff;
 }
+
+#main-nav,
+#mbtns1,
+#mbtns-cats {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+#main-nav::-webkit-scrollbar,
+#mbtns1::-webkit-scrollbar,
+#mbtns-cats::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  body {
+    line-height: 1.45;
+  }
+
+  #main-nav {
+    gap: 0.5rem;
+    padding-bottom: 0.15rem;
+    scroll-snap-type: x proximity;
+  }
+
+  #main-nav .nav-tab {
+    height: 40px;
+    border-bottom-width: 0;
+    border-radius: 9999px;
+    background: #f7f9fc;
+    padding: 0 0.9rem;
+    scroll-snap-align: start;
+  }
+
+  #main-nav .nav-tab.active {
+    background: #eef4ff;
+    box-shadow: inset 0 0 0 1px rgba(63, 111, 216, 0.15);
+  }
+
+  #mbtns1,
+  #mbtns-cats {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    padding-bottom: 0.1rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .month-btn {
+    min-height: 2.25rem;
+    flex: 0 0 auto;
+    padding: 0 0.95rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+
+  #glist,
+  #glist-detalle,
+  #notes-list,
+  #qlist,
+  #prestamos-lista-cobrar,
+  #prestamos-lista-pagar,
+  #carry-list,
+  #bulk-notes-list,
+  #extra-list {
+    max-height: none !important;
+  }
+
+  #gastos-payment-summary > div {
+    min-height: 84px;
+  }
+
+  #dlegend {
+    gap: 0.55rem;
+  }
+
+  #dlegend > div {
+    padding: 0.65rem 0.75rem;
+  }
+
+  #catgrid {
+    grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)) !important;
+  }
+
+  #overlay > div,
+  #overlay-auth > div,
+  #overlay-extra > div,
+  #overlay-carry > div,
+  #overlay-note > div,
+  #overlay-note-move > div,
+  #overlay-note-bulk > div,
+  #overlay-prestamo > div,
+  #overlay-abono > div,
+  #overlay-sueldo > div {
+    max-height: calc(100vh - 1.5rem);
+    overflow-y: auto;
+    border-radius: 22px;
+    padding: 1.1rem;
+  }
+
+  #overlay .grid-cols-2,
+  #overlay-auth .grid-cols-2,
+  #overlay-extra .grid-cols-2,
+  #overlay-carry .grid-cols-2,
+  #overlay-note .grid-cols-2,
+  #overlay-note-move .grid-cols-2,
+  #overlay-note-bulk .grid-cols-2,
+  #overlay-prestamo .grid-cols-2,
+  #overlay-abono .grid-cols-2,
+  #overlay-sueldo .grid-cols-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
