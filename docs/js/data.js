@@ -1,5 +1,90 @@
 import { app, resetState, runtime, state, supabaseClient } from './core.js';
 
+const LEGACY_SALARY_STORAGE_KEY = 'mf3_sueldo';
+const MONTHLY_SALARY_STORAGE_KEY = 'mf3_sueldos_mensuales';
+
+function sueldoPeriodKey(month, year) {
+  return `${year}-${String(Number(month) + 1).padStart(2, '0')}`;
+}
+
+function normalizeMonthlySalaries(rawValue) {
+  if (!rawValue || typeof rawValue !== 'object') return {};
+  return Object.entries(rawValue).reduce((acc, [key, value]) => {
+    const amount = Number(value);
+    if (!Number.isNaN(amount) && amount >= 0) {
+      acc[key] = amount;
+    }
+    return acc;
+  }, {});
+}
+
+function readMonthlySalaries() {
+  const rawValue = localStorage.getItem(MONTHLY_SALARY_STORAGE_KEY);
+  if (!rawValue) return {};
+  try {
+    return normalizeMonthlySalaries(JSON.parse(rawValue));
+  } catch (error) {
+    console.warn('No se pudo leer sueldos por mes:', error);
+    return {};
+  }
+}
+
+function writeMonthlySalaries(value) {
+  localStorage.setItem(MONTHLY_SALARY_STORAGE_KEY, JSON.stringify(normalizeMonthlySalaries(value)));
+}
+
+function mapMonthlySalaryRows(rows) {
+  return normalizeMonthlySalaries((rows || []).reduce((acc, row) => {
+    const month = Number(row?.mes);
+    const year = Number(row?.anio);
+    if (!Number.isNaN(month) && !Number.isNaN(year)) {
+      acc[sueldoPeriodKey(month, year)] = Number(row?.sueldo || 0);
+    }
+    return acc;
+  }, {}));
+}
+
+function monthlySalaryRowsFromMap(userId, monthlySalaries) {
+  return Object.entries(normalizeMonthlySalaries(monthlySalaries)).map(([periodKey, sueldo]) => {
+    const [yearValue, monthValue] = String(periodKey).split('-');
+    return {
+      user_id: userId,
+      anio: Number(yearValue),
+      mes: Math.max(0, Number(monthValue) - 1),
+      sueldo: Number(sueldo) || 0,
+    };
+  });
+}
+
+function monthlySalaryMapsMatch(left, right) {
+  const leftMap = normalizeMonthlySalaries(left);
+  const rightMap = normalizeMonthlySalaries(right);
+  const leftKeys = Object.keys(leftMap).sort();
+  const rightKeys = Object.keys(rightMap).sort();
+  if (leftKeys.length !== rightKeys.length) return false;
+  return leftKeys.every((key, index) => key === rightKeys[index] && Number(leftMap[key]) === Number(rightMap[key]));
+}
+
+export function getSueldoForPeriod(month = runtime.curM, year = runtime.curY) {
+  const key = sueldoPeriodKey(month, year);
+  const monthlySalaries = normalizeMonthlySalaries(state.userSettings?.sueldosMensuales);
+  if (Object.prototype.hasOwnProperty.call(monthlySalaries, key)) {
+    return Number(monthlySalaries[key]) || 0;
+  }
+
+  const storedMonthlySalaries = readMonthlySalaries();
+  if (Object.prototype.hasOwnProperty.call(storedMonthlySalaries, key)) {
+    return Number(storedMonthlySalaries[key]) || 0;
+  }
+
+  if (typeof state.userSettings?.sueldo === 'number' && !Number.isNaN(state.userSettings.sueldo)) {
+    return state.userSettings.sueldo;
+  }
+
+  const legacySalary = localStorage.getItem(LEGACY_SALARY_STORAGE_KEY);
+  return legacySalary !== null ? Number(legacySalary) || 0 : 0;
+}
+
 export async function loadCloudData() {
   if (!runtime.currentUser) {
     resetState();
@@ -13,6 +98,8 @@ export async function loadCloudData() {
     anotacionesRes,
     prestamosRes,
     abonosRes,
+    sueldosMensualesRes,
+    settingsRes,
   ] = await Promise.all([
     supabaseClient.from('categorias').select('*').eq('user_id', runtime.currentUser.id).order('nombre'),
     supabaseClient.from('gastos').select('*').eq('user_id', runtime.currentUser.id).order('id'),
@@ -20,6 +107,8 @@ export async function loadCloudData() {
     supabaseClient.from('anotaciones').select('*').eq('user_id', runtime.currentUser.id).order('id'),
     supabaseClient.from('prestamos').select('*').eq('user_id', runtime.currentUser.id).order('id'),
     supabaseClient.from('abonos_prestamos').select('*').eq('user_id', runtime.currentUser.id).order('id'),
+    supabaseClient.from('sueldos_mensuales').select('mes, anio, sueldo').eq('user_id', runtime.currentUser.id),
+    supabaseClient.from('user_settings').select('sueldo').eq('user_id', runtime.currentUser.id).single(),
   ]);
 
   if (categoriasRes.error) throw categoriasRes.error;
@@ -100,21 +189,39 @@ export async function loadCloudData() {
     };
   });
 
-  state.userSettings = { sueldo: null };
-  const settingsRes = await supabaseClient
-    .from('user_settings')
-    .select('sueldo')
-    .eq('user_id', runtime.currentUser.id)
-    .single();
+  const localMonthlySalaries = readMonthlySalaries();
+  const cloudMonthlySalaries = sueldosMensualesRes.error ? {} : mapMonthlySalaryRows(sueldosMensualesRes.data);
+  state.userSettings = {
+    sueldo: null,
+    sueldosMensuales: { ...localMonthlySalaries, ...cloudMonthlySalaries },
+  };
+
+  if (Object.keys(state.userSettings.sueldosMensuales).length) {
+    writeMonthlySalaries(state.userSettings.sueldosMensuales);
+  }
+
+  if (!sueldosMensualesRes.error && !monthlySalaryMapsMatch(localMonthlySalaries, cloudMonthlySalaries) && Object.keys(localMonthlySalaries).length) {
+    const mergedMonthlySalaryRows = monthlySalaryRowsFromMap(runtime.currentUser.id, state.userSettings.sueldosMensuales);
+    const { error: syncMonthlySalaryError } = await supabaseClient
+      .from('sueldos_mensuales')
+      .upsert(mergedMonthlySalaryRows, { onConflict: 'user_id,anio,mes' });
+
+    if (syncMonthlySalaryError) {
+      console.warn('No se pudo sincronizar sueldos mensuales locales con BD:', syncMonthlySalaryError.message);
+    }
+  }
 
   if (!settingsRes.error && settingsRes.data) {
     state.userSettings.sueldo = Number(settingsRes.data.sueldo || 0);
-    return;
   }
 
-  const storedSalary = localStorage.getItem('mf3_sueldo');
-  if (storedSalary !== null) {
+  const storedSalary = localStorage.getItem(LEGACY_SALARY_STORAGE_KEY);
+  if (storedSalary !== null && (state.userSettings.sueldo === null || Number.isNaN(state.userSettings.sueldo))) {
     state.userSettings.sueldo = Number(storedSalary);
+  }
+
+  if (sueldosMensualesRes.error) {
+    console.warn('No se pudo cargar sueldos mensuales de BD:', sueldosMensualesRes.error.message);
   }
 
   const errorMessage = settingsRes.error?.message?.toLowerCase() || '';
@@ -127,23 +234,49 @@ export function syncSueldoInput() {
   const sueldoInput = document.getElementById('sueldo');
   if (!sueldoInput) return;
   const currentValue = sueldoInput.value;
-  const storedValue = typeof state.userSettings?.sueldo === 'number' && !Number.isNaN(state.userSettings.sueldo)
-    ? state.userSettings.sueldo
-    : (localStorage.getItem('mf3_sueldo') !== null ? Number(localStorage.getItem('mf3_sueldo')) : null);
+  const storedValue = getSueldoForPeriod(runtime.curM, runtime.curY);
 
-  if (storedValue !== null && String(storedValue) !== currentValue) {
+  if (String(storedValue) !== currentValue) {
     sueldoInput.value = storedValue;
   }
 }
 
-export async function saveSueldo() {
+export async function saveSueldo(month = runtime.curM, year = runtime.curY) {
   const sueldoInput = document.getElementById('sueldo');
   if (!sueldoInput) return;
   const sueldoBase = parseFloat(sueldoInput.value) || 0;
-  localStorage.setItem('mf3_sueldo', sueldoBase);
-  state.userSettings = { ...state.userSettings, sueldo: sueldoBase };
+  const key = sueldoPeriodKey(month, year);
+  const monthlySalaries = {
+    ...readMonthlySalaries(),
+    ...normalizeMonthlySalaries(state.userSettings?.sueldosMensuales),
+    [key]: sueldoBase,
+  };
+
+  writeMonthlySalaries(monthlySalaries);
+  const hasFallbackSalary = typeof state.userSettings?.sueldo === 'number' && !Number.isNaN(state.userSettings.sueldo)
+    ? true
+    : localStorage.getItem(LEGACY_SALARY_STORAGE_KEY) !== null;
+
+  if (!hasFallbackSalary) {
+    localStorage.setItem(LEGACY_SALARY_STORAGE_KEY, sueldoBase);
+  }
+
+  state.userSettings = { ...state.userSettings, sueldosMensuales: monthlySalaries };
 
   if (!runtime.currentUser) return;
+
+  const { error: monthlySalaryError } = await supabaseClient
+    .from('sueldos_mensuales')
+    .upsert(
+      { user_id: runtime.currentUser.id, anio: year, mes: month, sueldo: sueldoBase },
+      { onConflict: 'user_id,anio,mes' },
+    );
+
+  if (monthlySalaryError) {
+    console.warn('No se pudo guardar sueldo mensual en BD:', monthlySalaryError.message);
+  }
+
+  if (hasFallbackSalary) return;
 
   const { error } = await supabaseClient
     .from('user_settings')

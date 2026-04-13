@@ -14,22 +14,48 @@ import {
   state,
   toast,
 } from '../core.js';
-import { saveSueldo } from '../data.js';
+import { getSueldoForPeriod, saveSueldo } from '../data.js';
 
 function extrasDelMes() {
   return (state.ingresosExtra || []).filter(item => Number(item.mes) === runtime.curM && Number(item.anio || runtime.curY) === runtime.curY);
 }
 
-function totalExtras() {
-  return extrasDelMes().reduce((sum, item) => sum + Number(item.monto || 0), 0);
+function periodoRelativo(offset = 0) {
+  const baseDate = new Date(runtime.curY, runtime.curM + offset, 1);
+  return { month: baseDate.getMonth(), year: baseDate.getFullYear() };
 }
 
-function totalGastos() {
-  return active().reduce((sum, gasto) => sum + gasto.monto, 0);
+function extrasDelPeriodo(month, year) {
+  return (state.ingresosExtra || []).reduce((sum, item) => {
+    const itemMonth = Number(item.mes);
+    const itemYear = Number(item.anio ?? year);
+    return itemMonth === month && itemYear === year ? sum + Number(item.monto || 0) : sum;
+  }, 0);
 }
 
-function totalIngresos() {
-  return (parseFloat(document.getElementById('sueldo')?.value) || 0) + totalExtras();
+function gastosActivosDelPeriodo(month, year) {
+  return (state.gastos || []).filter(gasto => {
+    const gastoMonth = Number(gasto.mes);
+    const gastoYear = typeof gasto.anio === 'number' ? gasto.anio : year;
+    if (gasto.tipo === 'cuotas') {
+      return gasto.cuotaAct <= gasto.cuotas && (gastoYear < year || (gastoYear === year && gastoMonth <= month));
+    }
+    return gastoYear === year && gastoMonth === month;
+  });
+}
+
+function resumenDelPeriodo(month, year) {
+  const sueldoBase = getSueldoForPeriod(month, year);
+  const extras = extrasDelPeriodo(month, year);
+  const gastos = gastosActivosDelPeriodo(month, year).reduce((sum, gasto) => sum + Number(gasto.monto || 0), 0);
+  const ingresos = sueldoBase + extras;
+  return {
+    sueldoBase,
+    extras,
+    gastos,
+    ingresos,
+    saldo: ingresos - gastos,
+  };
 }
 
 function sortPreviewItems(items) {
@@ -200,18 +226,23 @@ function drawDonut(sorted, total) {
 }
 
 function updateInicio() {
-  const sueldoBase = parseFloat(document.getElementById('sueldo')?.value) || 0;
-  const extras = totalExtras();
-  const ingresos = sueldoBase + extras;
-  const gastos = totalGastos();
-  const resta = ingresos - gastos;
+  const resumenActual = resumenDelPeriodo(runtime.curM, runtime.curY);
+  const sueldoBase = resumenActual.sueldoBase;
+  const extras = resumenActual.extras;
+  const ingresos = resumenActual.ingresos;
+  const gastos = resumenActual.gastos;
+  const resta = resumenActual.saldo;
   const pct = ingresos > 0 ? (gastos / ingresos) * 100 : 0;
   const items = active();
+  const periodoAnterior = periodoRelativo(-1);
+  const arrastreAnterior = resumenDelPeriodo(periodoAnterior.month, periodoAnterior.year);
 
   const inicioSub = document.getElementById('inicio-sub');
   if (!inicioSub) return;
 
   inicioSub.textContent = `Tu resumen de ${MS[runtime.curM]} ${runtime.curY}`;
+  const sueldoCardSub = document.getElementById('sueldo-card-sub');
+  if (sueldoCardSub) sueldoCardSub.textContent = `Monto fijo de ${MS[runtime.curM]} ${runtime.curY}`;
   const sueldoDisplay = document.getElementById('sueldo-display');
   if (sueldoDisplay) sueldoDisplay.textContent = fmt(sueldoBase);
   document.getElementById('cextra').textContent = fmt(extras);
@@ -244,6 +275,22 @@ function updateInicio() {
   document.getElementById('pright').innerHTML = resta >= 0
     ? `<span class="text-bluetx">Disponible</span> <span class="font-semibold text-bluetx">${fmt(resta)}</span>`
     : `<span class="text-red1">Exceso</span> <span class="font-semibold text-red1">${fmt(Math.abs(resta))}</span>`;
+
+  const carryPrevLabel = document.getElementById('carry-prev-label');
+  const carryPrevSub = document.getElementById('carry-prev-sub');
+  const carryPrevAmount = document.getElementById('carry-prev-amount');
+  if (carryPrevLabel && carryPrevSub && carryPrevAmount) {
+    const saldoAnterior = arrastreAnterior.saldo;
+    const saldoAnteriorPositivo = saldoAnterior >= 0;
+    carryPrevLabel.textContent = saldoAnteriorPositivo
+      ? `Arrastre de ${MS[periodoAnterior.month]}`
+      : `Saldo pendiente de ${MS[periodoAnterior.month]}`;
+    carryPrevSub.textContent = saldoAnteriorPositivo
+      ? `${periodoAnterior.year} ${MS[periodoAnterior.month]} - saldo final del mes pasado`
+      : `${periodoAnterior.year} ${MS[periodoAnterior.month]} - cierre en negativo del mes pasado`;
+    carryPrevAmount.className = `font-heading text-[20px] font-bold ${saldoAnteriorPositivo ? 'text-bluetx' : 'text-red1'}`;
+    carryPrevAmount.textContent = fmt(saldoAnterior);
+  }
 
   const byCategory = {};
   items.forEach(gasto => {
@@ -314,8 +361,15 @@ function closeExtraModal() {
 }
 
 function openSueldoModal() {
-  const currentSueldo = document.getElementById('sueldo').value;
+  const currentSueldo = getSueldoForPeriod(runtime.curM, runtime.curY);
   document.getElementById('sueldo-modal-input').value = currentSueldo;
+  const periodLabel = `${MS[runtime.curM]} ${runtime.curY}`;
+  const modalTitle = document.getElementById('sueldo-modal-title');
+  const modalSub = document.getElementById('sueldo-modal-sub');
+  const modalLabel = document.getElementById('sueldo-modal-label');
+  if (modalTitle) modalTitle.textContent = `Editar sueldo de ${periodLabel}`;
+  if (modalSub) modalSub.textContent = 'Este valor aplica solo al mes que estas viendo.';
+  if (modalLabel) modalLabel.textContent = `Monto para ${periodLabel} (S/)`;
   showOverlay('overlay-sueldo');
 }
 
@@ -326,10 +380,10 @@ function closeSueldoModal() {
 async function saveSueldoFromModal() {
   const newSueldo = parseFloat(document.getElementById('sueldo-modal-input').value) || 0;
   document.getElementById('sueldo').value = newSueldo;
-  await saveSueldo();
+  await saveSueldo(runtime.curM, runtime.curY);
   app.actions.updateAll?.();
   closeSueldoModal();
-  toast('Sueldo actualizado');
+  toast(`Sueldo de ${MS[runtime.curM]} ${runtime.curY} actualizado`);
 }
 
 async function saveExtra() {

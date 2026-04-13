@@ -44,7 +44,7 @@ export const state = app.state ?? {
   anotaciones: [],
   prestamos: [],
   gastos: [],
-  userSettings: { sueldo: null },
+  userSettings: { sueldo: null, sueldosMensuales: {} },
 };
 
 app.actions ??= {};
@@ -62,7 +62,7 @@ export function resetState() {
   state.anotaciones = [];
   state.prestamos = [];
   state.gastos = [];
-  state.userSettings = { sueldo: null };
+  state.userSettings = { sueldo: null, sueldosMensuales: {} };
 }
 
 export function cs(cat) {
