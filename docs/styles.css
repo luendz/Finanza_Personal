@@ -136,6 +136,7 @@
   #overlay-note-bulk > div,
   #overlay-prestamo > div,
   #overlay-abono > div,
+  #overlay-export > div,
   #overlay-sueldo > div,
   #loading-screen > div {
     max-height: calc(100vh - 1.5rem);
@@ -153,6 +154,7 @@
   #overlay-note-bulk .grid-cols-2,
   #overlay-prestamo .grid-cols-2,
   #overlay-abono .grid-cols-2,
+  #overlay-export .grid-cols-2,
   #overlay-sueldo .grid-cols-2 {
     grid-template-columns: minmax(0, 1fr);
   }

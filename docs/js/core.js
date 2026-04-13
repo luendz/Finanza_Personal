@@ -228,6 +228,10 @@ export function maybeCloseSueldo(event) {
   closeOnBackdrop(event, window.closeSueldoModal);
 }
 
+export function maybeCloseExport(event) {
+  closeOnBackdrop(event, window.closeExportModal);
+}
+
 export function fillMonthOptions(selectId) {
   const el = document.getElementById(selectId);
   if (!el) return;
@@ -394,6 +398,7 @@ Object.assign(window, {
   maybeCloseNote,
   maybeCloseNoteMove,
   maybeClosePrestamo,
+  maybeCloseExport,
   maybeCloseSueldo,
   setM,
 });

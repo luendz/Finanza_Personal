@@ -40,7 +40,7 @@
       <div class="flex flex-wrap items-center gap-2 max-md:grid max-md:w-full max-md:grid-cols-2">
         <input type="file" id="excel-import" accept=".xlsx,.xls" class="hidden" onchange="handleExcelImport(event)">
         <button class="rounded-full border border-accent/15 bg-white px-3 py-1.5 font-heading text-[11px] font-bold text-accent shadow-soft transition hover:-translate-y-0.5 hover:border-accent hover:bg-bluebg max-md:w-full max-md:py-2" onclick="triggerExcelImport()">Subir Excel</button>
-        <button class="rounded-full border border-accent bg-accent px-3 py-1.5 font-heading text-[11px] font-bold text-white shadow-soft transition hover:-translate-y-0.5 hover:brightness-95 max-md:w-full max-md:py-2" onclick="exportExcel()">Descargar Excel</button>
+        <button class="rounded-full border border-accent bg-accent px-3 py-1.5 font-heading text-[11px] font-bold text-white shadow-soft transition hover:-translate-y-0.5 hover:brightness-95 max-md:w-full max-md:py-2" onclick="openExportModal()">Descargar Excel</button>
       </div>
     </div>
 
@@ -635,6 +635,51 @@
     <div class="mt-5 flex justify-end gap-2">
       <button class="rounded-smapp border border-borderc bg-white px-4 py-1.5 font-heading text-[13px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="closeAbonoModal()">Cancelar</button>
       <button id="abono-save-btn" class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="saveAbono()">Registrar ✓</button>
+    </div>
+  </div>
+</div>
+
+<div class="fixed inset-0 z-[212] hidden items-center justify-center bg-black/35 p-4" id="overlay-export" onclick="maybeCloseExport(event)">
+  <div class="w-full max-w-[560px] rounded-app bg-card p-6 shadow-modal animate-up">
+    <div class="mb-5">
+      <h3 class="font-heading text-lg font-bold text-text1">Exportar Excel</h3>
+      <div class="mt-1 text-[13px] text-text2">Genera un archivo más útil para revisar o compartir tus finanzas.</div>
+    </div>
+
+    <div class="mb-4 space-y-3">
+      <label class="flex cursor-pointer items-start gap-3 rounded-[16px] border border-borderc bg-white px-4 py-3 transition hover:border-accent">
+        <input type="radio" name="export-scope" value="month" checked class="mt-1 h-4 w-4 accent-accent">
+        <div class="min-w-0">
+          <div class="font-heading text-[14px] font-bold text-text1">Mes actual</div>
+          <div id="export-scope-month-copy" class="mt-1 text-[12px] leading-5 text-text2">Exporta el periodo que estás viendo ahora.</div>
+        </div>
+      </label>
+
+      <label class="flex cursor-pointer items-start gap-3 rounded-[16px] border border-borderc bg-white px-4 py-3 transition hover:border-accent">
+        <input type="radio" name="export-scope" value="year" class="mt-1 h-4 w-4 accent-accent">
+        <div class="min-w-0">
+          <div class="font-heading text-[14px] font-bold text-text1">Año actual</div>
+          <div id="export-scope-year-copy" class="mt-1 text-[12px] leading-5 text-text2">Incluye el año que tienes seleccionado.</div>
+        </div>
+      </label>
+
+      <label class="flex cursor-pointer items-start gap-3 rounded-[16px] border border-borderc bg-white px-4 py-3 transition hover:border-accent">
+        <input type="radio" name="export-scope" value="all" class="mt-1 h-4 w-4 accent-accent">
+        <div class="min-w-0">
+          <div class="font-heading text-[14px] font-bold text-text1">Todos los datos</div>
+          <div class="mt-1 text-[12px] leading-5 text-text2">Prepara una exportación completa de la base sincronizada en este dispositivo.</div>
+        </div>
+      </label>
+    </div>
+
+    <div class="rounded-[16px] border border-[#dbe5f3] bg-appbg/70 px-4 py-3">
+      <div class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Hojas incluidas</div>
+      <div class="mt-2 text-[12px] leading-5 text-text2">Resumen, Gastos, Ingresos extra, Anotaciones, Préstamos y Abonos.</div>
+    </div>
+
+    <div class="mt-5 flex justify-end gap-2">
+      <button class="rounded-smapp border border-borderc bg-white px-4 py-1.5 font-heading text-[13px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="closeExportModal()">Cancelar</button>
+      <button class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="exportExcel()">Exportar</button>
     </div>
   </div>
 </div>
