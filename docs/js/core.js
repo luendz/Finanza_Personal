@@ -35,6 +35,7 @@ export const runtime = app.runtime ?? {
 export const uiState = app.uiState ?? {
   carrySelection: new Set(),
   noteBulkSelection: new Set(),
+  loadingStack: [],
   toastTimer: null,
 };
 
@@ -132,6 +133,55 @@ export function hideOverlay(id) {
   if (!el) return;
   el.classList.remove('flex');
   el.classList.add('hidden');
+}
+
+function syncLoadingOverlay() {
+  const overlay = document.getElementById('loading-screen');
+  const message = document.getElementById('loading-screen-message');
+  const activeMessage = uiState.loadingStack[uiState.loadingStack.length - 1] || 'Procesando...';
+
+  if (message) {
+    message.textContent = activeMessage;
+  }
+
+  if (!overlay) return;
+
+  if (uiState.loadingStack.length) {
+    overlay.classList.remove('hidden');
+    overlay.classList.add('flex');
+    document.body.classList.add('overflow-hidden');
+    return;
+  }
+
+  overlay.classList.remove('flex');
+  overlay.classList.add('hidden');
+  document.body.classList.remove('overflow-hidden');
+}
+
+export function showLoading(message = 'Procesando...') {
+  uiState.loadingStack.push(message || 'Procesando...');
+  syncLoadingOverlay();
+}
+
+export function hideLoading() {
+  if (uiState.loadingStack.length) {
+    uiState.loadingStack.pop();
+  }
+  syncLoadingOverlay();
+}
+
+export async function runWithLoading(message, task) {
+  showLoading(message);
+  try {
+    return await task();
+  } finally {
+    hideLoading();
+  }
+}
+
+export async function refreshAppData() {
+  await app.actions.loadCloudData?.();
+  app.actions.updateAll?.();
 }
 
 function closeOnBackdrop(event, closeFn) {
@@ -329,6 +379,7 @@ export function updateAll() {
 }
 
 app.actions.updateAll = updateAll;
+app.actions.refreshAppData = refreshAppData;
 
 Object.assign(window, {
   applyYearInput,

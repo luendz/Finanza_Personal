@@ -3,6 +3,16 @@
   color: #3f6fd8;
 }
 
+.loading-spinner {
+  animation: loading-spin 0.85s linear infinite;
+}
+
+@keyframes loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .month-btn {
   border: 1px solid #e4e8f0;
   background: #ffffff;
@@ -117,7 +127,8 @@
   #overlay-note-bulk > div,
   #overlay-prestamo > div,
   #overlay-abono > div,
-  #overlay-sueldo > div {
+  #overlay-sueldo > div,
+  #loading-screen > div {
     max-height: calc(100vh - 1.5rem);
     overflow-y: auto;
     border-radius: 22px;

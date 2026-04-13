@@ -1,4 +1,4 @@
-import { active, app, runtime, state, toast } from '../core.js';
+import { active, app, runWithLoading, runtime, state, toast } from '../core.js';
 
 function renderCats() {
   const grid = document.getElementById('catgrid');
@@ -46,14 +46,21 @@ async function addCat() {
     return;
   }
 
-  const { error } = await app.supabaseClient.from('categorias').insert({ user_id: runtime.currentUser.id, nombre: trimmed });
+  let error;
+  await runWithLoading('Guardando categoria...', async () => {
+    ({ error } = await app.supabaseClient.from('categorias').insert({ user_id: runtime.currentUser.id, nombre: trimmed }));
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    await app.actions.refreshAppData?.();
+  });
+
   if (error) {
-    alert(error.message);
     return;
   }
 
-  await app.actions.loadCloudData?.();
-  app.actions.updateAll?.();
   toast('Categoria agregada');
 }
 
@@ -78,30 +85,38 @@ async function editCat(encodedName) {
     return;
   }
 
-  const { error: catError } = await app.supabaseClient
-    .from('categorias')
-    .update({ nombre: trimmed })
-    .eq('user_id', runtime.currentUser.id)
-    .eq('nombre', name);
+  let catError;
+  let failed;
+  await runWithLoading('Actualizando categoria...', async () => {
+    ({ error: catError } = await app.supabaseClient
+      .from('categorias')
+      .update({ nombre: trimmed })
+      .eq('user_id', runtime.currentUser.id)
+      .eq('nombre', name));
 
-  if (catError) {
-    alert(catError.message);
+    if (catError) {
+      alert(catError.message);
+      return;
+    }
+
+    const results = await Promise.all([
+      app.supabaseClient.from('gastos').update({ categoria: trimmed }).eq('user_id', runtime.currentUser.id).eq('categoria', name),
+      app.supabaseClient.from('anotaciones').update({ categoria: trimmed }).eq('user_id', runtime.currentUser.id).eq('categoria', name),
+    ]);
+
+    failed = results.find(result => result.error);
+    if (failed) {
+      alert(failed.error.message);
+      return;
+    }
+
+    await app.actions.refreshAppData?.();
+  });
+
+  if (catError || failed) {
     return;
   }
 
-  const results = await Promise.all([
-    app.supabaseClient.from('gastos').update({ categoria: trimmed }).eq('user_id', runtime.currentUser.id).eq('categoria', name),
-    app.supabaseClient.from('anotaciones').update({ categoria: trimmed }).eq('user_id', runtime.currentUser.id).eq('categoria', name),
-  ]);
-
-  const failed = results.find(result => result.error);
-  if (failed) {
-    alert(failed.error.message);
-    return;
-  }
-
-  await app.actions.loadCloudData?.();
-  app.actions.updateAll?.();
   toast('Categoria renombrada');
 }
 
@@ -120,19 +135,26 @@ async function deleteCat(encodedName) {
   }
   if (!confirm(`¿Eliminar la categoria "${name}"? Esta accion no se puede deshacer.`)) return;
 
-  const { error } = await app.supabaseClient
-    .from('categorias')
-    .delete()
-    .eq('user_id', runtime.currentUser.id)
-    .eq('nombre', name);
+  let error;
+  await runWithLoading('Eliminando categoria...', async () => {
+    ({ error } = await app.supabaseClient
+      .from('categorias')
+      .delete()
+      .eq('user_id', runtime.currentUser.id)
+      .eq('nombre', name));
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    await app.actions.refreshAppData?.();
+  });
 
   if (error) {
-    alert(error.message);
     return;
   }
 
-  await app.actions.loadCloudData?.();
-  app.actions.updateAll?.();
   toast('Categoria eliminada');
 }
 

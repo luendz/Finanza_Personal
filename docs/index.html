@@ -121,7 +121,7 @@
             <div class="flex items-start justify-between gap-3">
               <div>
                 <div class="text-[11px] font-bold uppercase tracking-[0.08em] text-text3">Sueldo base</div>
-                <div id="sueldo-card-sub" class="mt-2 text-[13px] text-text2">Monto fijo del mes</div>
+                <div id="sueldo-card-sub" class="mt-2 overflow-hidden text-ellipsis whitespace-nowrap text-[13px] text-text2">Monto fijo del mes</div>
               </div>
               <button class="rounded-full border border-borderc bg-white px-3 py-1 text-[11px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="openSueldoModal()">Editar</button>
             </div>
@@ -640,6 +640,14 @@
 </div>
 
 <div class="fixed bottom-6 right-6 z-[999] translate-y-[60px] rounded-smapp bg-text1 px-[18px] py-2.5 font-heading text-[13px] font-bold text-white opacity-0 shadow-toast transition-all duration-200" id="toast"></div>
+
+<div class="fixed inset-0 z-[1200] hidden items-center justify-center bg-[rgba(247,251,255,0.88)] p-4 backdrop-blur-sm" id="loading-screen" aria-live="assertive" aria-busy="true">
+  <div class="w-full max-w-[320px] rounded-[24px] border border-[#dbe5f3] bg-white px-6 py-7 text-center shadow-modal">
+    <div class="loading-spinner mx-auto h-12 w-12 rounded-full border-[4px] border-[#dbe5f3] border-t-accent"></div>
+    <div class="mt-5 font-heading text-[18px] font-bold text-text1">Cargando</div>
+    <div id="loading-screen-message" class="mt-2 text-[13px] leading-6 text-text2">Procesando...</div>
+  </div>
+</div>
 
 <div class="fixed inset-0 z-[210] hidden items-center justify-center bg-black/35 p-4" id="overlay-sueldo" onclick="maybeCloseSueldo(event)">
   <div class="w-full max-w-[320px] rounded-app bg-card p-5 shadow-modal animate-up">

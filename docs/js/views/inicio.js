@@ -10,6 +10,7 @@ import {
   MS,
   requireCurrentUser,
   runtime,
+  runWithLoading,
   showOverlay,
   state,
   toast,
@@ -380,8 +381,10 @@ function closeSueldoModal() {
 async function saveSueldoFromModal() {
   const newSueldo = parseFloat(document.getElementById('sueldo-modal-input').value) || 0;
   document.getElementById('sueldo').value = newSueldo;
-  await saveSueldo(runtime.curM, runtime.curY);
-  app.actions.updateAll?.();
+  await runWithLoading(`Guardando sueldo de ${MS[runtime.curM]} ${runtime.curY}...`, async () => {
+    await saveSueldo(runtime.curM, runtime.curY);
+    app.actions.updateAll?.();
+  });
   closeSueldoModal();
   toast(`Sueldo de ${MS[runtime.curM]} ${runtime.curY} actualizado`);
 }
@@ -407,19 +410,26 @@ async function saveExtra() {
   };
 
   let error;
-  if (runtime.editingExtraId !== null) {
-    ({ error } = await app.supabaseClient.from('ingresos_extra').update(payload).eq('id', runtime.editingExtraId));
-  } else {
-    ({ error } = await app.supabaseClient.from('ingresos_extra').insert(payload));
-  }
+  const isEditing = runtime.editingExtraId !== null;
+  await runWithLoading(isEditing ? 'Actualizando ingreso extra...' : 'Guardando ingreso extra...', async () => {
+    if (isEditing) {
+      ({ error } = await app.supabaseClient.from('ingresos_extra').update(payload).eq('id', runtime.editingExtraId));
+    } else {
+      ({ error } = await app.supabaseClient.from('ingresos_extra').insert(payload));
+    }
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    await app.actions.refreshAppData?.();
+    renderExtraList();
+  });
+
   if (error) {
-    alert(error.message);
     return;
   }
 
-  await app.actions.loadCloudData?.();
-  app.actions.updateAll?.();
-  renderExtraList();
   toast(runtime.editingExtraId !== null ? 'Ingreso adicional actualizado' : 'Ingreso adicional guardado');
   resetExtraForm();
 }
@@ -440,18 +450,25 @@ function editExtra(id) {
 async function delExtra(id) {
   if (!runtime.currentUser) return;
   if (!confirm('¿Eliminar este ingreso adicional?')) return;
-  const { error } = await app.supabaseClient.from('ingresos_extra').delete().eq('id', id);
+  let error;
+  await runWithLoading('Eliminando ingreso extra...', async () => {
+    ({ error } = await app.supabaseClient.from('ingresos_extra').delete().eq('id', id));
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    if (runtime.editingExtraId === id) {
+      resetExtraForm();
+    }
+    await app.actions.refreshAppData?.();
+    renderExtraList();
+  });
+
   if (error) {
-    alert(error.message);
     return;
   }
 
-  if (runtime.editingExtraId === id) {
-    resetExtraForm();
-  }
-  await app.actions.loadCloudData?.();
-  app.actions.updateAll?.();
-  renderExtraList();
   toast('Ingreso adicional eliminado');
 }
 
@@ -466,76 +483,77 @@ async function handleExcelImport(event) {
   const file = event.target.files?.[0];
   if (!file) return;
 
-  const reader = new FileReader();
-  reader.onload = async loadedEvent => {
-    const workbook = new window.ExcelJS.Workbook();
-    await workbook.xlsx.load(loadedEvent.target.result);
-    const sheet = workbook.worksheets[0];
-    const headers = sheet.getRow(1).values.map(value => String(value || '').trim().toLowerCase());
-    const rows = [];
+  try {
+    await runWithLoading('Importando Excel...', async () => {
+      const workbook = new window.ExcelJS.Workbook();
+      await workbook.xlsx.load(await file.arrayBuffer());
+      const sheet = workbook.worksheets[0];
+      const headers = sheet.getRow(1).values.map(value => String(value || '').trim().toLowerCase());
+      const rows = [];
 
-    sheet.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) return;
-      const values = row.values;
-      const item = {
-        descripcion: values[headers.indexOf('descripcion') + 1] || '',
-        categoria: values[headers.indexOf('categoria') + 1] || '',
-        dia_pago: parseInt(values[headers.indexOf('dia_pago') + 1], 10) || 15,
-        tipo: values[headers.indexOf('tipo') + 1] || 'unico',
-        monto: parseFloat(values[headers.indexOf('monto') + 1]) || 0,
-        mes: parseInt(values[headers.indexOf('mes') + 1], 10) || runtime.curM,
-        anio: parseInt(values[headers.indexOf('anio') + 1], 10) || runtime.curY,
-        total_cuotas: parseInt(values[headers.indexOf('total_cuotas') + 1], 10) || 0,
-        cuota_actual: parseInt(values[headers.indexOf('cuota_actual') + 1], 10) || 1,
-      };
-      if (item.descripcion && item.monto > 0) rows.push(item);
+      sheet.eachRow((row, rowNumber) => {
+        if (rowNumber === 1) return;
+        const values = row.values;
+        const item = {
+          descripcion: values[headers.indexOf('descripcion') + 1] || '',
+          categoria: values[headers.indexOf('categoria') + 1] || '',
+          dia_pago: parseInt(values[headers.indexOf('dia_pago') + 1], 10) || 15,
+          tipo: values[headers.indexOf('tipo') + 1] || 'unico',
+          monto: parseFloat(values[headers.indexOf('monto') + 1]) || 0,
+          mes: parseInt(values[headers.indexOf('mes') + 1], 10) || runtime.curM,
+          anio: parseInt(values[headers.indexOf('anio') + 1], 10) || runtime.curY,
+          total_cuotas: parseInt(values[headers.indexOf('total_cuotas') + 1], 10) || 0,
+          cuota_actual: parseInt(values[headers.indexOf('cuota_actual') + 1], 10) || 1,
+        };
+        if (item.descripcion && item.monto > 0) rows.push(item);
+      });
+
+      if (!rows.length) {
+        alert('No se encontraron datos validos en el archivo.');
+        return;
+      }
+
+      const payloads = rows.map(item => ({
+        user_id: currentUser.id,
+        descripcion: item.descripcion,
+        categoria: item.categoria,
+        dia_pago: item.dia_pago,
+        tipo: item.tipo,
+        monto: item.monto,
+        mes: item.mes,
+        anio: item.anio,
+        origen_mes: item.mes,
+        origen_anio: item.anio,
+        cuota_actual: item.cuota_actual,
+        total_cuotas: item.total_cuotas,
+      }));
+
+      const { error } = await app.supabaseClient.from('gastos').insert(payloads);
+      if (error) {
+        alert(error.message);
+        return;
+      }
+
+      await app.actions.refreshAppData?.();
+      toast('Excel importado');
     });
-
-    if (!rows.length) {
-      alert('No se encontraron datos validos en el archivo.');
-      return;
-    }
-
-    const payloads = rows.map(item => ({
-      user_id: currentUser.id,
-      descripcion: item.descripcion,
-      categoria: item.categoria,
-      dia_pago: item.dia_pago,
-      tipo: item.tipo,
-      monto: item.monto,
-      mes: item.mes,
-      anio: item.anio,
-      origen_mes: item.mes,
-      origen_anio: item.anio,
-      cuota_actual: item.cuota_actual,
-      total_cuotas: item.total_cuotas,
-    }));
-
-    const { error } = await app.supabaseClient.from('gastos').insert(payloads);
-    if (error) {
-      alert(error.message);
-      return;
-    }
-
-    await app.actions.loadCloudData?.();
-    app.actions.updateAll?.();
-    toast('Excel importado');
+  } finally {
     event.target.value = '';
-  };
-
-  reader.readAsArrayBuffer(file);
+  }
 }
 
 async function exportExcel() {
-  const workbook = new window.ExcelJS.Workbook();
-  const gastosSheet = workbook.addWorksheet('Gastos');
-  gastosSheet.addRow(['descripcion', 'categoria', 'dia_pago', 'tipo', 'monto', 'mes', 'anio', 'total_cuotas', 'cuota_actual']);
-  state.gastos.forEach(gasto => {
-    gastosSheet.addRow([gasto.desc, gasto.cat, gasto.dia, gasto.tipo, gasto.monto, gasto.mes, gasto.anio, gasto.cuotas, gasto.cuotaAct]);
+  await runWithLoading('Generando Excel...', async () => {
+    const workbook = new window.ExcelJS.Workbook();
+    const gastosSheet = workbook.addWorksheet('Gastos');
+    gastosSheet.addRow(['descripcion', 'categoria', 'dia_pago', 'tipo', 'monto', 'mes', 'anio', 'total_cuotas', 'cuota_actual']);
+    state.gastos.forEach(gasto => {
+      gastosSheet.addRow([gasto.desc, gasto.cat, gasto.dia, gasto.tipo, gasto.monto, gasto.mes, gasto.anio, gasto.cuotas, gasto.cuotaAct]);
+    });
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    window.saveAs(blob, `finanzas-${runtime.curY}-${runtime.curM + 1}.xlsx`);
   });
-  const buffer = await workbook.xlsx.writeBuffer();
-  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  window.saveAs(blob, `finanzas-${runtime.curY}-${runtime.curM + 1}.xlsx`);
 }
 
 app.actions.updateInicio = updateInicio;

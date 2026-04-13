@@ -1,4 +1,13 @@
-import { app, hideOverlay, resetState, runtime, showOverlay, supabaseClient } from './core.js';
+import {
+  app,
+  hideOverlay,
+  refreshAppData,
+  resetState,
+  runWithLoading,
+  runtime,
+  showOverlay,
+  supabaseClient,
+} from './core.js';
 
 const authState = { loading: false };
 
@@ -137,8 +146,7 @@ function validateSignInInputs(email, password) {
 
 async function refreshAfterAuth() {
   try {
-    await app.actions.loadCloudData?.();
-    app.actions.updateAll?.();
+    await refreshAppData();
   } catch (error) {
     console.error(error);
     setAuthMessage('No se pudo cargar tu informacion.', 'error');
@@ -157,18 +165,27 @@ async function signUp() {
 
   setAuthLoading(true);
   setAuthModalMessage('Registrando...', 'info');
-  const { data, error } = await supabaseClient.auth.signUp({ email, password });
-  setAuthLoading(false);
-  if (error) {
+  let data;
+  try {
+    data = await runWithLoading('Creando tu cuenta...', async () => {
+      const result = await supabaseClient.auth.signUp({ email, password });
+      if (result.error) throw result.error;
+      if (result.data.user) {
+        runtime.currentUser = result.data.user;
+        await refreshAfterAuth();
+      }
+      return result.data;
+    });
+  } catch (error) {
     setAuthModalMessage(error.message, 'error');
     return;
+  } finally {
+    setAuthLoading(false);
   }
 
   setAuthModalMessage('Cuenta creada. Revisa tu correo para confirmar.', 'success');
-  if (data.user) {
-    runtime.currentUser = data.user;
+  if (data?.user) {
     updateAuthUI();
-    await refreshAfterAuth();
     closeAuthModal();
     setAuthMessage(`Bienvenido ${runtime.currentUser.email}`, 'success');
   }
@@ -185,27 +202,37 @@ async function signIn() {
 
   setAuthLoading(true);
   setAuthModalMessage('Iniciando sesion...', 'info');
-  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-  setAuthLoading(false);
-  if (error) {
+  try {
+    await runWithLoading('Ingresando a tu cuenta...', async () => {
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      runtime.currentUser = data.user;
+      await refreshAfterAuth();
+    });
+  } catch (error) {
     setAuthModalMessage(error.message, 'error');
     return;
+  } finally {
+    setAuthLoading(false);
   }
 
-  runtime.currentUser = data.user;
   updateAuthUI();
-  await refreshAfterAuth();
   setAuthMessage(`Bienvenido ${runtime.currentUser.email}`, 'success');
   closeAuthModal();
 }
 
 async function signOutUser() {
   setAuthLoading(true);
-  const { error } = await supabaseClient.auth.signOut();
-  setAuthLoading(false);
-  if (error) {
+  try {
+    await runWithLoading('Cerrando sesion...', async () => {
+      const { error } = await supabaseClient.auth.signOut();
+      if (error) throw error;
+    });
+  } catch (error) {
     setAuthMessage(error.message, 'error');
     return;
+  } finally {
+    setAuthLoading(false);
   }
 
   runtime.currentUser = null;
@@ -225,17 +252,19 @@ function submitAuthAction() {
 }
 
 export async function initAuth() {
-  const { data, error } = await supabaseClient.auth.getSession();
-  if (error) {
+  try {
+    await runWithLoading('Cargando tu sesion...', async () => {
+      const { data, error } = await supabaseClient.auth.getSession();
+      if (error) throw error;
+      runtime.currentUser = data.session?.user ?? null;
+      updateAuthUI();
+      if (runtime.currentUser) {
+        await refreshAfterAuth();
+      }
+    });
+  } catch (error) {
     console.error(error);
     setAuthMessage('Error al comprobar sesion', 'error');
-    return;
-  }
-
-  runtime.currentUser = data.session?.user ?? null;
-  updateAuthUI();
-  if (runtime.currentUser) {
-    await refreshAfterAuth();
   }
 }
 

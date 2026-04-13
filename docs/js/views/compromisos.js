@@ -15,6 +15,7 @@ import {
   prestamoSaldo,
   requireCurrentUser,
   runtime,
+  runWithLoading,
   showOverlay,
   state,
   toast,
@@ -211,18 +212,24 @@ async function saveG() {
   };
 
   let error;
-  if (runtime.editId !== null) {
-    ({ error } = await app.supabaseClient.from('gastos').update(payload).eq('id', runtime.editId));
-  } else {
-    ({ error } = await app.supabaseClient.from('gastos').insert(payload));
-  }
+  const isEditing = runtime.editId !== null;
+  await runWithLoading(isEditing ? 'Actualizando gasto...' : 'Guardando gasto...', async () => {
+    if (isEditing) {
+      ({ error } = await app.supabaseClient.from('gastos').update(payload).eq('id', runtime.editId));
+    } else {
+      ({ error } = await app.supabaseClient.from('gastos').insert(payload));
+    }
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    await app.actions.refreshAppData?.();
+  });
+
   if (error) {
-    alert(error.message);
     return;
   }
-
-  await app.actions.loadCloudData?.();
-  app.actions.updateAll?.();
   closeModal();
   toast(runtime.editId !== null ? 'Gasto actualizado' : 'Gasto agregado');
   runtime.editId = null;
@@ -247,14 +254,20 @@ function editG(id) {
 async function delG(id) {
   if (!runtime.currentUser) return;
   if (!confirm('¿Eliminar este gasto?')) return;
-  const { error } = await app.supabaseClient.from('gastos').delete().eq('id', id);
+  let error;
+  await runWithLoading('Eliminando gasto...', async () => {
+    ({ error } = await app.supabaseClient.from('gastos').delete().eq('id', id));
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    await app.actions.refreshAppData?.();
+  });
+
   if (error) {
-    alert(error.message);
     return;
   }
-
-  await app.actions.loadCloudData?.();
-  app.actions.updateAll?.();
   toast('Gasto eliminado');
 }
 
@@ -277,14 +290,20 @@ async function toggleGastoPago(id) {
     ? { pagado: true, fecha_pagado: paymentDateForView() }
     : { pagado: false, fecha_pagado: null };
 
-  const { error } = await app.supabaseClient.from('gastos').update(payload).eq('id', id);
+  let error;
+  await runWithLoading('Actualizando pago...', async () => {
+    ({ error } = await app.supabaseClient.from('gastos').update(payload).eq('id', id));
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    await app.actions.refreshAppData?.();
+  });
+
   if (error) {
-    alert(error.message);
     return;
   }
-
-  await app.actions.loadCloudData?.();
-  app.actions.updateAll?.();
   toast(nextPaid ? 'Gasto marcado como pagado' : 'Pago deshecho');
 }
 
@@ -296,19 +315,25 @@ async function registerCuota(id) {
   const nextCuota = Math.min(gasto.cuotaAct + 1, gasto.cuotas + 1);
   if (nextCuota === gasto.cuotaAct) return;
 
-  const { error } = await app.supabaseClient.from('gastos').update({
-    cuota_actual: nextCuota,
-    pagado: true,
-    fecha_pagado: paymentDateForView(),
-  }).eq('id', id);
+  let error;
+  await runWithLoading('Registrando cuota...', async () => {
+    ({ error } = await app.supabaseClient.from('gastos').update({
+      cuota_actual: nextCuota,
+      pagado: true,
+      fecha_pagado: paymentDateForView(),
+    }).eq('id', id));
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    await app.actions.refreshAppData?.();
+  });
 
   if (error) {
-    alert(error.message);
     return;
   }
-
-  await app.actions.loadCloudData?.();
-  app.actions.updateAll?.();
   toast(nextCuota > gasto.cuotas ? 'Ultima cuota registrada' : 'Cuota registrada');
 }
 
@@ -322,19 +347,25 @@ async function undoCuota(id) {
   }
 
   const prevCuota = gasto.cuotaAct - 1;
-  const { error } = await app.supabaseClient.from('gastos').update({
-    cuota_actual: prevCuota,
-    pagado: false,
-    fecha_pagado: null,
-  }).eq('id', id);
+  let error;
+  await runWithLoading('Deshaciendo cuota...', async () => {
+    ({ error } = await app.supabaseClient.from('gastos').update({
+      cuota_actual: prevCuota,
+      pagado: false,
+      fecha_pagado: null,
+    }).eq('id', id));
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    await app.actions.refreshAppData?.();
+  });
 
   if (error) {
-    alert(error.message);
     return;
   }
-
-  await app.actions.loadCloudData?.();
-  app.actions.updateAll?.();
   toast('Cuota deshecha');
 }
 
@@ -447,14 +478,21 @@ async function carrySelectedExpenses() {
     total_cuotas: gasto.cuotas,
   }));
 
-  const { error } = await app.supabaseClient.from('gastos').insert(payloads);
+  let error;
+  await runWithLoading('Copiando gastos al siguiente mes...', async () => {
+    ({ error } = await app.supabaseClient.from('gastos').insert(payloads));
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    await app.actions.refreshAppData?.();
+  });
+
   if (error) {
-    alert(error.message);
     return;
   }
 
-  await app.actions.loadCloudData?.();
-  app.actions.updateAll?.();
   closeCarryModal();
   toast(`Gastos copiados a ${MS[target.month]} ${target.year}`);
 }
@@ -670,18 +708,25 @@ async function savePrestamo() {
   };
 
   let error;
-  if (runtime.editingPrestamoId !== null) {
-    ({ error } = await app.supabaseClient.from('prestamos').update(payload).eq('id', runtime.editingPrestamoId));
-  } else {
-    ({ error } = await app.supabaseClient.from('prestamos').insert(payload));
-  }
+  const isEditing = runtime.editingPrestamoId !== null;
+  await runWithLoading(isEditing ? 'Actualizando prestamo...' : 'Guardando prestamo...', async () => {
+    if (isEditing) {
+      ({ error } = await app.supabaseClient.from('prestamos').update(payload).eq('id', runtime.editingPrestamoId));
+    } else {
+      ({ error } = await app.supabaseClient.from('prestamos').insert(payload));
+    }
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    await app.actions.refreshAppData?.();
+  });
+
   if (error) {
-    alert(error.message);
     return;
   }
 
-  await app.actions.loadCloudData?.();
-  app.actions.updateAll?.();
   closePrestamoModal();
   toast(runtime.editingPrestamoId ? 'Prestamo actualizado' : 'Prestamo agregado');
   runtime.editingPrestamoId = null;
@@ -690,14 +735,21 @@ async function savePrestamo() {
 async function delPrestamo(id) {
   if (!runtime.currentUser) return;
   if (!confirm('¿Eliminar este prestamo y todos sus abonos?')) return;
-  const { error } = await app.supabaseClient.from('prestamos').delete().eq('id', id);
+  let error;
+  await runWithLoading('Eliminando prestamo...', async () => {
+    ({ error } = await app.supabaseClient.from('prestamos').delete().eq('id', id));
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    await app.actions.refreshAppData?.();
+  });
+
   if (error) {
-    alert(error.message);
     return;
   }
 
-  await app.actions.loadCloudData?.();
-  app.actions.updateAll?.();
   toast('Prestamo eliminado');
 }
 
@@ -768,36 +820,45 @@ async function saveAbono() {
     return;
   }
 
-  const { data: abonoData, error: abonoError } = await app.supabaseClient.from('abonos_prestamos').insert({
-    user_id: runtime.currentUser.id,
-    prestamo_id: prestamo.id,
-    fecha: new Date().toISOString().slice(0, 10),
-    mes,
-    monto,
-    impacto,
-    nota,
-    linked_type: null,
-    linked_id: null,
-  }).select('id').single();
+  let abonoError;
+  let updateError;
+  await runWithLoading('Registrando abono...', async () => {
+    const { data: abonoData, error } = await app.supabaseClient.from('abonos_prestamos').insert({
+      user_id: runtime.currentUser.id,
+      prestamo_id: prestamo.id,
+      fecha: new Date().toISOString().slice(0, 10),
+      mes,
+      monto,
+      impacto,
+      nota,
+      linked_type: null,
+      linked_id: null,
+    }).select('id').single();
 
-  if (abonoError) {
-    alert(abonoError.message);
+    abonoError = error;
+    if (abonoError) {
+      alert(abonoError.message);
+      return;
+    }
+
+    const nuevoPagado = (prestamo.montoPagado || 0) + monto;
+    ({ error: updateError } = await app.supabaseClient.from('prestamos').update({ monto_pagado: nuevoPagado }).eq('id', prestamo.id));
+    if (updateError) {
+      alert(updateError.message);
+      return;
+    }
+
+    if (impacto === 'mes') {
+      await syncAbonoImpact(prestamo, monto, mes, abonoData.id);
+    }
+
+    await app.actions.refreshAppData?.();
+  });
+
+  if (abonoError || updateError) {
     return;
   }
 
-  const nuevoPagado = (prestamo.montoPagado || 0) + monto;
-  const { error: updateError } = await app.supabaseClient.from('prestamos').update({ monto_pagado: nuevoPagado }).eq('id', prestamo.id);
-  if (updateError) {
-    alert(updateError.message);
-    return;
-  }
-
-  if (impacto === 'mes') {
-    await syncAbonoImpact(prestamo, monto, mes, abonoData.id);
-  }
-
-  await app.actions.loadCloudData?.();
-  app.actions.updateAll?.();
   closeAbonoModal();
   toast('Abono registrado');
 }
@@ -819,31 +880,43 @@ async function saveAbonoEdit() {
     return;
   }
 
-  await removeLinkedAbonoImpact(historial);
+  let abonoError;
+  let updateError;
+  await runWithLoading('Actualizando abono...', async () => {
+    await removeLinkedAbonoImpact(historial);
 
-  const { error: abonoError } = await app.supabaseClient.from('abonos_prestamos').update({
-    monto,
-    mes,
-    impacto,
-    nota,
-    linked_type: null,
-    linked_id: null,
-  }).eq('id', historial.id);
+    ({ error: abonoError } = await app.supabaseClient.from('abonos_prestamos').update({
+      monto,
+      mes,
+      impacto,
+      nota,
+      linked_type: null,
+      linked_id: null,
+    }).eq('id', historial.id));
 
-  if (abonoError) {
-    alert(abonoError.message);
+    if (abonoError) {
+      alert(abonoError.message);
+      return;
+    }
+
+    const nuevoPagado = (prestamo.montoPagado || 0) - (historial.monto || 0) + monto;
+    ({ error: updateError } = await app.supabaseClient.from('prestamos').update({ monto_pagado: nuevoPagado }).eq('id', prestamo.id));
+    if (updateError) {
+      alert(updateError.message);
+      return;
+    }
+
+    if (impacto === 'mes') {
+      await syncAbonoImpact(prestamo, monto, mes, historial.id);
+    }
+
+    await app.actions.refreshAppData?.();
+  });
+
+  if (abonoError || updateError) {
     return;
   }
 
-  const nuevoPagado = (prestamo.montoPagado || 0) - (historial.monto || 0) + monto;
-  await app.supabaseClient.from('prestamos').update({ monto_pagado: nuevoPagado }).eq('id', prestamo.id);
-
-  if (impacto === 'mes') {
-    await syncAbonoImpact(prestamo, monto, mes, historial.id);
-  }
-
-  await app.actions.loadCloudData?.();
-  app.actions.updateAll?.();
   closeAbonoModal();
   toast('Abono actualizado');
 }
@@ -855,14 +928,30 @@ async function removeAbono(prestamoId, historialId) {
   if (!prestamo || !historial) return;
   if (!confirm('¿Eliminar este abono?')) return;
 
-  await removeLinkedAbonoImpact(historial);
-  await app.supabaseClient.from('abonos_prestamos').delete().eq('id', historialId);
+  let deleteError;
+  let updateError;
+  await runWithLoading('Eliminando abono...', async () => {
+    await removeLinkedAbonoImpact(historial);
+    ({ error: deleteError } = await app.supabaseClient.from('abonos_prestamos').delete().eq('id', historialId));
+    if (deleteError) {
+      alert(deleteError.message);
+      return;
+    }
 
-  const nuevoPagado = Math.max((prestamo.montoPagado || 0) - (historial.monto || 0), 0);
-  await app.supabaseClient.from('prestamos').update({ monto_pagado: nuevoPagado }).eq('id', prestamoId);
+    const nuevoPagado = Math.max((prestamo.montoPagado || 0) - (historial.monto || 0), 0);
+    ({ error: updateError } = await app.supabaseClient.from('prestamos').update({ monto_pagado: nuevoPagado }).eq('id', prestamoId));
+    if (updateError) {
+      alert(updateError.message);
+      return;
+    }
 
-  await app.actions.loadCloudData?.();
-  app.actions.updateAll?.();
+    await app.actions.refreshAppData?.();
+  });
+
+  if (deleteError || updateError) {
+    return;
+  }
+
   toast('Abono eliminado');
 }
 

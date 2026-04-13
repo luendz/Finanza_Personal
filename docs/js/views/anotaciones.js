@@ -6,6 +6,7 @@ import {
   MS,
   requireCurrentUser,
   runtime,
+  runWithLoading,
   showOverlay,
   state,
   toast,
@@ -124,23 +125,31 @@ async function confirmBulkMoveNotes() {
     total_cuotas: note.cuotas,
   }));
 
-  const { error: insertError } = await app.supabaseClient.from('gastos').insert(inserts);
-  if (insertError) {
-    alert(insertError.message);
+  let insertError;
+  let deleteError;
+  await runWithLoading('Procesando anotaciones...', async () => {
+    ({ error: insertError } = await app.supabaseClient.from('gastos').insert(inserts));
+    if (insertError) {
+      alert(insertError.message);
+      return;
+    }
+
+    if (action === 'move') {
+      const ids = selected.map(note => note.id);
+      ({ error: deleteError } = await app.supabaseClient.from('anotaciones').delete().in('id', ids));
+      if (deleteError) {
+        alert(deleteError.message);
+        return;
+      }
+    }
+
+    await app.actions.refreshAppData?.();
+  });
+
+  if (insertError || deleteError) {
     return;
   }
 
-  if (action === 'move') {
-    const ids = selected.map(note => note.id);
-    const { error: deleteError } = await app.supabaseClient.from('anotaciones').delete().in('id', ids);
-    if (deleteError) {
-      alert(deleteError.message);
-      return;
-    }
-  }
-
-  await app.actions.loadCloudData?.();
-  app.actions.updateAll?.();
   closeBulkMoveNotesModal();
   toast('Anotaciones procesadas');
 }
@@ -167,22 +176,30 @@ async function confirmMoveNote() {
     total_cuotas: note.cuotas,
   };
 
-  const { error: insertError } = await app.supabaseClient.from('gastos').insert(payload);
-  if (insertError) {
-    alert(insertError.message);
+  let insertError;
+  let deleteError;
+  await runWithLoading('Enviando anotacion...', async () => {
+    ({ error: insertError } = await app.supabaseClient.from('gastos').insert(payload));
+    if (insertError) {
+      alert(insertError.message);
+      return;
+    }
+
+    if (action === 'move') {
+      ({ error: deleteError } = await app.supabaseClient.from('anotaciones').delete().eq('id', runtime.movingNoteId));
+      if (deleteError) {
+        alert(deleteError.message);
+        return;
+      }
+    }
+
+    await app.actions.refreshAppData?.();
+  });
+
+  if (insertError || deleteError) {
     return;
   }
 
-  if (action === 'move') {
-    const { error: deleteError } = await app.supabaseClient.from('anotaciones').delete().eq('id', runtime.movingNoteId);
-    if (deleteError) {
-      alert(deleteError.message);
-      return;
-    }
-  }
-
-  await app.actions.loadCloudData?.();
-  app.actions.updateAll?.();
   closeNoteMoveModal();
   toast('Anotacion enviada');
 }
@@ -275,18 +292,24 @@ async function saveNote() {
   };
 
   let error;
-  if (runtime.editingNoteId !== null) {
-    ({ error } = await app.supabaseClient.from('anotaciones').update(payload).eq('id', runtime.editingNoteId));
-  } else {
-    ({ error } = await app.supabaseClient.from('anotaciones').insert(payload));
-  }
+  const isEditing = runtime.editingNoteId !== null;
+  await runWithLoading(isEditing ? 'Actualizando anotacion...' : 'Guardando anotacion...', async () => {
+    if (isEditing) {
+      ({ error } = await app.supabaseClient.from('anotaciones').update(payload).eq('id', runtime.editingNoteId));
+    } else {
+      ({ error } = await app.supabaseClient.from('anotaciones').insert(payload));
+    }
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    await app.actions.refreshAppData?.();
+  });
+
   if (error) {
-    alert(error.message);
     return;
   }
-
-  await app.actions.loadCloudData?.();
-  app.actions.updateAll?.();
   closeNoteModal();
   toast(runtime.editingNoteId ? 'Anotacion actualizada' : 'Anotacion agregada');
   runtime.editingNoteId = null;
@@ -295,14 +318,20 @@ async function saveNote() {
 async function delNote(id) {
   if (!runtime.currentUser) return;
   if (!confirm('¿Eliminar esta anotacion?')) return;
-  const { error } = await app.supabaseClient.from('anotaciones').delete().eq('id', id);
+  let error;
+  await runWithLoading('Eliminando anotacion...', async () => {
+    ({ error } = await app.supabaseClient.from('anotaciones').delete().eq('id', id));
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    await app.actions.refreshAppData?.();
+  });
+
   if (error) {
-    alert(error.message);
     return;
   }
-
-  await app.actions.loadCloudData?.();
-  app.actions.updateAll?.();
   toast('Anotacion eliminada');
 }
 
