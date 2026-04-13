@@ -600,7 +600,8 @@ function getExportFileName(scope) {
 
 function parseDateParts(dateStr) {
   if (!dateStr) return null;
-  const [year, month, day] = String(dateStr).split('-').map(Number);
+  const normalized = String(dateStr).trim().split('T')[0].split(' ')[0];
+  const [year, month, day] = normalized.split('-').map(Number);
   if (!year || !month || !day) return null;
   return { year, month: month - 1, day };
 }
@@ -669,7 +670,8 @@ function getScopedPrestamos(scope) {
 
   return state.prestamos
     .filter(prestamo => (
-      matchesScopeByDate(prestamo.fecha, scope)
+      matchesScopeByDate(prestamo.createdAt, scope)
+      || matchesScopeByDate(prestamo.fecha, scope)
       || matchesScopeByDate(prestamo.vencimiento, scope)
       || (prestamo.historial || []).some(item => matchesScopeByDate(item.fecha, scope))
     ))
@@ -685,6 +687,12 @@ function getScopedAbonos(scope) {
     })))
     .filter(item => matchesScopeByDate(item.fecha, scope))
     .sort((left, right) => String(left.fecha || '').localeCompare(String(right.fecha || '')));
+}
+
+function getExportDateCell(dateStr) {
+  const parts = parseDateParts(dateStr);
+  if (!parts) return '';
+  return `${parts.year}-${String(parts.month + 1).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`;
 }
 
 function getAllSummaryYears() {
@@ -909,6 +917,7 @@ async function exportExcel() {
       montoTotal: Number(prestamo.montoTotal || 0),
       abonado: Number(prestamo.montoPagado || 0),
       saldo,
+      creado: getExportDateCell(prestamo.createdAt),
       fecha: prestamo.fecha || '',
       vencimiento: prestamo.vencimiento || '',
       estado,
@@ -966,6 +975,7 @@ async function exportExcel() {
         { header: 'Monto total', key: 'montoTotal', width: 14 },
         { header: 'Abonado', key: 'abonado', width: 14 },
         { header: 'Saldo', key: 'saldo', width: 14 },
+        { header: 'Creado', key: 'creado', width: 14 },
         { header: 'Fecha', key: 'fecha', width: 14 },
         { header: 'Vencimiento', key: 'vencimiento', width: 14 },
         { header: 'Estado', key: 'estado', width: 12 },

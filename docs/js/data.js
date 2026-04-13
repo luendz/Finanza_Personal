@@ -182,6 +182,7 @@ export async function loadCloudData() {
       desc: prestamo.descripcion,
       montoTotal: Number(prestamo.monto_total),
       montoPagado: Number(prestamo.monto_pagado),
+      createdAt: prestamo.created_at || null,
       fecha: prestamo.fecha,
       vencimiento: prestamo.vencimiento,
       notas: prestamo.notas,
