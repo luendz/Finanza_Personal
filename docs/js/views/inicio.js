@@ -15,7 +15,7 @@ import {
   state,
   toast,
 } from '../core.js';
-import { getSueldoForPeriod, saveSueldo } from '../data.js';
+import { getEmailReminderSettings, getSueldoForPeriod, saveEmailReminderSettings, saveSueldo } from '../data.js';
 
 function extrasDelMes() {
   return (state.ingresosExtra || []).filter(item => Number(item.mes) === runtime.curM && Number(item.anio || runtime.curY) === runtime.curY);
@@ -226,6 +226,123 @@ function drawDonut(sorted, total) {
   }).join('');
 }
 
+function getBrowserTimeZone() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Lima';
+  } catch (error) {
+    return 'America/Lima';
+  }
+}
+
+function formatReminderHour(hour) {
+  return `${String(Math.min(23, Math.max(0, Number(hour) || 0))).padStart(2, '0')}:00`;
+}
+
+function formatReminderLastSent(dateStr) {
+  if (!dateStr) return 'Aún no se ha enviado ningún correo.';
+  const [year, month, day] = String(dateStr).split('-').map(Number);
+  if (!year || !month || !day) return `Último envío: ${dateStr}`;
+  return `Último envío: ${new Date(year, month - 1, day).toLocaleDateString('es-PE')}`;
+}
+
+function ensureReminderHourOptions(selectedHour = 7) {
+  const hourSelect = document.getElementById('email-reminder-send-hour');
+  if (!hourSelect) return;
+  hourSelect.innerHTML = Array.from({ length: 24 }, (_, hour) => (
+    `<option value="${hour}" ${hour === selectedHour ? 'selected' : ''}>${formatReminderHour(hour)}</option>`
+  )).join('');
+}
+
+function validateReminderEmail(email) {
+  if (!email) return 'Ingresa un correo de destino.';
+  if (!/^\S+@\S+\.\S+$/.test(email)) return 'Ingresa un correo válido para las alertas.';
+  return null;
+}
+
+function getReminderFormValues() {
+  const fallbackEmail = runtime.currentUser?.email || '';
+  const timezone = document.getElementById('email-reminder-timezone')?.textContent?.trim() || getBrowserTimeZone();
+  return {
+    activo: document.getElementById('email-reminder-enabled')?.checked || false,
+    emailDestino: (document.getElementById('email-reminder-email')?.value || fallbackEmail).trim(),
+    diasAdelanto: parseInt(document.getElementById('email-reminder-days-ahead')?.value || '2', 10) || 0,
+    horaEnvio: parseInt(document.getElementById('email-reminder-send-hour')?.value || '7', 10) || 7,
+    timezone,
+  };
+}
+
+function renderEmailReminderSummary() {
+  const summary = document.getElementById('email-reminder-summary');
+  const chip = document.getElementById('email-reminder-chip');
+  if (!summary || !chip) return;
+
+  if (!runtime.currentUser) {
+    summary.textContent = 'Inicia sesión para activar un correo diario con tus gastos vencidos y próximos pagos.';
+    chip.className = 'inline-flex items-center rounded-full border border-borderc bg-white px-3 py-1 text-[11px] font-bold text-text2';
+    chip.textContent = 'Sin sesión';
+    return;
+  }
+
+  const settings = getEmailReminderSettings();
+  const daysCopy = settings.diasAdelanto > 0
+    ? `vencidos y próximos ${settings.diasAdelanto} día(s)`
+    : 'vencidos del día';
+
+  if (settings.activo) {
+    summary.textContent = `${settings.emailDestino || runtime.currentUser.email} · ${daysCopy} · todos los días a las ${formatReminderHour(settings.horaEnvio)} (${settings.timezone}).`;
+    chip.className = 'inline-flex items-center rounded-full border border-[#d8ead8] bg-[#f5fbf5] px-3 py-1 text-[11px] font-bold text-green1';
+    chip.textContent = 'Activo';
+    return;
+  }
+
+  summary.textContent = 'Desactivadas por ahora. Cuando las actives, enviaremos un solo correo al día para no gastar de más.';
+  chip.className = 'inline-flex items-center rounded-full border border-borderc bg-white px-3 py-1 text-[11px] font-bold text-text2';
+  chip.textContent = 'Inactivo';
+}
+
+function renderEmailReminderModalStatus(settings) {
+  const status = document.getElementById('email-reminder-modal-status');
+  const timezoneEl = document.getElementById('email-reminder-timezone');
+  const lastSent = document.getElementById('email-reminder-last-sent');
+  const lastError = document.getElementById('email-reminder-last-error');
+  if (status) {
+    status.textContent = settings.activo
+      ? `Activo: 1 correo diario a las ${formatReminderHour(settings.horaEnvio)} para ${settings.emailDestino || runtime.currentUser?.email || 'tu correo'}.`
+      : 'Configuración desactivada.';
+  }
+  if (timezoneEl) timezoneEl.textContent = settings.timezone || getBrowserTimeZone();
+  if (lastSent) lastSent.textContent = formatReminderLastSent(settings.ultimoEnvioFecha);
+  if (lastError) {
+    if (settings.ultimoError) {
+      lastError.textContent = `Último error: ${settings.ultimoError}`;
+      lastError.classList.remove('hidden');
+    } else {
+      lastError.textContent = '';
+      lastError.classList.add('hidden');
+    }
+  }
+}
+
+function syncEmailReminderModalFromState() {
+  const settings = getEmailReminderSettings();
+  const emailInput = document.getElementById('email-reminder-email');
+  const enabledInput = document.getElementById('email-reminder-enabled');
+  const daysAheadSelect = document.getElementById('email-reminder-days-ahead');
+  if (enabledInput) enabledInput.checked = settings.activo;
+  if (emailInput) emailInput.value = settings.emailDestino || runtime.currentUser?.email || '';
+  if (daysAheadSelect) daysAheadSelect.value = String(settings.diasAdelanto);
+  ensureReminderHourOptions(settings.horaEnvio);
+  renderEmailReminderModalStatus(settings);
+}
+
+function syncEmailReminderDraftState() {
+  const baseSettings = getEmailReminderSettings();
+  renderEmailReminderModalStatus({
+    ...baseSettings,
+    ...getReminderFormValues(),
+  });
+}
+
 function updateInicio() {
   const resumenActual = resumenDelPeriodo(runtime.curM, runtime.curY);
   const sueldoBase = resumenActual.sueldoBase;
@@ -315,6 +432,7 @@ function updateInicio() {
 
   renderInicioPreview(items);
   drawDonut(sorted, gastos);
+  renderEmailReminderSummary();
 }
 
 function renderExtraList() {
@@ -378,6 +496,20 @@ function closeSueldoModal() {
   hideOverlay('overlay-sueldo');
 }
 
+function openEmailRemindersModal() {
+  const currentUser = requireCurrentUser();
+  if (!currentUser) {
+    window.openAuthModal?.('login');
+    return;
+  }
+  syncEmailReminderModalFromState();
+  showOverlay('overlay-email-reminders');
+}
+
+function closeEmailRemindersModal() {
+  hideOverlay('overlay-email-reminders');
+}
+
 function getSelectedExportScope() {
   return document.querySelector('input[name="export-scope"]:checked')?.value || 'month';
 }
@@ -411,6 +543,63 @@ async function saveSueldoFromModal() {
   });
   closeSueldoModal();
   toast(`Sueldo de ${MS[runtime.curM]} ${runtime.curY} actualizado`);
+}
+
+async function saveEmailReminders() {
+  const currentUser = requireCurrentUser();
+  if (!currentUser) return;
+
+  const values = getReminderFormValues();
+  const emailError = validateReminderEmail(values.emailDestino);
+  if (emailError) {
+    alert(emailError);
+    return;
+  }
+
+  let saveError;
+  await runWithLoading('Guardando alertas por correo...', async () => {
+    const { error } = await saveEmailReminderSettings(values);
+    saveError = error;
+  });
+
+  if (saveError) {
+    alert(saveError.message || 'No se pudo guardar la configuración de alertas.');
+    return;
+  }
+
+  syncEmailReminderModalFromState();
+  app.actions.updateAll?.();
+  closeEmailRemindersModal();
+  toast(values.activo ? 'Alertas por correo activadas' : 'Alertas por correo actualizadas');
+}
+
+async function sendEmailReminderTest() {
+  const currentUser = requireCurrentUser();
+  if (!currentUser) return;
+
+  const settings = getReminderFormValues();
+  const emailError = validateReminderEmail(settings.emailDestino);
+  if (emailError) {
+    alert(emailError);
+    return;
+  }
+
+  try {
+    await runWithLoading('Enviando correo de prueba...', async () => {
+      const { error } = await app.supabaseClient.functions.invoke('send-due-reminders', {
+        body: {
+          mode: 'test',
+          settings,
+        },
+      });
+
+      if (error) throw error;
+    });
+    toast('Correo de prueba enviado');
+  } catch (error) {
+    console.error(error);
+    alert(error.message || 'No se pudo enviar el correo de prueba.');
+  }
 }
 
 async function saveExtra() {
@@ -1008,6 +1197,7 @@ async function exportExcel() {
 app.actions.updateInicio = updateInicio;
 
 Object.assign(window, {
+  closeEmailRemindersModal,
   closeExportModal,
   closeExtraModal,
   closeSueldoModal,
@@ -1015,11 +1205,15 @@ Object.assign(window, {
   editExtra,
   exportExcel,
   handleExcelImport,
+  openEmailRemindersModal,
   openExportModal,
   openExtraModal,
   openInicioGastosDetalle,
   openSueldoModal,
+  saveEmailReminders,
   saveExtra,
   saveSueldoFromModal,
+  sendEmailReminderTest,
+  syncEmailReminderDraftState,
   triggerExcelImport,
 });

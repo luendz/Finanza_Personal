@@ -45,7 +45,19 @@ export const state = app.state ?? {
   anotaciones: [],
   prestamos: [],
   gastos: [],
-  userSettings: { sueldo: null, sueldosMensuales: {} },
+  userSettings: {
+    sueldo: null,
+    sueldosMensuales: {},
+    emailReminders: {
+      activo: false,
+      emailDestino: '',
+      diasAdelanto: 2,
+      horaEnvio: 7,
+      timezone: 'America/Lima',
+      ultimoEnvioFecha: null,
+      ultimoError: null,
+    },
+  },
 };
 
 app.actions ??= {};
@@ -63,7 +75,19 @@ export function resetState() {
   state.anotaciones = [];
   state.prestamos = [];
   state.gastos = [];
-  state.userSettings = { sueldo: null, sueldosMensuales: {} };
+  state.userSettings = {
+    sueldo: null,
+    sueldosMensuales: {},
+    emailReminders: {
+      activo: false,
+      emailDestino: '',
+      diasAdelanto: 2,
+      horaEnvio: 7,
+      timezone: 'America/Lima',
+      ultimoEnvioFecha: null,
+      ultimoError: null,
+    },
+  };
 }
 
 export function cs(cat) {
@@ -232,6 +256,10 @@ export function maybeCloseExport(event) {
   closeOnBackdrop(event, window.closeExportModal);
 }
 
+export function maybeCloseEmailReminders(event) {
+  closeOnBackdrop(event, window.closeEmailRemindersModal);
+}
+
 export function fillMonthOptions(selectId) {
   const el = document.getElementById(selectId);
   if (!el) return;
@@ -394,6 +422,7 @@ Object.assign(window, {
   maybeCloseAuth,
   maybeCloseBulkMoveNotes,
   maybeCloseCarry,
+  maybeCloseEmailReminders,
   maybeCloseExtra,
   maybeCloseNote,
   maybeCloseNoteMove,

@@ -37,9 +37,10 @@
         <div class="font-heading text-[22px] font-bold tracking-[-0.02em] text-text1 max-md:text-[19px]">Panel mensual</div>
         <div class="text-[12px] text-text2" id="inicio-sub">Tu resumen del mes</div>
       </div>
-      <div class="flex flex-wrap items-center gap-2 max-md:grid max-md:w-full max-md:grid-cols-2">
+      <div class="flex flex-wrap items-center gap-2 max-md:grid max-md:w-full max-md:grid-cols-1">
         <input type="file" id="excel-import" accept=".xlsx,.xls" class="hidden" onchange="handleExcelImport(event)">
         <button class="rounded-full border border-accent/15 bg-white px-3 py-1.5 font-heading text-[11px] font-bold text-accent shadow-soft transition hover:-translate-y-0.5 hover:border-accent hover:bg-bluebg max-md:w-full max-md:py-2" onclick="triggerExcelImport()">Subir Excel</button>
+        <button class="rounded-full border border-borderc bg-white px-3 py-1.5 font-heading text-[11px] font-bold text-text2 shadow-soft transition hover:-translate-y-0.5 hover:border-accent hover:text-accent max-md:w-full max-md:py-2" onclick="openEmailRemindersModal()">Alertas correo</button>
         <button class="rounded-full border border-accent bg-accent px-3 py-1.5 font-heading text-[11px] font-bold text-white shadow-soft transition hover:-translate-y-0.5 hover:brightness-95 max-md:w-full max-md:py-2" onclick="openExportModal()">Descargar Excel</button>
       </div>
     </div>
@@ -53,6 +54,17 @@
       </div>
       <span class="ml-1 text-[11px] font-bold uppercase tracking-[0.07em] text-text3 max-md:ml-0 max-md:w-full">Mes:</span>
       <div id="mbtns1" class="flex flex-wrap gap-1.5 max-md:w-full"></div>
+    </div>
+
+    <div id="email-reminder-banner" class="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-[#dbe5f3] bg-white/85 px-4 py-3 shadow-soft max-md:px-3.5">
+      <div class="min-w-0">
+        <div class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Alertas por correo</div>
+        <div id="email-reminder-summary" class="mt-1 text-[12px] leading-5 text-text2">Actívalas para recibir un solo correo al día con vencidos y próximos pagos.</div>
+      </div>
+      <div class="flex items-center gap-2 max-md:w-full max-md:justify-between">
+        <span id="email-reminder-chip" class="inline-flex items-center rounded-full border border-borderc bg-white px-3 py-1 text-[11px] font-bold text-text2">Inactivo</span>
+        <button class="rounded-full border border-borderc bg-white px-3 py-1.5 font-heading text-[11px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="openEmailRemindersModal()">Configurar</button>
+      </div>
     </div>
   </div>
 
@@ -433,24 +445,34 @@
         <div id="auth-modal-title" class="font-heading text-lg font-bold text-text1">Iniciar sesión</div>
         <div id="auth-modal-sub" class="text-[12px] text-text2">Accede a tu cuenta para sincronizar datos.</div>
       </div>
-      <div class="flex gap-2">
+      <div id="auth-mode-switcher" class="flex gap-2">
         <button id="auth-mode-login" onclick="toggleAuthMode('login')" class="rounded-full border border-accent bg-accent px-4 py-1.5 font-heading text-[12px] font-bold text-white transition hover:brightness-95">Login</button>
         <button id="auth-mode-register" onclick="toggleAuthMode('register')" class="rounded-full border border-borderc bg-white px-4 py-1.5 font-heading text-[12px] font-bold text-text2 transition hover:border-accent hover:text-accent">Registro</button>
       </div>
     </div>
     <div class="mb-3 grid grid-cols-1 gap-3">
-      <div class="flex flex-col gap-1.5">
+      <div id="auth-email-field" class="flex flex-col gap-1.5">
         <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Correo</label>
-        <input id="auth-email" type="email" placeholder="ejemplo@mail.com" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+        <input id="auth-email" type="email" placeholder="ejemplo@mail.com" onkeydown="handleAuthKeydown(event)" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
       </div>
-      <div class="flex flex-col gap-1.5">
-        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Clave</label>
-        <input id="auth-password" type="password" placeholder="******" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+      <div id="auth-password-field" class="flex flex-col gap-1.5">
+        <label id="auth-password-label" class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Clave</label>
+        <div class="relative">
+          <input id="auth-password" type="password" placeholder="******" onkeydown="handleAuthKeydown(event)" class="w-full rounded-smapp border border-borderc bg-appbg px-3 py-2 pr-14 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+          <button type="button" class="absolute inset-y-0 right-2 text-[11px] font-bold text-text3 transition hover:text-accent" onclick="togglePasswordVisibility('auth-password', this)">Ver</button>
+        </div>
       </div>
       <div id="auth-confirm-field" class="hidden flex flex-col gap-1.5">
-        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Confirmar clave</label>
-        <input id="auth-confirm-password" type="password" placeholder="******" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+        <label id="auth-confirm-label" class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Confirmar clave</label>
+        <div class="relative">
+          <input id="auth-confirm-password" type="password" placeholder="******" onkeydown="handleAuthKeydown(event)" class="w-full rounded-smapp border border-borderc bg-appbg px-3 py-2 pr-14 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+          <button type="button" class="absolute inset-y-0 right-2 text-[11px] font-bold text-text3 transition hover:text-accent" onclick="togglePasswordVisibility('auth-confirm-password', this)">Ver</button>
+        </div>
       </div>
+    </div>
+    <div class="mb-3 flex items-center justify-between gap-3 text-[12px]">
+      <button id="auth-forgot-link" class="text-accent transition hover:underline" onclick="toggleAuthMode('forgot')">OlvidÃ© mi clave</button>
+      <button id="auth-back-link" class="hidden text-text2 transition hover:text-accent hover:underline" onclick="toggleAuthMode('login')">Volver a login</button>
     </div>
     <div id="auth-modal-message" class="mb-3 hidden rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text2"></div>
     <div class="mt-4 flex justify-end gap-2">
@@ -680,6 +702,71 @@
     <div class="mt-5 flex justify-end gap-2">
       <button class="rounded-smapp border border-borderc bg-white px-4 py-1.5 font-heading text-[13px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="closeExportModal()">Cancelar</button>
       <button class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="exportExcel()">Exportar</button>
+    </div>
+  </div>
+</div>
+
+<div class="fixed inset-0 z-[213] hidden items-center justify-center bg-black/35 p-4" id="overlay-email-reminders" onclick="maybeCloseEmailReminders(event)">
+  <div class="w-full max-w-[520px] rounded-app bg-card p-6 shadow-modal animate-up">
+    <div class="mb-5">
+      <h3 class="font-heading text-lg font-bold text-text1">Alertas por correo</h3>
+      <div class="mt-1 text-[13px] leading-6 text-text2">Envía un solo correo al día con gastos vencidos y próximos pagos para cuidar el free tier.</div>
+    </div>
+
+    <div class="mb-4 rounded-[18px] border border-[#dbe5f3] bg-appbg/70 px-4 py-3">
+      <div class="flex items-start justify-between gap-3 max-md:flex-col">
+        <div class="min-w-0">
+          <div class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Estado</div>
+          <div id="email-reminder-modal-status" class="mt-1 text-[13px] text-text2">Configuración desactivada.</div>
+        </div>
+        <label class="inline-flex items-center gap-2 rounded-full border border-borderc bg-white px-3 py-1.5 text-[12px] font-bold text-text2">
+          <input id="email-reminder-enabled" type="checkbox" class="h-4 w-4 accent-accent" onchange="syncEmailReminderDraftState()">
+          Activar alertas
+        </label>
+      </div>
+    </div>
+
+    <div class="mb-3 grid grid-cols-1 gap-3">
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Correo de destino</label>
+        <input id="email-reminder-email" type="email" placeholder="correo@dominio.com" oninput="syncEmailReminderDraftState()" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+      </div>
+    </div>
+
+    <div class="mb-3 grid grid-cols-2 gap-3">
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Avisar con</label>
+        <select id="email-reminder-days-ahead" onchange="syncEmailReminderDraftState()" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+          <option value="0">Solo vencidos de hoy</option>
+          <option value="1">1 día</option>
+          <option value="2">2 días</option>
+          <option value="3">3 días</option>
+          <option value="5">5 días</option>
+          <option value="7">7 días</option>
+        </select>
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Hora local</label>
+        <select id="email-reminder-send-hour" onchange="syncEmailReminderDraftState()" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white"></select>
+      </div>
+    </div>
+
+    <div class="mb-4 rounded-[16px] border border-borderc bg-white px-4 py-3">
+      <div class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Zona horaria</div>
+      <div id="email-reminder-timezone" class="mt-1 text-[13px] text-text2">America/Lima</div>
+      <div id="email-reminder-last-sent" class="mt-2 text-[12px] text-text3">Aún no se ha enviado ningún correo.</div>
+      <div id="email-reminder-last-error" class="mt-2 hidden rounded-smapp border border-[#f1d3d3] bg-[#fff5f5] px-3 py-2 text-[12px] text-red1"></div>
+    </div>
+
+    <div class="rounded-[16px] border border-[#dbe5f3] bg-appbg/70 px-4 py-3">
+      <div class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Cómo se envía</div>
+      <div class="mt-2 text-[12px] leading-5 text-text2">Se agrupan los gastos vencidos y los próximos pagos del rango elegido en un solo correo diario.</div>
+    </div>
+
+    <div class="mt-5 flex flex-wrap justify-end gap-2">
+      <button class="rounded-smapp border border-borderc bg-white px-4 py-1.5 font-heading text-[13px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="closeEmailRemindersModal()">Cancelar</button>
+      <button class="rounded-smapp border border-borderc bg-white px-4 py-1.5 font-heading text-[13px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="sendEmailReminderTest()">Enviar prueba</button>
+      <button class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="saveEmailReminders()">Guardar</button>
     </div>
   </div>
 </div>

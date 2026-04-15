@@ -2,6 +2,15 @@ import { app, resetState, runtime, state, supabaseClient } from './core.js';
 
 const LEGACY_SALARY_STORAGE_KEY = 'mf3_sueldo';
 const MONTHLY_SALARY_STORAGE_KEY = 'mf3_sueldos_mensuales';
+const DEFAULT_EMAIL_REMINDER_SETTINGS = Object.freeze({
+  activo: false,
+  emailDestino: '',
+  diasAdelanto: 2,
+  horaEnvio: 7,
+  timezone: 'America/Lima',
+  ultimoEnvioFecha: null,
+  ultimoError: null,
+});
 
 function sueldoPeriodKey(month, year) {
   return `${year}-${String(Number(month) + 1).padStart(2, '0')}`;
@@ -65,6 +74,28 @@ function monthlySalaryMapsMatch(left, right) {
   return leftKeys.every((key, index) => key === rightKeys[index] && Number(leftMap[key]) === Number(rightMap[key]));
 }
 
+function normalizeEmailReminderSettings(rawValue, fallbackEmail = '') {
+  const source = rawValue && typeof rawValue === 'object' ? rawValue : {};
+  const emailDestino = String(source.email_destino ?? source.emailDestino ?? fallbackEmail ?? '').trim();
+  const diasAdelanto = Math.min(7, Math.max(0, parseInt(source.dias_adelanto ?? source.diasAdelanto ?? DEFAULT_EMAIL_REMINDER_SETTINGS.diasAdelanto, 10) || 0));
+  const horaEnvio = Math.min(23, Math.max(0, parseInt(source.hora_envio ?? source.horaEnvio ?? DEFAULT_EMAIL_REMINDER_SETTINGS.horaEnvio, 10) || 0));
+  const timezone = String(source.timezone || DEFAULT_EMAIL_REMINDER_SETTINGS.timezone).trim() || DEFAULT_EMAIL_REMINDER_SETTINGS.timezone;
+
+  return {
+    activo: Boolean(source.activo ?? DEFAULT_EMAIL_REMINDER_SETTINGS.activo),
+    emailDestino,
+    diasAdelanto,
+    horaEnvio,
+    timezone,
+    ultimoEnvioFecha: source.ultimo_envio_fecha ?? source.ultimoEnvioFecha ?? null,
+    ultimoError: source.ultimo_error ?? source.ultimoError ?? null,
+  };
+}
+
+export function getEmailReminderSettings() {
+  return normalizeEmailReminderSettings(state.userSettings?.emailReminders, runtime.currentUser?.email || '');
+}
+
 export function getSueldoForPeriod(month = runtime.curM, year = runtime.curY) {
   const key = sueldoPeriodKey(month, year);
   const monthlySalaries = normalizeMonthlySalaries(state.userSettings?.sueldosMensuales);
@@ -99,6 +130,7 @@ export async function loadCloudData() {
     prestamosRes,
     abonosRes,
     sueldosMensualesRes,
+    recordatoriosRes,
     settingsRes,
   ] = await Promise.all([
     supabaseClient.from('categorias').select('*').eq('user_id', runtime.currentUser.id).order('nombre'),
@@ -108,6 +140,7 @@ export async function loadCloudData() {
     supabaseClient.from('prestamos').select('*').eq('user_id', runtime.currentUser.id).order('id'),
     supabaseClient.from('abonos_prestamos').select('*').eq('user_id', runtime.currentUser.id).order('id'),
     supabaseClient.from('sueldos_mensuales').select('mes, anio, sueldo').eq('user_id', runtime.currentUser.id),
+    supabaseClient.from('recordatorios_correo').select('*').eq('user_id', runtime.currentUser.id).maybeSingle(),
     supabaseClient.from('user_settings').select('sueldo').eq('user_id', runtime.currentUser.id).single(),
   ]);
 
@@ -195,6 +228,7 @@ export async function loadCloudData() {
   state.userSettings = {
     sueldo: null,
     sueldosMensuales: { ...localMonthlySalaries, ...cloudMonthlySalaries },
+    emailReminders: normalizeEmailReminderSettings(recordatoriosRes.data, runtime.currentUser.email || ''),
   };
 
   if (Object.keys(state.userSettings.sueldosMensuales).length) {
@@ -223,6 +257,11 @@ export async function loadCloudData() {
 
   if (sueldosMensualesRes.error) {
     console.warn('No se pudo cargar sueldos mensuales de BD:', sueldosMensualesRes.error.message);
+  }
+
+  const reminderErrorMessage = recordatoriosRes.error?.message?.toLowerCase() || '';
+  if (recordatoriosRes.error && !reminderErrorMessage.includes('no row') && !reminderErrorMessage.includes('not found') && !reminderErrorMessage.includes('recordatorios_correo')) {
+    console.warn('No se pudo cargar recordatorios por correo:', recordatoriosRes.error.message);
   }
 
   const errorMessage = settingsRes.error?.message?.toLowerCase() || '';
@@ -286,6 +325,52 @@ export async function saveSueldo(month = runtime.curM, year = runtime.curY) {
   if (error) {
     console.warn('No se pudo guardar el sueldo en BD:', error.message);
   }
+}
+
+export async function saveEmailReminderSettings(nextSettings) {
+  const fallbackEmail = runtime.currentUser?.email || '';
+  const normalized = normalizeEmailReminderSettings(nextSettings, fallbackEmail);
+  const previousSettings = state.userSettings?.emailReminders;
+
+  if (!runtime.currentUser) {
+    state.userSettings = {
+      ...state.userSettings,
+      emailReminders: normalized,
+    };
+    return { data: normalized, error: null };
+  }
+
+  const payload = {
+    user_id: runtime.currentUser.id,
+    activo: normalized.activo,
+    email_destino: normalized.emailDestino || fallbackEmail,
+    dias_adelanto: normalized.diasAdelanto,
+    hora_envio: normalized.horaEnvio,
+    timezone: normalized.timezone,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { data, error } = await supabaseClient
+    .from('recordatorios_correo')
+    .upsert(payload, { onConflict: 'user_id' })
+    .select('*')
+    .single();
+
+  if (error) {
+    state.userSettings = {
+      ...state.userSettings,
+      emailReminders: previousSettings,
+    };
+    return { data: null, error };
+  }
+
+  const savedSettings = normalizeEmailReminderSettings(data, fallbackEmail);
+  state.userSettings = {
+    ...state.userSettings,
+    emailReminders: savedSettings,
+  };
+
+  return { data: savedSettings, error: null };
 }
 
 app.actions.loadCloudData = loadCloudData;
