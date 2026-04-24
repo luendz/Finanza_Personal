@@ -34,6 +34,10 @@ export const runtime = app.runtime ?? {
 
 export const uiState = app.uiState ?? {
   carrySelection: new Set(),
+  gastosSort: {
+    key: null,
+    direction: 'asc',
+  },
   noteBulkSelection: new Set(),
   loadingStack: [],
   toastTimer: null,

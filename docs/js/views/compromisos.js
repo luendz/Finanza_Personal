@@ -22,6 +22,118 @@ import {
   uiState,
 } from '../core.js';
 
+const GASTOS_SORT_KEYS = new Set(['desc', 'tipo', 'dia', 'cat', 'status', 'monto']);
+const GASTOS_STATUS_ORDER = {
+  vencido: 0,
+  pendiente: 1,
+  pagado: 2,
+};
+
+function ensureGastosSortState() {
+  if (!uiState.gastosSort || typeof uiState.gastosSort !== 'object') {
+    uiState.gastosSort = { key: null, direction: 'asc' };
+  }
+
+  if (!('key' in uiState.gastosSort)) {
+    uiState.gastosSort.key = null;
+  }
+
+  if (!['asc', 'desc'].includes(uiState.gastosSort.direction)) {
+    uiState.gastosSort.direction = 'asc';
+  }
+
+  return uiState.gastosSort;
+}
+
+function compareText(left, right, direction = 'asc') {
+  const factor = direction === 'desc' ? -1 : 1;
+  return String(left || '').localeCompare(String(right || ''), 'es', {
+    sensitivity: 'base',
+    numeric: true,
+  }) * factor;
+}
+
+function compareNumber(left, right, direction = 'asc') {
+  const factor = direction === 'desc' ? -1 : 1;
+  return ((Number(left) || 0) - (Number(right) || 0)) * factor;
+}
+
+function compareGastos(left, right, key, direction) {
+  let result = 0;
+
+  switch (key) {
+    case 'desc':
+      result = compareText(left.desc, right.desc, direction);
+      break;
+    case 'tipo':
+      result = compareText(left.tipo, right.tipo, direction);
+      break;
+    case 'dia':
+      result = compareNumber(left.dia, right.dia, direction);
+      break;
+    case 'cat':
+      result = compareText(left.cat, right.cat, direction);
+      break;
+    case 'status':
+      result = compareNumber(
+        GASTOS_STATUS_ORDER[gastoPaymentStatus(left).key] ?? 99,
+        GASTOS_STATUS_ORDER[gastoPaymentStatus(right).key] ?? 99,
+        direction,
+      );
+      break;
+    case 'monto':
+      result = compareNumber(left.monto, right.monto, direction);
+      break;
+    default:
+      break;
+  }
+
+  if (result !== 0) {
+    return result;
+  }
+
+  const byDay = compareNumber(left.dia, right.dia, 'asc');
+  if (byDay !== 0) {
+    return byDay;
+  }
+
+  return compareNumber(left.id, right.id, 'asc');
+}
+
+function sortGastosItems(items) {
+  const sortState = ensureGastosSortState();
+  if (!sortState.key) {
+    return items.slice();
+  }
+
+  return items.slice().sort((left, right) => compareGastos(left, right, sortState.key, sortState.direction));
+}
+
+function syncGastosSortHeader() {
+  const sortState = ensureGastosSortState();
+  document.querySelectorAll('[data-gastos-sort]').forEach(button => {
+    const key = button.getAttribute('data-gastos-sort');
+    const label = button.getAttribute('data-gastos-sort-label') || key || 'columna';
+    const isActive = sortState.key === key;
+    const indicator = button.querySelector('[data-gastos-sort-indicator]');
+    const directionLabel = isActive ? (sortState.direction === 'asc' ? 'ascendente' : 'descendente') : 'sin orden activo';
+
+    button.classList.toggle('text-accent', isActive);
+    button.classList.toggle('text-text3', !isActive);
+    button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    button.setAttribute('title', `Ordenar ${isActive ? directionLabel : 'por'} ${label}`);
+
+    if (indicator) {
+      indicator.textContent = isActive
+        ? (sortState.direction === 'asc' ? '↑' : '↓')
+        : '↕';
+      indicator.textContent = isActive ? (sortState.direction === 'asc' ? '^' : 'v') : '--';
+      indicator.classList.toggle('text-accent', isActive);
+      indicator.classList.toggle('text-text3', !isActive);
+    }
+  });
+}
+
 function renderGastosPaymentSummary(items) {
   const summary = document.getElementById('gastos-payment-summary');
   if (!summary) return;
@@ -83,9 +195,10 @@ function renderGastos() {
   const footerTotal = document.getElementById('gastos-total-footer');
   if (!list) return;
 
-  const items = active().filter(gasto => !filter || gasto.cat === filter);
+  const items = sortGastosItems(active().filter(gasto => !filter || gasto.cat === filter));
   const itemsTotal = items.reduce((sum, gasto) => sum + gasto.monto, 0);
   renderGastosPaymentSummary(items);
+  syncGastosSortHeader();
   if (footerTotal) footerTotal.textContent = fmt(itemsTotal);
 
   if (!items.length) {
@@ -175,6 +288,20 @@ function renderGastos() {
       </div>
     `;
   }).join('');
+}
+
+function setGastosSort(key) {
+  if (!GASTOS_SORT_KEYS.has(key)) return;
+
+  const sortState = ensureGastosSortState();
+  if (sortState.key === key) {
+    sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortState.key = key;
+    sortState.direction = key === 'monto' ? 'desc' : 'asc';
+  }
+
+  renderGastos();
 }
 
 async function saveG() {
@@ -984,6 +1111,7 @@ Object.assign(window, {
   saveAbono,
   saveG,
   savePrestamo,
+  setGastosSort,
   toggleCarryItem,
   toggleGastoPago,
   toggleQ,

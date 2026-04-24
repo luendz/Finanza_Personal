@@ -98,13 +98,31 @@
         </div>
         <div class="border-b border-[#dbe5f3] bg-white">
         <div id="gastos-payment-summary" class="grid grid-cols-2 gap-2 border-b border-[#dbe5f3] bg-appbg/70 px-5 py-3 max-md:px-4 xl:grid-cols-4"></div>
-          <div class="hidden items-center border-b border-[#dbe5f3] bg-[#f8fbff] px-5 py-2 text-[11px] font-bold uppercase tracking-[0.06em] text-text3 md:grid md:grid-cols-[minmax(0,1.45fr)_64px_68px_110px_110px_96px_92px]">
-            <span>Gasto</span>
-            <span>Tipo</span>
-            <span>Dia</span>
-            <span>Categoria</span>
-            <span>Estado</span>
-            <span class="text-right">Monto</span>
+          <div id="gastos-sort-header" class="hidden items-center border-b border-[#dbe5f3] bg-[#f8fbff] px-5 py-2 text-[11px] font-bold uppercase tracking-[0.06em] text-text3 md:grid md:grid-cols-[minmax(0,1.45fr)_64px_68px_110px_110px_96px_92px]">
+            <button type="button" class="flex min-w-0 items-center gap-1 text-left transition hover:text-accent" data-gastos-sort="desc" data-gastos-sort-label="gasto" onclick="setGastosSort('desc')">
+              <span class="truncate">Gasto</span>
+              <span class="text-[10px]" data-gastos-sort-indicator="desc">--</span>
+            </button>
+            <button type="button" class="flex items-center gap-1 text-left transition hover:text-accent" data-gastos-sort="tipo" data-gastos-sort-label="tipo" onclick="setGastosSort('tipo')">
+              <span>Tipo</span>
+              <span class="text-[10px]" data-gastos-sort-indicator="tipo">--</span>
+            </button>
+            <button type="button" class="flex items-center gap-1 text-left transition hover:text-accent" data-gastos-sort="dia" data-gastos-sort-label="dia" onclick="setGastosSort('dia')">
+              <span>Dia</span>
+              <span class="text-[10px]" data-gastos-sort-indicator="dia">--</span>
+            </button>
+            <button type="button" class="flex min-w-0 items-center gap-1 text-left transition hover:text-accent" data-gastos-sort="cat" data-gastos-sort-label="categoria" onclick="setGastosSort('cat')">
+              <span class="truncate">Categoria</span>
+              <span class="text-[10px]" data-gastos-sort-indicator="cat">--</span>
+            </button>
+            <button type="button" class="flex items-center gap-1 text-left transition hover:text-accent" data-gastos-sort="status" data-gastos-sort-label="estado" onclick="setGastosSort('status')">
+              <span>Estado</span>
+              <span class="text-[10px]" data-gastos-sort-indicator="status">--</span>
+            </button>
+            <button type="button" class="ml-auto flex items-center justify-end gap-1 text-right transition hover:text-accent" data-gastos-sort="monto" data-gastos-sort-label="monto" onclick="setGastosSort('monto')">
+              <span>Monto</span>
+              <span class="text-[10px]" data-gastos-sort-indicator="monto">--</span>
+            </button>
             <span class="text-right">Acciones</span>
           </div>
           <div id="glist" class="max-h-[860px] overflow-y-auto bg-white"></div>
