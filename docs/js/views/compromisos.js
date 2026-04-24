@@ -262,7 +262,7 @@ function renderGastos() {
             <button class="${mobileActionBtnBase} text-text3 hover:border-red1 hover:bg-redbg hover:text-red1" onclick="delG(${gasto.id})" title="Eliminar gasto" aria-label="Eliminar gasto">&times;</button>
           </div>
         </div>
-        <div class="hidden gap-2 md:grid md:grid-cols-[minmax(0,1.45fr)_64px_68px_110px_110px_96px_92px] md:items-center">
+        <div class="hidden gap-2 md:grid md:grid-cols-[minmax(0,1.9fr)_58px_60px_96px_96px_88px_92px] md:items-center">
           <div class="min-w-0">
             <div class="truncate text-[14px] font-semibold ${isPaid ? 'text-text2 line-through' : 'text-text1'}" title="${gasto.desc}">${gasto.desc}</div>
           </div>
