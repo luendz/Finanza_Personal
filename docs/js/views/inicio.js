@@ -545,6 +545,97 @@ async function saveSueldoFromModal() {
   toast(`Sueldo de ${MS[runtime.curM]} ${runtime.curY} actualizado`);
 }
 
+const REMINDER_TEST_FUNCTION_NAME = 'resend-email';
+
+function serializeReminderDebugError(error) {
+  if (!error) return null;
+
+  const base = {
+    type: error?.constructor?.name || typeof error,
+    name: error?.name || null,
+    message: error?.message || String(error),
+  };
+
+  ['code', 'context', 'details', 'hint', 'status'].forEach(key => {
+    if (error?.[key] !== undefined) {
+      base[key] = error[key];
+    }
+  });
+
+  const extra = Object.getOwnPropertyNames(error || {}).reduce((acc, key) => {
+    if (!(key in base)) {
+      acc[key] = error[key];
+    }
+    return acc;
+  }, {});
+
+  if (Object.keys(extra).length) {
+    base.extra = extra;
+  }
+
+  if (error?.stack) {
+    base.stack = error.stack;
+  }
+
+  return base;
+}
+
+async function readReminderFunctionError(error) {
+  if (!error) return null;
+
+  const context = error?.context;
+  if (!context) {
+    return error?.message || null;
+  }
+
+  try {
+    if (typeof context.json === 'function') {
+      const payload = await context.json();
+      if (payload?.error) return payload.error;
+      return JSON.stringify(payload);
+    }
+
+    if (typeof context.text === 'function') {
+      const text = await context.text();
+      if (text) return text;
+    }
+  } catch (contextError) {
+    console.warn('No se pudo leer el body del error de la Edge Function', serializeReminderDebugError(contextError));
+  }
+
+  return error?.message || null;
+}
+
+function getReminderDebugSnapshot(currentUser, settings, session) {
+  return {
+    timestamp: new Date().toISOString(),
+    functionName: REMINDER_TEST_FUNCTION_NAME,
+    location: {
+      origin: window.location.origin,
+      pathname: window.location.pathname,
+      href: window.location.href,
+    },
+    currentUser: currentUser
+      ? {
+          id: currentUser.id,
+          email: currentUser.email || null,
+        }
+      : null,
+    session: session
+      ? {
+          hasAccessToken: Boolean(session.access_token),
+          userId: session.user?.id || null,
+          email: session.user?.email || null,
+          expiresAt: session.expires_at || null,
+        }
+      : null,
+    payload: {
+      mode: 'test',
+      settings,
+    },
+  };
+}
+
 async function saveEmailReminders() {
   const currentUser = requireCurrentUser();
   if (!currentUser) return;
@@ -584,21 +675,54 @@ async function sendEmailReminderTest() {
     return;
   }
 
+  const debugLabel = '[Alertas correo] Enviar prueba';
+  console.groupCollapsed(debugLabel);
+  console.info('Iniciando prueba de alertas por correo');
+
   try {
+    const { data: sessionData, error: sessionError } = await app.supabaseClient.auth.getSession();
+    if (sessionError) {
+      console.warn('No se pudo leer la sesión actual antes de invocar la función', serializeReminderDebugError(sessionError));
+    }
+
+    console.info('Snapshot previo al invoke', getReminderDebugSnapshot(currentUser, settings, sessionData?.session || null));
+
     await runWithLoading('Enviando correo de prueba...', async () => {
-      const { error } = await app.supabaseClient.functions.invoke('send-due-reminders', {
-        body: {
-          mode: 'test',
-          settings,
-        },
+      const invokeBody = {
+        mode: 'test',
+        settings,
+      };
+
+      console.info('Invocando Edge Function', {
+        functionName: REMINDER_TEST_FUNCTION_NAME,
+        body: invokeBody,
       });
 
-      if (error) throw error;
+      const { data, error } = await app.supabaseClient.functions.invoke(REMINDER_TEST_FUNCTION_NAME, {
+        body: invokeBody,
+      });
+
+      console.info('Respuesta cruda de supabase.functions.invoke', {
+        data,
+        error: serializeReminderDebugError(error),
+      });
+
+      if (error) {
+        const functionErrorMessage = await readReminderFunctionError(error);
+        if (functionErrorMessage) {
+          error.message = functionErrorMessage;
+        }
+        throw error;
+      }
     });
+
+    console.info('La prueba terminó sin errores en el cliente');
     toast('Correo de prueba enviado');
   } catch (error) {
-    console.error(error);
+    console.error('Falló la prueba de alertas por correo', serializeReminderDebugError(error));
     alert(error.message || 'No se pudo enviar el correo de prueba.');
+  } finally {
+    console.groupEnd();
   }
 }
 

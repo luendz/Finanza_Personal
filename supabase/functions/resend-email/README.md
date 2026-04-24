@@ -1,4 +1,4 @@
-# Send Due Reminders
+# Resend Email
 
 Esta Edge Function envía un solo correo diario por usuario con:
 
@@ -31,7 +31,7 @@ supabase secrets set \
 Luego despliega la función:
 
 ```bash
-supabase functions deploy send-due-reminders
+supabase functions deploy resend-email
 ```
 
 ## Programación recomendada
@@ -44,7 +44,7 @@ Para mantenerte en free tier, programa la function **una vez por hora**. La func
 
 En Supabase Dashboard puedes crear un scheduled invocation hacia:
 
-`https://yrufxaubdztblkdfkpvw.supabase.co/functions/v1/send-due-reminders`
+`https://yrufxaubdztblkdfkpvw.supabase.co/functions/v1/resend-email`
 
 Headers:
 
