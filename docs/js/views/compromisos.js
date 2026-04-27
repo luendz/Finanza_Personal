@@ -167,6 +167,10 @@ function renderGastosPaymentSummary(items) {
 function openModal() {
   runtime.editId = null;
   document.getElementById('mh').textContent = 'Agregar gasto';
+  const sub = document.getElementById('gasto-panel-sub');
+  if (sub) sub.textContent = 'Agrega un gasto nuevo sin perder de vista tu lista principal.';
+  const saveBtn = document.getElementById('gasto-save-btn');
+  if (saveBtn) saveBtn.textContent = 'Guardar';
   document.getElementById('fdesc').value = '';
   document.getElementById('fmonto').value = '';
   document.getElementById('fcatModal').value = state.categorias[0] || '';
@@ -176,6 +180,7 @@ function openModal() {
   document.getElementById('fcuotaact').value = 1;
   toggleQ();
   showOverlay('overlay');
+  setTimeout(() => document.getElementById('fdesc')?.focus(), 0);
 }
 
 function closeModal() {
@@ -369,6 +374,10 @@ function editG(id) {
   if (!gasto) return;
   runtime.editId = id;
   document.getElementById('mh').textContent = 'Editar gasto';
+  const sub = document.getElementById('gasto-panel-sub');
+  if (sub) sub.textContent = 'Ajusta este gasto y revisa el resultado directo en la lista.';
+  const saveBtn = document.getElementById('gasto-save-btn');
+  if (saveBtn) saveBtn.textContent = 'Actualizar';
   document.getElementById('fdesc').value = gasto.desc;
   document.getElementById('fmonto').value = gasto.monto;
   document.getElementById('fcatModal').value = gasto.cat;
@@ -378,6 +387,7 @@ function editG(id) {
   document.getElementById('fcuotaact').value = gasto.cuotaAct || 1;
   toggleQ();
   showOverlay('overlay');
+  setTimeout(() => document.getElementById('fdesc')?.focus(), 0);
 }
 
 async function delG(id) {

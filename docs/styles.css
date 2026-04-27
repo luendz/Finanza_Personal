@@ -58,6 +58,10 @@
   display: none;
 }
 
+.gasto-drawer-panel {
+  max-height: 100vh;
+}
+
 @media (max-width: 768px) {
   body {
     line-height: 1.45;
@@ -127,6 +131,10 @@
     grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)) !important;
   }
 
+  #overlay {
+    padding: 0;
+  }
+
   #overlay > div,
   #overlay-auth > div,
   #overlay-extra > div,
@@ -144,6 +152,19 @@
     overflow-y: auto;
     border-radius: 22px;
     padding: 1.1rem;
+  }
+
+  #overlay > div {
+    max-height: 100vh;
+    overflow: visible;
+    border-radius: 0;
+    padding: 0;
+  }
+
+  #overlay .gasto-drawer-panel {
+    max-height: 100vh;
+    overflow-y: auto;
+    border-radius: 0;
   }
 
   #overlay .grid-cols-2,

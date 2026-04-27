@@ -125,10 +125,9 @@ function renderInicioPreview(items) {
 }
 
 function openInicioGastosDetalle() {
-  const details = document.getElementById('inicio-gastos-detalle');
-  if (!details) return;
-  details.open = true;
-  details.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const mainList = document.getElementById('inicio-gastos-principal') || document.getElementById('glist');
+  if (!mainList) return;
+  mainList.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function drawDonut(sorted, total) {
@@ -426,7 +425,7 @@ function updateInicio() {
       const topShare = gastos > 0 ? Math.round((topAmount / gastos) * 100) : 0;
       focusCopy.textContent = `${topCategory} concentra ${topShare}% de tus gastos del mes. Si ajustas esa categoria, recuperas margen mas rapido.`;
     } else {
-      focusCopy.textContent = 'Tu mes se ve estable. Usa el detalle solo cuando necesites editar o revisar todo.';
+      focusCopy.textContent = 'Tu mes se ve estable. Si quieres ajustar algo, hazlo directo desde la lista principal.';
     }
   }
 
