@@ -9,10 +9,66 @@ import {
   supabaseClient,
 } from './core.js';
 
+function readAuthCallback(rawUrl = window.location.href) {
+  const url = new URL(rawUrl);
+  const hashParams = new URLSearchParams(url.hash.replace(/^#/, ''));
+  const callbackType = hashParams.get('type') || url.searchParams.get('type');
+  const errorDescription = hashParams.get('error_description')
+    || url.searchParams.get('error_description')
+    || '';
+  const hasCallbackSignal = url.searchParams.has('code')
+    || url.searchParams.has('token_hash')
+    || url.searchParams.has('error')
+    || hashParams.has('access_token')
+    || hashParams.has('refresh_token')
+    || hashParams.has('error');
+
+  return {
+    isRecovery: callbackType === 'recovery'
+      || (url.searchParams.get('auth') === 'recovery' && hasCallbackSignal),
+    errorDescription: errorDescription.replace(/\+/g, ' '),
+  };
+}
+
+const initialAuthCallback = readAuthCallback(window.__INITIAL_AUTH_URL__ || window.location.href);
+
 const authState = {
   loading: false,
   listenerBound: false,
+  recoveryRequested: initialAuthCallback.isRecovery,
+  recoveryHandled: false,
+  recoveryError: initialAuthCallback.errorDescription,
 };
+
+function clearAuthCallbackUrl() {
+  const url = new URL(window.location.href);
+  ['auth', 'code', 'type', 'error', 'error_code', 'error_description'].forEach(key => {
+    url.searchParams.delete(key);
+  });
+  url.hash = '';
+  window.history.replaceState({}, document.title, `${url.pathname}${url.search}`);
+}
+
+function openRecoveryFromCallback(user) {
+  if (authState.recoveryHandled) return;
+  authState.recoveryHandled = true;
+
+  if (user) {
+    runtime.currentUser = user;
+    updateAuthUI();
+    openAuthModal('recovery');
+    setAuthModalMessage('Enlace validado. Crea una nueva contraseña para completar la recuperación.', 'success');
+    clearAuthCallbackUrl();
+    return;
+  }
+
+  openAuthModal('forgot');
+  setAuthModalMessage(
+    authState.recoveryError || 'El enlace no es válido o ya expiró. Solicita uno nuevo.',
+    'error',
+  );
+  clearAuthCallbackUrl();
+}
 
 function setAuthMessage(message, type = 'info') {
   const el = document.getElementById('auth-status');
@@ -40,19 +96,13 @@ function setAuthModalMessage(message, type = 'info') {
   if (!message) {
     el.textContent = '';
     el.classList.add('hidden');
-    el.classList.remove('text-red1', 'text-green1', 'text-blue1');
+    delete el.dataset.type;
     return;
   }
 
   el.textContent = message;
-  el.classList.remove('hidden', 'text-red1', 'text-green1', 'text-blue1');
-  if (type === 'error') {
-    el.classList.add('text-red1');
-  } else if (type === 'success') {
-    el.classList.add('text-green1');
-  } else {
-    el.classList.add('text-blue1');
-  }
+  el.dataset.type = type;
+  el.classList.remove('hidden');
 }
 
 function setAuthLoading(loading) {
@@ -73,18 +123,26 @@ function setAuthLoading(loading) {
     const el = document.getElementById(id);
     if (el) el.disabled = loading;
   });
+
+  const action = document.getElementById('auth-modal-action');
+  if (action) {
+    action.setAttribute('aria-busy', String(loading));
+    action.classList.toggle('is-loading', loading);
+  }
 }
 
 function humanizeAuthError(error) {
   const rawMessage = error?.message || 'No se pudo completar la operación.';
   const message = rawMessage.toLowerCase();
 
-  if (message.includes('invalid login credentials')) return 'Correo o clave incorrectos.';
+  if (message.includes('invalid login credentials')) return 'Correo o contraseña incorrectos.';
   if (message.includes('email not confirmed')) return 'Confirma tu correo antes de ingresar.';
   if (message.includes('user already registered')) return 'Ese correo ya tiene una cuenta.';
-  if (message.includes('password should be at least')) return 'La clave debe tener al menos 6 caracteres.';
-  if (message.includes('same password')) return 'La nueva clave debe ser distinta a la anterior.';
+  if (message.includes('password should be at least')) return 'La contraseña debe tener al menos 6 caracteres.';
+  if (message.includes('same password')) return 'La nueva contraseña debe ser distinta a la anterior.';
   if (message.includes('unable to validate email address')) return 'Ingresa un correo válido.';
+  if (message.includes('rate limit') || message.includes('too many requests')) return 'Has realizado varios intentos. Espera unos minutos y vuelve a intentarlo.';
+  if (message.includes('network') || message.includes('fetch')) return 'No pudimos conectar con el servicio. Revisa tu conexión e inténtalo nuevamente.';
   return rawMessage;
 }
 
@@ -93,9 +151,30 @@ function resetPasswordVisibility() {
     const input = document.getElementById(id);
     if (input) input.type = 'password';
   });
-  document.querySelectorAll('#overlay-auth button[type="button"]').forEach(button => {
+  document.querySelectorAll('#overlay-auth [data-password-toggle]').forEach(button => {
     button.textContent = 'Ver';
   });
+}
+
+function getPasswordStrength(password) {
+  if (!password) return 0;
+  let score = password.length >= 6 ? 1 : 0;
+  if (password.length >= 10) score += 1;
+  if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score += 1;
+  if (/\d/.test(password) && /[^A-Za-z0-9]/.test(password)) score += 1;
+  return Math.min(score, 4);
+}
+
+function updatePasswordStrength() {
+  const strength = document.getElementById('auth-password-strength');
+  const label = document.getElementById('auth-strength-label');
+  const input = document.getElementById('auth-password');
+  if (!strength || !label || !input) return;
+
+  const score = getPasswordStrength(input.value);
+  const labels = ['Escribe una contraseña', 'Débil', 'Aceptable', 'Buena', 'Segura'];
+  strength.dataset.score = String(score);
+  label.textContent = labels[score];
 }
 
 function validateEmail(email) {
@@ -107,25 +186,25 @@ function validateEmail(email) {
 function validateSignInInputs(email, password) {
   const emailError = validateEmail(email);
   if (emailError) return emailError;
-  if (!password) return 'Ingresa tu clave.';
+  if (!password) return 'Ingresa tu contraseña.';
   return null;
 }
 
 function validateSignUpInputs(email, password, confirmPassword) {
   const emailError = validateEmail(email);
   if (emailError) return emailError;
-  if (!password) return 'Ingresa tu clave.';
-  if (!confirmPassword) return 'Confirma tu clave.';
-  if (password.length < 6) return 'La clave debe tener al menos 6 caracteres.';
-  if (password !== confirmPassword) return 'Las claves no coinciden.';
+  if (!password) return 'Ingresa tu contraseña.';
+  if (!confirmPassword) return 'Confirma tu contraseña.';
+  if (password.length < 6) return 'La contraseña debe tener al menos 6 caracteres.';
+  if (password !== confirmPassword) return 'Las contraseñas no coinciden.';
   return null;
 }
 
 function validateRecoveryInputs(password, confirmPassword) {
-  if (!password) return 'Ingresa tu nueva clave.';
-  if (!confirmPassword) return 'Confirma tu nueva clave.';
-  if (password.length < 6) return 'La clave debe tener al menos 6 caracteres.';
-  if (password !== confirmPassword) return 'Las claves no coinciden.';
+  if (!password) return 'Ingresa tu nueva contraseña.';
+  if (!confirmPassword) return 'Confirma tu nueva contraseña.';
+  if (password.length < 6) return 'La contraseña debe tener al menos 6 caracteres.';
+  if (password !== confirmPassword) return 'Las contraseñas no coinciden.';
   return null;
 }
 
@@ -150,10 +229,10 @@ function updateAuthUI() {
 }
 
 function setModeButtonState(activeButton, inactiveButton) {
-  activeButton?.classList.add('bg-accent', 'text-white');
-  activeButton?.classList.remove('bg-white', 'text-text2');
-  inactiveButton?.classList.remove('bg-accent', 'text-white');
-  inactiveButton?.classList.add('bg-white', 'text-text2', 'border-borderc');
+  activeButton?.classList.add('active');
+  activeButton?.setAttribute('aria-pressed', 'true');
+  inactiveButton?.classList.remove('active');
+  inactiveButton?.setAttribute('aria-pressed', 'false');
 }
 
 function toggleAuthMode(mode) {
@@ -164,7 +243,7 @@ function toggleAuthMode(mode) {
   const registerBtn = document.getElementById('auth-mode-register');
   const title = document.getElementById('auth-modal-title');
   const sub = document.getElementById('auth-modal-sub');
-  const action = document.getElementById('auth-modal-action');
+  const actionLabel = document.getElementById('auth-action-label');
   const emailField = document.getElementById('auth-email-field');
   const passwordField = document.getElementById('auth-password-field');
   const confirmField = document.getElementById('auth-confirm-field');
@@ -172,8 +251,14 @@ function toggleAuthMode(mode) {
   const confirmLabel = document.getElementById('auth-confirm-label');
   const forgotLink = document.getElementById('auth-forgot-link');
   const backLink = document.getElementById('auth-back-link');
+  const contextCopy = document.getElementById('auth-context-copy');
+  const modeKicker = document.getElementById('auth-mode-kicker');
+  const modeIcon = document.getElementById('auth-mode-icon-mobile');
+  const passwordHelp = document.getElementById('auth-password-help');
+  const passwordStrength = document.getElementById('auth-password-strength');
+  const passwordInput = document.getElementById('auth-password');
 
-  if (!loginBtn || !registerBtn || !title || !sub || !action || !emailField || !passwordField || !confirmField || !passwordLabel || !confirmLabel || !forgotLink || !backLink || !switcher) {
+  if (!loginBtn || !registerBtn || !title || !sub || !actionLabel || !emailField || !passwordField || !confirmField || !passwordLabel || !confirmLabel || !forgotLink || !backLink || !switcher) {
     return;
   }
 
@@ -184,39 +269,59 @@ function toggleAuthMode(mode) {
   emailField.classList.toggle('hidden', mode === 'recovery');
   passwordField.classList.toggle('hidden', mode === 'forgot');
   confirmField.classList.toggle('hidden', mode !== 'register' && mode !== 'recovery');
+  passwordHelp?.classList.toggle('hidden', mode !== 'register' && mode !== 'recovery');
+  passwordStrength?.classList.toggle('hidden', mode !== 'register' && mode !== 'recovery');
+
+  if (passwordInput) {
+    passwordInput.autocomplete = mode === 'login' ? 'current-password' : 'new-password';
+  }
 
   if (mode === 'register') {
     setModeButtonState(registerBtn, loginBtn);
     title.textContent = 'Crear cuenta';
-    sub.textContent = 'Registrate para sincronizar y proteger tus finanzas.';
-    action.textContent = 'Registrarme';
-    passwordLabel.textContent = 'Clave';
-    confirmLabel.textContent = 'Confirmar clave';
+    sub.textContent = 'Crea tu espacio personal y mantén tus finanzas sincronizadas.';
+    actionLabel.textContent = 'Crear mi cuenta';
+    passwordLabel.textContent = 'Contraseña';
+    confirmLabel.textContent = 'Confirmar contraseña';
+    if (contextCopy) contextCopy.textContent = 'Después del registro podrías recibir un correo para confirmar tu cuenta.';
+    if (modeKicker) modeKicker.textContent = 'Tu espacio personal';
+    if (modeIcon) modeIcon.textContent = '+';
+    updatePasswordStrength();
     return;
   }
 
   if (mode === 'forgot') {
-    title.textContent = 'Recuperar clave';
-    sub.textContent = 'Te enviaremos un enlace para que elijas una nueva clave.';
-    action.textContent = 'Enviar enlace';
+    title.textContent = 'Recuperar contraseña';
+    sub.textContent = 'Te enviaremos un enlace seguro para crear una nueva contraseña.';
+    actionLabel.textContent = 'Enviar enlace de recuperación';
+    if (contextCopy) contextCopy.textContent = 'Ingresa el correo asociado a tu cuenta. El enlace tendrá una duración limitada.';
+    if (modeKicker) modeKicker.textContent = 'Recuperación segura';
+    if (modeIcon) modeIcon.textContent = '↗';
     return;
   }
 
   if (mode === 'recovery') {
-    title.textContent = 'Nueva clave';
-    sub.textContent = `Elige una nueva clave${runtime.currentUser?.email ? ` para ${runtime.currentUser.email}` : ''}.`;
-    action.textContent = 'Actualizar clave';
-    passwordLabel.textContent = 'Nueva clave';
-    confirmLabel.textContent = 'Confirmar nueva clave';
+    title.textContent = 'Crea una nueva contraseña';
+    sub.textContent = `Protege nuevamente tu cuenta${runtime.currentUser?.email ? ` ${runtime.currentUser.email}` : ''}.`;
+    actionLabel.textContent = 'Guardar nueva contraseña';
+    passwordLabel.textContent = 'Nueva contraseña';
+    confirmLabel.textContent = 'Confirmar nueva contraseña';
+    if (contextCopy) contextCopy.textContent = 'Usa una contraseña que no hayas utilizado anteriormente.';
+    if (modeKicker) modeKicker.textContent = 'Actualiza tu acceso';
+    if (modeIcon) modeIcon.textContent = '✓';
+    updatePasswordStrength();
     return;
   }
 
   setModeButtonState(loginBtn, registerBtn);
-  title.textContent = 'Iniciar sesion';
-  sub.textContent = 'Accede a tu cuenta para sincronizar datos.';
-  action.textContent = 'Ingresar';
-  passwordLabel.textContent = 'Clave';
-  confirmLabel.textContent = 'Confirmar clave';
+  title.textContent = 'Iniciar sesión';
+  sub.textContent = 'Accede a tu cuenta para sincronizar tus datos.';
+  actionLabel.textContent = 'Ingresar a mi cuenta';
+  passwordLabel.textContent = 'Contraseña';
+  confirmLabel.textContent = 'Confirmar contraseña';
+  if (contextCopy) contextCopy.textContent = 'Usa el correo con el que registraste tu cuenta.';
+  if (modeKicker) modeKicker.textContent = 'Acceso seguro';
+  if (modeIcon) modeIcon.textContent = '→';
 }
 
 function openAuthModal(mode = 'login') {
@@ -227,9 +332,14 @@ function openAuthModal(mode = 'login') {
   if (emailInput) emailInput.value = mode === 'recovery' ? (runtime.currentUser?.email || '') : '';
   if (passwordInput) passwordInput.value = '';
   if (confirmInput) confirmInput.value = '';
+  updatePasswordStrength();
   setAuthModalMessage('');
   setAuthMessage('');
   showOverlay('overlay-auth');
+  requestAnimationFrame(() => {
+    const target = mode === 'recovery' ? passwordInput : emailInput;
+    target?.focus();
+  });
 }
 
 function closeAuthModal() {
@@ -258,14 +368,14 @@ async function refreshAfterAuth() {
     await refreshAppData();
   } catch (error) {
     console.error(error);
-    setAuthMessage('No se pudo cargar tu informacion.', 'error');
+    setAuthMessage('No se pudo cargar tu información.', 'error');
   }
 }
 
 async function signUp() {
   const email = document.getElementById('auth-email').value.trim();
-  const password = document.getElementById('auth-password').value.trim();
-  const confirmPassword = document.getElementById('auth-confirm-password').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const confirmPassword = document.getElementById('auth-confirm-password').value;
   const validationError = validateSignUpInputs(email, password, confirmPassword);
   if (validationError) {
     setAuthModalMessage(validationError, 'error');
@@ -306,7 +416,7 @@ async function signUp() {
 
 async function signIn() {
   const email = document.getElementById('auth-email').value.trim();
-  const password = document.getElementById('auth-password').value.trim();
+  const password = document.getElementById('auth-password').value;
   const validationError = validateSignInInputs(email, password);
   if (validationError) {
     setAuthModalMessage(validationError, 'error');
@@ -314,7 +424,7 @@ async function signIn() {
   }
 
   setAuthLoading(true);
-  setAuthModalMessage('Iniciando sesion...', 'info');
+  setAuthModalMessage('Iniciando sesión...', 'info');
   try {
     await runWithLoading('Ingresando a tu cuenta...', async () => {
       const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
@@ -345,9 +455,14 @@ async function requestPasswordReset() {
   setAuthLoading(true);
   setAuthModalMessage('Enviando enlace...', 'info');
   try {
-    await runWithLoading('Enviando enlace de recuperacion...', async () => {
-      const redirectTo = `${window.location.origin}${window.location.pathname}`;
-      const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo });
+    await runWithLoading('Enviando enlace de recuperación...', async () => {
+      const redirectUrl = new URL(window.location.href);
+      redirectUrl.search = '';
+      redirectUrl.hash = '';
+      redirectUrl.searchParams.set('auth', 'recovery');
+      const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl.toString(),
+      });
       if (error) throw error;
     });
   } catch (error) {
@@ -357,12 +472,12 @@ async function requestPasswordReset() {
     setAuthLoading(false);
   }
 
-  setAuthModalMessage('Te enviamos un enlace para restablecer tu clave.', 'success');
+  setAuthModalMessage('Enlace enviado. Revisa tu correo y sigue las instrucciones para crear una nueva contraseña.', 'success');
 }
 
 async function updateRecoveredPassword() {
-  const password = document.getElementById('auth-password').value.trim();
-  const confirmPassword = document.getElementById('auth-confirm-password').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const confirmPassword = document.getElementById('auth-confirm-password').value;
   const validationError = validateRecoveryInputs(password, confirmPassword);
   if (validationError) {
     setAuthModalMessage(validationError, 'error');
@@ -370,9 +485,9 @@ async function updateRecoveredPassword() {
   }
 
   setAuthLoading(true);
-  setAuthModalMessage('Actualizando clave...', 'info');
+  setAuthModalMessage('Actualizando contraseña...', 'info');
   try {
-    await runWithLoading('Actualizando tu clave...', async () => {
+    await runWithLoading('Actualizando tu contraseña...', async () => {
       const { data, error } = await supabaseClient.auth.updateUser({ password });
       if (error) throw error;
       runtime.currentUser = data.user ?? runtime.currentUser;
@@ -393,7 +508,7 @@ async function updateRecoveredPassword() {
 async function signOutUser() {
   setAuthLoading(true);
   try {
-    await runWithLoading('Cerrando sesion...', async () => {
+    await runWithLoading('Cerrando sesión...', async () => {
       const { error } = await supabaseClient.auth.signOut();
       if (error) throw error;
     });
@@ -409,7 +524,7 @@ async function signOutUser() {
   updateAuthUI();
   app.actions.updateAll?.();
   closeAuthModal();
-  setAuthMessage('Sesion cerrada.', 'info');
+  setAuthMessage('Sesión cerrada.', 'info');
 }
 
 function submitAuthAction() {
@@ -433,11 +548,9 @@ function bindAuthListener() {
   authState.listenerBound = true;
 
   supabaseClient.auth.onAuthStateChange((event, session) => {
-    if (event === 'PASSWORD_RECOVERY') {
-      runtime.currentUser = session?.user ?? runtime.currentUser;
-      updateAuthUI();
-      openAuthModal('recovery');
-      setAuthModalMessage('Elige una nueva clave para completar la recuperacion.', 'info');
+    if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && authState.recoveryRequested)) {
+      authState.recoveryRequested = true;
+      openRecoveryFromCallback(session?.user ?? runtime.currentUser);
       return;
     }
 
@@ -453,7 +566,7 @@ function bindAuthListener() {
 export async function initAuth() {
   bindAuthListener();
   try {
-    await runWithLoading('Cargando tu sesion...', async () => {
+    await runWithLoading('Cargando tu sesión...', async () => {
       const { data, error } = await supabaseClient.auth.getSession();
       if (error) throw error;
       runtime.currentUser = data.session?.user ?? null;
@@ -464,9 +577,18 @@ export async function initAuth() {
         app.actions.updateAll?.();
       }
     });
+
+    if (authState.recoveryRequested && !authState.recoveryHandled) {
+      openRecoveryFromCallback(runtime.currentUser);
+    }
   } catch (error) {
     console.error(error);
-    setAuthMessage('Error al comprobar sesion.', 'error');
+    if (authState.recoveryRequested && !authState.recoveryHandled) {
+      authState.recoveryError = humanizeAuthError(error);
+      openRecoveryFromCallback(null);
+    } else {
+      setAuthMessage('Error al comprobar la sesión.', 'error');
+    }
   }
 }
 
@@ -480,4 +602,5 @@ Object.assign(window, {
   submitAuthAction,
   toggleAuthMode,
   togglePasswordVisibility,
+  updatePasswordStrength,
 });

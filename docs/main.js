@@ -4,6 +4,6 @@ import './js/views/inicio.js';
 import './js/views/compromisos.js?v=7';
 import './js/views/anotaciones.js';
 import './js/views/categorias.js';
-import './js/auth.js';
+import './js/auth.js?v=11';
 
 window.financeApp.actions.initAuth?.();

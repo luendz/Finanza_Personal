@@ -9,8 +9,9 @@
   <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="tailwind-config.js?v=2"></script>
+  <script>window.__INITIAL_AUTH_URL__ = window.location.href;</script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=2">
+  <link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body class="bg-appbg text-text1 font-sans text-sm leading-6">
 
@@ -443,46 +444,91 @@
 </div>
 </div>
 
-<div class="fixed inset-0 z-[205] hidden items-center justify-center bg-black/35 p-4" id="overlay-auth" onclick="maybeCloseAuth(event)">
-  <div class="w-full max-w-[420px] rounded-app bg-card p-6 shadow-modal animate-up">
-    <div class="mb-5 flex items-center justify-between gap-3">
-      <div>
-        <div id="auth-modal-title" class="font-heading text-lg font-bold text-text1">Iniciar sesión</div>
-        <div id="auth-modal-sub" class="text-[12px] text-text2">Accede a tu cuenta para sincronizar datos.</div>
-      </div>
-      <div id="auth-mode-switcher" class="flex gap-2">
-        <button id="auth-mode-login" onclick="toggleAuthMode('login')" class="rounded-full border border-accent bg-accent px-4 py-1.5 font-heading text-[12px] font-bold text-white transition hover:brightness-95">Login</button>
-        <button id="auth-mode-register" onclick="toggleAuthMode('register')" class="rounded-full border border-borderc bg-white px-4 py-1.5 font-heading text-[12px] font-bold text-text2 transition hover:border-accent hover:text-accent">Registro</button>
-      </div>
-    </div>
-    <div class="mb-3 grid grid-cols-1 gap-3">
-      <div id="auth-email-field" class="flex flex-col gap-1.5">
-        <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Correo</label>
-        <input id="auth-email" type="email" placeholder="ejemplo@mail.com" onkeydown="handleAuthKeydown(event)" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
-      </div>
-      <div id="auth-password-field" class="flex flex-col gap-1.5">
-        <label id="auth-password-label" class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Clave</label>
-        <div class="relative">
-          <input id="auth-password" type="password" placeholder="******" onkeydown="handleAuthKeydown(event)" class="w-full rounded-smapp border border-borderc bg-appbg px-3 py-2 pr-14 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
-          <button type="button" class="absolute inset-y-0 right-2 text-[11px] font-bold text-text3 transition hover:text-accent" onclick="togglePasswordVisibility('auth-password', this)">Ver</button>
+<div class="fixed inset-0 z-[205] hidden items-center justify-center bg-[#0f1f3a]/55 p-4" id="overlay-auth" onclick="maybeCloseAuth(event)">
+  <div class="auth-dialog w-full max-w-[760px] overflow-hidden rounded-[26px] bg-card shadow-modal animate-up">
+    <div class="grid md:grid-cols-[255px_minmax(0,1fr)]">
+      <aside class="auth-visual hidden min-h-[590px] flex-col justify-between p-7 text-white md:flex">
+        <div>
+          <div class="inline-flex items-center gap-2.5">
+            <span class="inline-flex h-10 w-10 items-center justify-center rounded-[13px] bg-white/15 ring-1 ring-white/20">
+              <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.75 8.25h14.5v9.5a2 2 0 0 1-2 2H6.75a2 2 0 0 1-2-2v-9.5Z" stroke="currentColor" stroke-width="1.8"/><path d="M7 8.25V6.7a2.45 2.45 0 0 1 2.45-2.45h7.8a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="1.8"/><path d="M15.25 13.75h4v-3h-4a1.5 1.5 0 0 0 0 3Z" fill="currentColor"/></svg>
+            </span>
+            <span class="font-heading text-[15px] font-bold">Mis Finanzas</span>
+          </div>
+          <div id="auth-mode-kicker" class="mt-12 text-[10px] font-bold uppercase tracking-[0.16em] text-white/65">Acceso seguro</div>
+          <div class="mt-3 font-heading text-[28px] font-bold leading-[1.18] tracking-[-0.04em]">Tus finanzas,<br>siempre contigo.</div>
+          <p class="mt-4 text-[12px] leading-6 text-white/72">Sincroniza tus movimientos y continúa desde cualquier dispositivo.</p>
         </div>
-      </div>
-      <div id="auth-confirm-field" class="hidden flex flex-col gap-1.5">
-        <label id="auth-confirm-label" class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Confirmar clave</label>
-        <div class="relative">
-          <input id="auth-confirm-password" type="password" placeholder="******" onkeydown="handleAuthKeydown(event)" class="w-full rounded-smapp border border-borderc bg-appbg px-3 py-2 pr-14 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
-          <button type="button" class="absolute inset-y-0 right-2 text-[11px] font-bold text-text3 transition hover:text-accent" onclick="togglePasswordVisibility('auth-confirm-password', this)">Ver</button>
+        <div class="space-y-3 text-[11px] text-white/78">
+          <div class="flex items-center gap-2.5"><span class="auth-check">✓</span><span>Datos asociados únicamente a tu cuenta</span></div>
+          <div class="flex items-center gap-2.5"><span class="auth-check">✓</span><span>Recuperación segura por correo</span></div>
+          <div class="flex items-center gap-2.5"><span class="auth-check">✓</span><span>Sesión sincronizada con Supabase</span></div>
         </div>
+      </aside>
+
+      <div class="relative p-7 max-md:p-5">
+        <button type="button" class="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-borderc bg-white text-[20px] leading-none text-text3 transition hover:border-accent hover:text-accent" onclick="closeAuthModal()" aria-label="Cerrar">×</button>
+
+        <div class="mb-5 pr-10">
+          <div class="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-[14px] bg-bluebg text-accent md:hidden">
+            <span id="auth-mode-icon-mobile" class="font-heading text-[19px] font-bold" aria-hidden="true">→</span>
+          </div>
+          <div id="auth-modal-title" class="font-heading text-[24px] font-bold tracking-[-0.035em] text-text1">Iniciar sesión</div>
+          <div id="auth-modal-sub" class="mt-1.5 text-[13px] leading-5 text-text2">Accede a tu cuenta para sincronizar tus datos.</div>
+        </div>
+
+        <div id="auth-mode-switcher" class="mb-5 grid grid-cols-2 rounded-[13px] border border-borderc bg-appbg p-1">
+          <button id="auth-mode-login" onclick="toggleAuthMode('login')" class="auth-mode-option active rounded-[9px] px-4 py-2 font-heading text-[12px] font-bold transition">Ingresar</button>
+          <button id="auth-mode-register" onclick="toggleAuthMode('register')" class="auth-mode-option rounded-[9px] px-4 py-2 font-heading text-[12px] font-bold transition">Crear cuenta</button>
+        </div>
+
+        <div id="auth-context-tip" class="mb-4 flex items-start gap-2.5 rounded-[13px] border border-[#d8e4fb] bg-bluebg/60 px-3 py-2.5 text-[11px] leading-5 text-bluetx">
+          <span class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white font-bold" aria-hidden="true">i</span>
+          <span id="auth-context-copy">Usa el correo con el que registraste tu cuenta.</span>
+        </div>
+
+        <div class="grid grid-cols-1 gap-3.5">
+          <div id="auth-email-field" class="flex flex-col gap-1.5">
+            <label for="auth-email" class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Correo electrónico</label>
+            <input id="auth-email" type="email" inputmode="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="nombre@correo.com" onkeydown="handleAuthKeydown(event)" class="auth-input rounded-smapp border border-borderc bg-appbg px-3.5 py-2.5 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+          </div>
+
+          <div id="auth-password-field" class="flex flex-col gap-1.5">
+            <label id="auth-password-label" for="auth-password" class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Contraseña</label>
+            <div class="relative">
+              <input id="auth-password" type="password" autocomplete="current-password" minlength="6" placeholder="Ingresa tu contraseña" aria-describedby="auth-password-help" oninput="updatePasswordStrength()" onkeydown="handleAuthKeydown(event)" class="auth-input w-full rounded-smapp border border-borderc bg-appbg px-3.5 py-2.5 pr-20 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+              <button type="button" data-password-toggle class="absolute inset-y-0 right-3 text-[11px] font-bold text-text3 transition hover:text-accent" onclick="togglePasswordVisibility('auth-password', this)">Ver</button>
+            </div>
+            <div id="auth-password-help" class="hidden text-[10px] leading-4 text-text3">Usa al menos 6 caracteres. Combina letras, números y símbolos.</div>
+            <div id="auth-password-strength" class="hidden" data-score="0">
+              <div class="grid grid-cols-4 gap-1">
+                <span></span><span></span><span></span><span></span>
+              </div>
+              <div id="auth-strength-label" class="mt-1 text-[10px] font-semibold text-text3">Escribe una contraseña</div>
+            </div>
+          </div>
+
+          <div id="auth-confirm-field" class="hidden flex flex-col gap-1.5">
+            <label id="auth-confirm-label" for="auth-confirm-password" class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Confirmar contraseña</label>
+            <div class="relative">
+              <input id="auth-confirm-password" type="password" autocomplete="new-password" minlength="6" placeholder="Repite tu contraseña" onkeydown="handleAuthKeydown(event)" class="auth-input w-full rounded-smapp border border-borderc bg-appbg px-3.5 py-2.5 pr-20 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
+              <button type="button" data-password-toggle class="absolute inset-y-0 right-3 text-[11px] font-bold text-text3 transition hover:text-accent" onclick="togglePasswordVisibility('auth-confirm-password', this)">Ver</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="auth-modal-message" class="auth-message mt-4 hidden rounded-[13px] border px-3.5 py-3 text-[12px] leading-5" aria-live="polite" role="status"></div>
+
+        <button id="auth-modal-action" class="auth-primary-action mt-5 inline-flex w-full items-center justify-center gap-2 rounded-[12px] border border-accent bg-accent px-4 py-2.5 font-heading text-[13px] font-bold text-white transition hover:-translate-y-0.5 hover:brightness-95 disabled:cursor-wait disabled:opacity-70" onclick="submitAuthAction()">
+          <span id="auth-action-label">Ingresar</span><span aria-hidden="true">→</span>
+        </button>
+
+        <div class="mt-4 flex items-center justify-center gap-3 text-[12px]">
+          <button id="auth-forgot-link" class="font-semibold text-accent transition hover:underline" onclick="toggleAuthMode('forgot')">¿Olvidaste tu contraseña?</button>
+          <button id="auth-back-link" class="hidden font-semibold text-text2 transition hover:text-accent hover:underline" onclick="toggleAuthMode('login')">← Volver a iniciar sesión</button>
+        </div>
+        <div class="mt-5 border-t border-borderc pt-4 text-center text-[10px] leading-4 text-text3">Tu sesión se mantiene protegida y puedes cerrarla en cualquier momento.</div>
       </div>
-    </div>
-    <div class="mb-3 flex items-center justify-between gap-3 text-[12px]">
-      <button id="auth-forgot-link" class="text-accent transition hover:underline" onclick="toggleAuthMode('forgot')">OlvidÃ© mi clave</button>
-      <button id="auth-back-link" class="hidden text-text2 transition hover:text-accent hover:underline" onclick="toggleAuthMode('login')">Volver a login</button>
-    </div>
-    <div id="auth-modal-message" class="mb-3 hidden rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text2"></div>
-    <div class="mt-4 flex justify-end gap-2">
-      <button class="rounded-smapp border border-borderc bg-white px-4 py-1.5 font-heading text-[13px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="closeAuthModal()">Cancelar</button>
-      <button id="auth-modal-action" class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95" onclick="submitAuthAction()">Ingresar</button>
     </div>
   </div>
 </div>
@@ -801,7 +847,7 @@
   </div>
 </div>
 
-<script type="module" src="main.js?v=7"></script>
+<script type="module" src="main.js?v=11"></script>
 
 </body>
 </html>
