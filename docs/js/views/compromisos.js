@@ -143,23 +143,35 @@ function renderGastosPaymentSummary(items) {
     return acc;
   }, { pagado: 0, pendiente: 0, vencido: 0 });
   const totalGastos = totals.pagado + totals.pendiente + totals.vencido;
+  const totalPorPagar = totals.pendiente + totals.vencido;
 
   summary.innerHTML = `
-    <div class="rounded-[14px] border border-borderc bg-white px-4 py-3">
-      <div class="text-[11px] font-bold uppercase tracking-[0.06em] text-text3">Pagado</div>
-      <div class="mt-1 font-heading text-[20px] font-bold text-bluetx">${fmt(totals.pagado)}</div>
+    <div class="col-span-2 rounded-[14px] border border-[#d8e1ec] bg-[#f7f9fc] px-4 py-3 xl:col-span-1">
+      <div class="text-[11px] font-bold uppercase tracking-[0.06em] text-text3">Total este mes</div>
+      <div class="mt-1.5 font-heading text-[20px] font-bold text-text1">${fmt(totalGastos)}</div>
+      <div class="mt-0.5 text-[10px] font-semibold text-text3">Todos los estados</div>
     </div>
-    <div class="rounded-[14px] border border-borderc bg-white px-4 py-3">
-      <div class="text-[11px] font-bold uppercase tracking-[0.06em] text-text3">Pendiente</div>
-      <div class="mt-1 font-heading text-[20px] font-bold text-[#b7791f]">${fmt(totals.pendiente)}</div>
+    <div class="rounded-[14px] border border-[#cfe7dc] bg-[#f3fbf7] px-4 py-3">
+      <div class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.06em] text-greentx">
+        <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-[11px] shadow-sm" aria-hidden="true">✓</span>
+        Pagado
+      </div>
+      <div class="mt-1.5 font-heading text-[20px] font-bold text-green1">${fmt(totals.pagado)}</div>
+      <div class="mt-0.5 text-[10px] font-semibold text-[#56806d]">Confirmado</div>
     </div>
-    <div class="rounded-[14px] border border-borderc bg-white px-4 py-3">
-      <div class="text-[11px] font-bold uppercase tracking-[0.06em] text-text3">Vencido</div>
-      <div class="mt-1 font-heading text-[20px] font-bold text-[#8a4a10]">${fmt(totals.vencido)}</div>
-    </div>
-    <div class="rounded-[14px] border border-[#f1d3d3] bg-[#fff5f5] px-4 py-3">
-      <div class="text-[11px] font-bold uppercase tracking-[0.06em] text-text3">Total gastos</div>
-      <div class="mt-1 font-heading text-[20px] font-bold text-red1">${fmt(totalGastos)}</div>
+    <div class="rounded-[14px] border border-[#d8e1ec] bg-white px-4 py-3">
+      <div class="text-[11px] font-bold uppercase tracking-[0.06em] text-text2">Por pagar</div>
+      <div class="mt-1.5 font-heading text-[20px] font-bold text-text1">${fmt(totalPorPagar)}</div>
+      <div class="mt-2 grid gap-1.5">
+        <div class="flex items-center justify-between gap-2 rounded-[8px] border border-[#f0c1c8] bg-[#fff0f2] px-2 py-1">
+          <span class="text-[9px] font-bold uppercase tracking-[0.04em] text-redtx">Vencido</span>
+          <span class="whitespace-nowrap text-[10px] font-bold text-red1">${fmt(totals.vencido)}</span>
+        </div>
+        <div class="flex items-center justify-between gap-2 rounded-[8px] border border-[#c8dafb] bg-[#f2f6ff] px-2 py-1">
+          <span class="whitespace-nowrap text-[9px] font-bold uppercase tracking-[0.04em] text-bluetx">En fecha</span>
+          <span class="whitespace-nowrap text-[10px] font-bold text-blue1">${fmt(totals.pendiente)}</span>
+        </div>
+      </div>
     </div>
   `;
 }
@@ -219,8 +231,8 @@ function renderGastos() {
       ? 'border-[#d8ead8] bg-[#f5fbf5] text-green1'
       : status.key === 'vencido'
         ? 'border-[#f1d3d3] bg-[#fff5f5] text-red1'
-        : 'border-[#eadfca] bg-[#fffaf1] text-[#b7791f]';
-    const amountClass = isPaid ? 'text-green1' : status.key === 'vencido' ? 'text-red1' : 'text-[#b7791f]';
+        : 'border-[#c8dafb] bg-[#f2f6ff] text-bluetx';
+    const amountClass = isPaid ? 'text-green1' : status.key === 'vencido' ? 'text-red1' : 'text-bluetx';
     const toggleLabel = gasto.tipo === 'cuotas'
       ? (isPaid ? 'Deshacer cuota' : 'Registrar cuota')
       : (isPaid ? 'Deshacer pago' : 'Marcar pagado');

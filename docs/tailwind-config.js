@@ -2,36 +2,36 @@
       theme: {
         extend: {
           fontFamily: {
-            sans: ['Nunito Sans', 'sans-serif'],
-            heading: ['Nunito', 'sans-serif']
+            sans: ['DM Sans', 'sans-serif'],
+            heading: ['Manrope', 'sans-serif']
           },
           colors: {
-            appbg: '#f6f7fb',
-            appbg2: '#eef2f7',
+            appbg: '#f4f7fb',
+            appbg2: '#eaf0f7',
             card: '#ffffff',
-            borderc: '#e4e8f0',
-            text1: '#182033',
-            text2: '#5f6b85',
-            text3: '#98a2b3',
-            green1: '#2f9e6f',
-            greenbg: '#eefaf4',
-            greentx: '#1f6f50',
-            red1: '#dc5a5a',
-            redbg: '#fff3f3',
-            redtx: '#9b2c2c',
-            blue1: '#3f6fd8',
-            bluebg: '#eef3ff',
-            bluetx: '#244caa',
-            accent: '#3f6fd8'
+            borderc: '#dce5f0',
+            text1: '#122033',
+            text2: '#526178',
+            text3: '#8794a8',
+            green1: '#168b63',
+            greenbg: '#ecf9f3',
+            greentx: '#11694c',
+            red1: '#d84d5f',
+            redbg: '#fff1f3',
+            redtx: '#9f2336',
+            blue1: '#2563eb',
+            bluebg: '#edf4ff',
+            bluetx: '#1d4fbf',
+            accent: '#2563eb'
           },
           boxShadow: {
-            soft: '0 1px 4px rgba(0,0,0,0.06)',
-            modal: '0 8px 40px rgba(0,0,0,0.15)',
-            toast: '0 4px 20px rgba(0,0,0,0.2)'
+            soft: '0 10px 32px rgba(23, 43, 77, 0.07)',
+            modal: '0 24px 70px rgba(16, 32, 56, 0.20)',
+            toast: '0 12px 32px rgba(16, 32, 56, 0.24)'
           },
           borderRadius: {
-            app: '14px',
-            smapp: '9px'
+            app: '18px',
+            smapp: '11px'
           },
           keyframes: {
             up: {
