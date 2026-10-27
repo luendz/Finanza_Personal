@@ -8,12 +8,12 @@
   <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="tailwind-config.js?v=2"></script>
+  <script src="tailwind-config.js?v=3"></script>
   <script>window.__INITIAL_AUTH_URL__ = window.location.href;</script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="img/mis_finanzas.png?v=1">
   <link rel="apple-touch-icon" href="img/mis_finanzas.png?v=1">
-  <link rel="stylesheet" href="styles.css?v=12">
+  <link rel="stylesheet" href="styles.css?v=26">
 </head>
 <body class="bg-appbg text-text1 font-sans text-sm leading-6">
 
@@ -64,16 +64,16 @@
 </header>
 
 <section id="page-inicio" class="page active mx-auto block max-w-[1280px] animate-up px-6 py-7 max-md:px-3 max-md:py-5">
-  <div class="dashboard-hero mb-5 overflow-visible rounded-[22px] border border-[#dbe5f3] bg-gradient-to-r from-white via-white to-bluebg/80 px-5 py-4 shadow-soft max-md:px-4 max-md:py-4">
+  <div class="dashboard-hero mb-3 overflow-visible rounded-[22px] border border-[#dbe5f3] bg-gradient-to-r from-white via-white to-bluebg/80 px-5 py-2.5 shadow-soft max-md:px-4 max-md:py-3">
     <div class="flex flex-wrap items-start justify-between gap-3 max-md:flex-col">
-      <div>
-        <div class="font-heading text-[24px] font-bold tracking-[-0.035em] text-text1 max-md:text-[20px]">Panel mensual</div>
-        <div class="text-[12px] text-text2" id="inicio-sub">Tu resumen del mes</div>
+      <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+        <div class="font-heading text-[22px] font-bold tracking-[-0.035em] text-text1 max-md:text-[20px]">Panel mensual</div>
+        <div class="text-[12px] text-text2" id="inicio-sub">– Mes actual</div>
       </div>
       <div class="flex flex-wrap items-center justify-end gap-2 max-md:w-full">
         <input type="file" id="excel-import" accept=".xlsx,.xls" class="hidden" onchange="handleExcelImport(event)">
         <details id="excel-actions-menu" class="excel-actions relative z-20">
-          <summary class="inline-flex min-h-[38px] list-none items-center gap-2 rounded-full border border-accent/15 bg-white px-3.5 py-2 font-heading text-[11px] font-bold text-accent shadow-soft transition hover:-translate-y-0.5 hover:border-accent hover:bg-bluebg" aria-label="Abrir opciones de Excel">
+          <summary class="inline-flex min-h-[34px] list-none items-center gap-2 rounded-full border border-accent/15 bg-white px-3 py-1.5 font-heading text-[11px] font-bold text-accent shadow-soft transition hover:-translate-y-0.5 hover:border-accent hover:bg-bluebg" aria-label="Abrir opciones de Excel">
             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 3.75h9.5L19 8.25v12H5v-16.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14.5 3.75v4.5H19M8 12l3 4m0-4-3 4m5-4h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
             Excel
             <svg class="excel-actions-chevron h-3.5 w-3.5 transition-transform" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m6 8 4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -89,7 +89,7 @@
             </button>
           </div>
         </details>
-        <button id="email-reminder-trigger" class="inline-flex min-h-[38px] items-center gap-2 rounded-full border border-borderc bg-white px-3.5 py-2 font-heading text-[11px] font-bold text-text2 shadow-soft transition hover:-translate-y-0.5 hover:border-accent hover:text-accent" onclick="openEmailRemindersModal()" aria-label="Configurar alertas por correo">
+        <button id="email-reminder-trigger" class="inline-flex min-h-[34px] items-center gap-2 rounded-full border border-borderc bg-white px-3 py-1.5 font-heading text-[11px] font-bold text-text2 shadow-soft transition hover:-translate-y-0.5 hover:border-accent hover:text-accent" onclick="openEmailRemindersModal()" aria-label="Configurar alertas por correo">
           <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 8.5h18C21 16 18 16 18 9Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9.5 20a3 3 0 0 0 5 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
           Alertas
           <span id="email-reminder-chip" class="inline-flex items-center rounded-full border border-borderc bg-appbg px-2 py-0.5 text-[10px] font-bold text-text3">Inactivo</span>
@@ -97,7 +97,7 @@
       </div>
     </div>
 
-    <div class="mt-3 flex flex-wrap items-center gap-2 max-md:gap-y-3">
+    <div class="mt-2 flex flex-wrap items-center gap-1.5 max-md:gap-y-2">
       <span class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Año:</span>
       <div class="flex items-center gap-2 max-md:w-full max-md:justify-between">
         <button class="rounded-full border border-borderc bg-white px-3 py-1 font-heading text-xs font-bold text-text2 transition hover:border-text1 hover:text-text1 max-md:min-h-[38px] max-md:min-w-[38px]" onclick="changeYear(-1)">−</button>
@@ -109,40 +109,109 @@
     </div>
   </div>
 
-  <div class="budget-progress mb-4 rounded-app border border-borderc bg-card px-5 py-3.5 shadow-soft max-md:px-4 max-md:py-3">
-    <div class="mb-2.5 flex items-center justify-between gap-3">
-      <span class="font-heading text-[13px] font-bold">Resumen de mis gastos</span>
-      <span class="font-heading text-[18px] font-bold text-[#5f6b85]" id="ppct">0%</span>
+  <div class="mb-3 grid grid-cols-1 gap-3 xl:grid-cols-3 xl:items-stretch">
+    <div class="metric-card metric-card--positive h-full rounded-app border border-[#d8ead8] bg-[#f5fbf5] px-4 py-3 shadow-soft">
+      <div class="flex items-end justify-between gap-3">
+        <div class="text-[11px] font-bold uppercase tracking-[0.055em] text-text3">Ingresos del mes</div>
+        <div id="cing" class="font-heading text-[25px] font-bold leading-none text-green1">S/ 0.00</div>
+      </div>
+
+      <div class="mt-2.5 grid grid-cols-2 gap-2">
+        <div class="min-w-0 rounded-[12px] border border-[#d8ead8] bg-[#f8fafc] px-3 py-2">
+          <div class="flex items-center justify-between gap-1.5">
+            <div class="truncate text-[10px] font-bold uppercase tracking-[0.05em] text-text3">Sueldo base</div>
+            <button class="shrink-0 rounded-full border border-borderc bg-white px-2 py-0.5 text-[9px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="openSueldoModal()">Editar</button>
+          </div>
+          <input id="sueldo" type="hidden" value="0">
+          <div id="sueldo-card-sub" class="sr-only">Monto fijo del mes</div>
+          <div id="sueldo-display" class="mt-1.5 truncate font-heading text-[17px] font-bold leading-none text-accent">S/ 0.00</div>
+        </div>
+
+        <div class="min-w-0 rounded-[12px] border border-[#d8e4fb] bg-[#f8fafc] px-3 py-2">
+          <div class="flex items-center justify-between gap-1.5">
+            <div class="truncate text-[10px] font-bold uppercase tracking-[0.05em] text-text3">Ingresos extra</div>
+            <button class="shrink-0 rounded-full border border-borderc bg-white px-2 py-0.5 text-[9px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="openExtraModal()">Gestionar</button>
+          </div>
+          <div id="cextrasub" class="sr-only">0 ingreso(s) extra este mes</div>
+          <div id="cextra" class="mt-1.5 truncate font-heading text-[17px] font-bold leading-none text-accent">S/ 0.00</div>
+        </div>
+      </div>
     </div>
-    <div class="mb-2.5 h-2.5 overflow-hidden rounded-full bg-appbg2">
-      <div class="h-full w-0 rounded-full bg-green1 transition-all duration-500" id="pfill"></div>
+
+    <div class="metric-card metric-card--expense h-full rounded-app border border-[#f1d3d3] bg-[#fff8f8] px-4 py-3 shadow-soft">
+      <div class="flex items-end justify-between gap-3">
+        <div class="text-[11px] font-bold uppercase tracking-[0.055em] text-text3">Gastos del mes</div>
+        <div id="month-expenses-total" class="whitespace-nowrap font-heading text-[25px] font-bold leading-none text-red1">S/ 0.00</div>
+      </div>
+      <div class="mt-2.5 grid grid-cols-2 gap-2">
+        <div class="rounded-[12px] border border-borderc bg-[#f8fafc] px-3 py-2">
+          <div class="text-[10px] font-bold uppercase tracking-[0.05em] text-text3">Registrados</div>
+          <div id="month-expenses-count" class="mt-1.5 font-heading text-[17px] font-bold leading-none text-text1">0 gastos</div>
+        </div>
+        <div class="rounded-[12px] border border-[#f1d3d3] bg-[#fff8f8] px-3 py-2">
+          <div class="text-[10px] font-bold uppercase tracking-[0.05em] text-redtx">Vencidos</div>
+          <div id="month-expenses-overdue" class="mt-1.5 truncate font-heading text-[17px] font-bold leading-none text-red1">S/ 0.00</div>
+        </div>
+      </div>
     </div>
-    <div class="flex items-center justify-between gap-3 text-[11px] leading-none text-text2">
-      <span id="pleft" class="truncate"></span>
-      <span id="pright" class="truncate text-right"></span>
+
+    <div id="rcard" class="h-full rounded-app border border-[#d8e4fb] bg-gradient-to-br from-bluebg via-white to-white px-4 py-3 shadow-soft ring-1 ring-[#dde8fb]">
+      <div class="flex items-end justify-between gap-3">
+        <div class="text-[11px] font-bold uppercase tracking-[0.055em] text-text3" id="ricon-wrap">Te queda este mes</div>
+        <div id="cr" class="font-heading text-[25px] font-bold leading-none text-bluetx">S/ 0.00</div>
+      </div>
+      <div id="crsub" class="sr-only">disponible</div>
+      <div class="mt-2.5 grid grid-cols-2 gap-2">
+        <div class="rounded-[12px] border border-borderc bg-[#f8fafc] px-3 py-2">
+          <div class="text-[10px] font-bold uppercase tracking-[0.05em] text-text3">Margen libre</div>
+          <div id="remaining-percent" class="mt-1.5 truncate font-heading text-[15px] font-bold leading-none text-text2">0% de tus ingresos</div>
+        </div>
+        <div class="min-w-0 rounded-[12px] border border-borderc bg-[#f8fafc] px-3 py-2">
+          <div id="carry-prev-label" class="truncate text-[10px] font-bold uppercase tracking-[0.05em] text-text3">Arrastre del mes pasado</div>
+          <div id="carry-prev-sub" class="sr-only">Cierre del mes anterior</div>
+          <div id="carry-prev-amount" class="mt-1.5 truncate whitespace-nowrap font-heading text-[17px] font-bold leading-none text-bluetx">S/ 0.00</div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 gap-5 md:grid-cols-12 md:items-start">
-    <aside class="min-w-0 md:col-span-7">
+  <div class="budget-progress mb-3 rounded-app border border-borderc bg-card px-5 py-2.5 shadow-soft max-md:px-4">
+    <div class="mb-1.5 flex items-center justify-between gap-3">
+      <span class="font-heading text-[13px] font-bold">Resumen de mis gastos</span>
+      <span class="font-heading text-[16px] font-bold text-[#5f6b85]" id="ppct">0%</span>
+    </div>
+    <div class="h-2 overflow-hidden rounded-full bg-appbg2">
+      <div class="h-full w-0 rounded-full bg-green1 transition-all duration-500" id="pfill"></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="min-w-0">
       <div id="inicio-gastos-principal" class="expenses-panel overflow-hidden rounded-[24px] border border-[#dbe5f3] bg-gradient-to-b from-white to-[#fbfdff] shadow-soft">
-        <div class="border-b border-[#dbe5f3] bg-white px-5 py-4 max-md:px-4 max-md:py-4">
-          <div class="flex items-start justify-between gap-3">
+        <div class="bg-white px-5 py-2.5 max-md:px-4 max-md:py-3">
+          <div class="flex items-center justify-between gap-3">
             <div class="min-w-0">
               <div class="font-heading text-[18px] font-bold text-text1 max-md:text-[17px]">Lista principal de gastos</div>
-              <div class="text-[13px] text-text2 max-md:mt-1" id="inicio-preview-caption">Tus movimientos más relevantes del mes.</div>
             </div>
-            <button class="shrink-0 rounded-smapp border border-accent bg-accent px-4 py-2 font-heading text-[13px] font-bold text-white transition hover:-translate-y-0.5 hover:brightness-95 max-md:min-h-[40px] max-md:px-3" onclick="openModal()">+ Agregar</button>
+            <button class="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-smapp border border-accent bg-accent px-3 font-heading text-[12px] font-bold text-white transition hover:-translate-y-0.5 hover:brightness-95" onclick="openModal()" aria-label="Agregar gasto">
+              <span class="text-[16px] font-medium leading-none" aria-hidden="true">+</span>
+              Agregar
+            </button>
           </div>
-          <div class="mt-3 flex flex-wrap items-center gap-2">
-            <label class="relative min-w-[200px] flex-1 max-md:w-full max-md:flex-none">
+        </div>
+        <div class="border-b border-[#dbe5f3] bg-[#f8fbff] px-5 py-3 max-md:px-4">
+          <div class="flex flex-wrap items-center gap-2 xl:flex-nowrap">
+            <div id="gastos-payment-summary" class="shrink-0"></div>
+            <label class="relative min-w-[180px] flex-1 max-md:order-first max-md:w-full max-md:flex-none">
               <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text3" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8"/><path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-              <input id="fsearch" type="search" placeholder="Buscar gasto..." aria-label="Buscar gasto" oninput="renderGastos()" class="h-[40px] w-full rounded-smapp border border-borderc bg-appbg pl-9 pr-3 text-[12px] font-semibold text-text1 outline-none transition placeholder:font-normal placeholder:text-text3 focus:border-accent focus:bg-white focus:ring-4 focus:ring-accent/5">
+              <input id="fsearch" name="expense-search" type="search" autocomplete="off" autocapitalize="off" spellcheck="false" readonly onfocus="this.removeAttribute('readonly')" placeholder="Buscar gasto..." aria-label="Buscar gasto" oninput="renderGastos()" class="h-[40px] w-full rounded-smapp border border-borderc bg-appbg pl-9 pr-3 text-[12px] font-semibold text-text1 outline-none transition placeholder:font-normal placeholder:text-text3 focus:border-accent focus:bg-white focus:ring-4 focus:ring-accent/5">
             </label>
             <select class="h-[40px] min-w-[170px] rounded-smapp border border-borderc bg-white px-3 font-heading text-[11px] font-bold text-text2 outline-none focus:border-accent max-md:min-w-0 max-md:flex-1 max-md:text-[12px]" id="fcat" onchange="renderGastos()"><option value="">Todas las categorías</option></select>
             <details id="gastos-actions-menu" class="excel-actions relative z-20">
               <summary class="inline-flex h-[40px] list-none items-center gap-2 rounded-smapp border border-borderc bg-white px-3 font-heading text-[11px] font-bold text-text2 transition hover:border-accent hover:text-accent" aria-label="Abrir acciones de la lista">
-                <span class="text-[18px] leading-none" aria-hidden="true">⋯</span>
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M10 14v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
                 Acciones
                 <svg class="excel-actions-chevron h-3.5 w-3.5 transition-transform" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m6 8 4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </summary>
@@ -156,8 +225,7 @@
           </div>
         </div>
         <div class="border-b border-[#dbe5f3] bg-white">
-        <div id="gastos-payment-summary" class="grid grid-cols-2 gap-2 border-b border-[#dbe5f3] bg-appbg/70 px-5 py-3 max-md:px-4 xl:grid-cols-3"></div>
-          <div id="gastos-sort-header" class="hidden items-center border-b border-[#dbe5f3] bg-[#f8fbff] px-5 py-2 text-[11px] font-bold uppercase tracking-[0.06em] text-text3 md:grid md:grid-cols-[minmax(0,1.9fr)_58px_60px_96px_96px_88px_92px]">
+          <div id="gastos-sort-header" class="hidden items-center gap-2 border-b border-[#dbe5f3] bg-[#f8fbff] px-5 py-2 text-[11px] font-bold uppercase tracking-[0.06em] text-text3 md:grid md:grid-cols-[minmax(0,1.9fr)_58px_60px_96px_96px_92px_116px]">
             <button type="button" class="flex min-w-0 items-center gap-1 text-left transition hover:text-accent" data-gastos-sort="desc" data-gastos-sort-label="gasto" onclick="setGastosSort('desc')">
               <span class="truncate">Gasto</span>
               <span class="text-[10px]" data-gastos-sort-indicator="desc">--</span>
@@ -182,7 +250,7 @@
               <span>Monto</span>
               <span class="text-[10px]" data-gastos-sort-indicator="monto">--</span>
             </button>
-            <span class="text-right">Acciones</span>
+            <span class="border-l border-[#d6e0ec] pl-3 text-center">Acciones</span>
           </div>
           <div id="glist" class="max-h-[860px] overflow-y-auto bg-white"></div>
           <div class="border-t border-[#dbe5f3] bg-appbg px-5 py-4 max-md:px-4">
@@ -201,87 +269,21 @@
           </div>
         </div>
       </div>
-    </aside>
+    </div>
 
-    <aside class="min-w-0 md:col-span-5 md:sticky md:top-[74px]">
-      <div class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1.25fr)_minmax(0,0.9fr)]">
-        <div class="metric-card metric-card--positive rounded-app border border-[#d8ead8] bg-[#f5fbf5] px-5 py-4 shadow-soft max-md:px-4 max-md:py-3.5">
-          <div class="text-[11px] font-bold uppercase tracking-[0.08em] text-text3">Ingresos del mes</div>
-          <div id="cing" class="mt-2 font-heading text-[30px] font-bold leading-none text-green1">S/ 0.00</div>
-          <div class="mt-2 text-[12px] text-text2">Sueldo base más ingresos extra.</div>
-
-          <div class="mt-4 grid gap-2">
-            <div class="rounded-[14px] border border-[#d8ead8] bg-white/80 px-3 py-2.5">
-              <div class="flex items-start justify-between gap-2">
-                <div class="min-w-0">
-                  <div class="text-[10px] font-bold uppercase tracking-[0.07em] text-text3">Sueldo base</div>
-                  <div id="sueldo-card-sub" class="mt-1 truncate text-[10px] text-text2">Monto fijo del mes</div>
-                </div>
-                <button class="shrink-0 rounded-full border border-borderc bg-white px-2.5 py-1 text-[10px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="openSueldoModal()">Editar</button>
-              </div>
-              <input id="sueldo" type="hidden" value="0">
-              <div id="sueldo-display" class="mt-2 font-heading text-[18px] font-bold leading-none text-accent">S/ 0.00</div>
-            </div>
-
-            <div class="rounded-[14px] border border-[#ddd5fb] bg-white/80 px-3 py-2.5">
-              <div class="flex items-start justify-between gap-2">
-                <div class="min-w-0">
-                  <div class="text-[10px] font-bold uppercase tracking-[0.07em] text-text3">Ingresos extra</div>
-                  <div id="cextrasub" class="mt-1 truncate text-[10px] text-text2">0 ingreso(s) extra este mes</div>
-                </div>
-                <button class="shrink-0 rounded-full border border-borderc bg-white px-2.5 py-1 text-[10px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="openExtraModal()">Gestionar</button>
-              </div>
-              <div id="cextra" class="mt-2 font-heading text-[18px] font-bold leading-none text-[#7353d9]">S/ 0.00</div>
-            </div>
+    <div class="category-distribution-card mt-4 rounded-app border border-borderc bg-card px-4 py-3.5 shadow-soft">
+      <div class="font-heading text-[13px] font-bold">Distribución por categoría</div>
+      <div class="mt-2 grid grid-cols-[112px_minmax(0,1fr)] items-center gap-3 max-sm:grid-cols-1">
+        <div class="relative mx-auto flex h-[112px] w-[112px] items-center justify-center">
+          <canvas id="donut" width="220" height="220" class="h-[112px] w-[112px]"></canvas>
+          <div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+            <div class="text-[8px] font-bold uppercase tracking-[0.06em] text-text3">Gasto total</div>
+            <div class="mt-0.5 font-heading text-[14px] font-bold text-text1" id="donut-total">S/ 0</div>
           </div>
         </div>
-
-        <div class="metric-card metric-card--expense flex flex-col rounded-app border border-[#f1d3d3] bg-[#fff5f5] px-5 py-4 shadow-soft max-md:px-4 max-md:py-3.5">
-          <div class="text-[11px] font-bold uppercase tracking-[0.08em] text-text3">Gastos activos</div>
-          <div id="cg" class="mt-2 whitespace-nowrap font-heading text-[26px] font-bold leading-none tracking-[-0.025em] text-red1 max-lg:text-[23px]">S/ 0.00</div>
-          <div id="cgsub" class="mt-2 text-[13px] text-text2">0 gastos activos</div>
-          <div class="mt-4 rounded-[14px] border border-[#f1d3d3] bg-white/75 px-3 py-3 sm:mt-auto">
-            <div class="text-[10px] font-bold uppercase tracking-[0.07em] text-redtx">Impacto del mes</div>
-            <div class="mt-1 text-[11px] leading-5 text-text2">Incluye pagos vencidos y pagos que aún están en fecha.</div>
-          </div>
-        </div>
+        <div id="dlegend" class="grid min-w-0 grid-cols-2 gap-1.5 md:grid-cols-3 lg:grid-cols-5"></div>
       </div>
-      <div id="rcard" class="mb-6 rounded-[22px] border border-[#d8e4fb] bg-gradient-to-br from-bluebg via-white to-white px-6 py-5 shadow-soft ring-1 ring-[#dde8fb] max-md:px-4 max-md:py-4">
-        <div class="flex items-start justify-between gap-4 max-md:flex-col">
-          <div>
-            <div class="text-[11px] font-bold uppercase tracking-[0.08em] text-text3" id="ricon-wrap">Disponible</div>
-            <div class="mt-2 font-heading text-[15px] font-bold text-text2">Te queda este mes</div>
-          </div>
-          <button class="rounded-full border border-borderc bg-white px-3 py-1.5 font-heading text-[11px] font-bold text-text2 transition hover:border-accent hover:text-accent max-md:w-full max-md:py-2" onclick="openModal()">Agregar gasto</button>
-        </div>
-        <div id="cr" class="mt-5 font-heading text-[34px] font-bold leading-none text-bluetx max-md:text-[30px]">S/ 0.00</div>
-        <div id="crsub" class="mt-2 text-[13px] text-text2">disponible</div>
-        <div class="mt-4 rounded-[16px] border border-white/80 bg-white/80 px-4 py-3 shadow-soft">
-          <div class="flex items-center justify-between gap-3 max-md:flex-col max-md:items-start">
-            <div class="min-w-0">
-              <div id="carry-prev-label" class="text-[11px] font-bold uppercase tracking-[0.06em] text-text3">Arrastre del mes pasado</div>
-              <div id="carry-prev-sub" class="mt-1 text-[12px] text-text2">Cierre del mes anterior</div>
-            </div>
-            <div id="carry-prev-amount" class="font-heading text-[20px] font-bold text-bluetx">S/ 0.00</div>
-          </div>
-        </div>
-      </div>
-      <div class="rounded-app border border-borderc bg-card px-6 py-5 shadow-soft max-md:px-4 max-md:py-4">
-        <div class="mb-1 font-heading text-sm font-bold">Distribución por categoría</div>
-        <div class="mb-4 text-xs text-text3">Así se reparten tus gastos del mes por categoría, manteniendo visible lo disponible.</div>
-
-        <div class="grid grid-cols-1 gap-4 lg:grid-cols-[220px_minmax(0,1fr)] lg:items-center">
-          <div class="relative mx-auto flex h-[220px] w-[220px] items-center justify-center max-md:h-[188px] max-md:w-[188px]">
-            <canvas id="donut" width="220" height="220" class="h-[220px] w-[220px] max-md:h-[188px] max-md:w-[188px]"></canvas>
-            <div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-              <div class="text-[11px] font-bold uppercase tracking-[0.08em] text-text3">Gasto total</div>
-              <div class="mt-2 font-heading text-[24px] font-bold text-text1" id="donut-total">S/ 0</div>
-            </div>
-          </div>
-          <div id="dlegend" class="flex flex-col gap-2"></div>
-        </div>
-      </div>
-    </aside>
+    </div>
   </div>
 </section>
 
@@ -900,7 +902,7 @@
   </div>
 </div>
 
-<script type="module" src="main.js?v=15"></script>
+<script type="module" src="main.js?v=25"></script>
 
 </body>
 </html>

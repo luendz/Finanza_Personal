@@ -146,7 +146,6 @@ function drawDonut(sorted, total) {
   ctx.clearRect(0, 0, width, height);
 
   let start = -Math.PI / 2;
-  const sliceLabels = [];
   if (!sorted.length || total <= 0) {
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
@@ -155,17 +154,12 @@ function drawDonut(sorted, total) {
   } else {
     sorted.forEach(([cat, value]) => {
       const slice = (value / total) * Math.PI * 2;
-      const midAngle = start + slice / 2;
       ctx.beginPath();
       ctx.moveTo(centerX, centerY);
       ctx.arc(centerX, centerY, radius, start, start + slice);
       ctx.closePath();
       ctx.fillStyle = cs(cat).bar;
       ctx.fill();
-      sliceLabels.push({
-        angle: midAngle,
-        percent: `${Math.round((value / total) * 100)}%`,
-      });
       start += slice;
     });
   }
@@ -175,22 +169,6 @@ function drawDonut(sorted, total) {
   ctx.fillStyle = '#ffffff';
   ctx.fill();
 
-  if (sliceLabels.length) {
-    const labelRadius = (radius + innerRadius) / 2;
-    ctx.font = '700 11px "Nunito Sans", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = 'rgba(24, 32, 51, 0.25)';
-    ctx.fillStyle = '#ffffff';
-    sliceLabels.forEach(label => {
-      const x = centerX + Math.cos(label.angle) * labelRadius;
-      const y = centerY + Math.sin(label.angle) * labelRadius;
-      ctx.strokeText(label.percent, x, y);
-      ctx.fillText(label.percent, x, y);
-    });
-  }
-
   const centerTotal = document.getElementById('donut-total');
   if (centerTotal) centerTotal.textContent = fmt(total);
 
@@ -198,9 +176,9 @@ function drawDonut(sorted, total) {
   if (!legend) return;
   if (!sorted.length) {
     legend.innerHTML = `
-      <div class="rounded-[18px] border border-dashed border-borderc bg-appbg px-4 py-5 text-center">
-        <div class="font-heading text-[15px] font-bold text-text1">Sin categorias por mostrar</div>
-        <div class="mt-2 text-[12px] leading-6 text-text2">Cuando registres gastos, aqui veras la participacion de cada categoria.</div>
+      <div class="rounded-[12px] border border-dashed border-borderc bg-appbg px-3 py-3 text-center">
+        <div class="font-heading text-[12px] font-bold text-text1">Sin categorías por mostrar</div>
+        <div class="mt-1 text-[10px] leading-4 text-text2">Registra un gasto para ver su distribución.</div>
       </div>
     `;
     return;
@@ -211,14 +189,14 @@ function drawDonut(sorted, total) {
     const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
 
     return `
-      <div class="flex items-center justify-between gap-3 rounded-[14px] border border-borderc bg-white px-3 py-2 text-[12px] shadow-soft">
-        <div class="flex min-w-0 items-center gap-2">
-          <span class="h-2.5 w-2.5 shrink-0 rounded-full" style="background:${palette.bar}"></span>
-          <span class="truncate font-semibold text-text1">${cat}</span>
+      <div class="min-w-0 rounded-[9px] border border-borderc bg-[#f8fbff] px-2 py-1.5">
+        <div class="flex min-w-0 items-center gap-1.5 text-[10px]">
+          <span class="h-2 w-2 shrink-0 rounded-full" style="background:${palette.bar}"></span>
+          <span class="truncate font-semibold text-text1" title="${cat}">${cat}</span>
         </div>
-        <div class="flex shrink-0 items-center gap-3">
-          <span class="text-[11px] font-bold uppercase tracking-[0.06em] text-text3">${percentage}%</span>
-          <span class="font-semibold text-text1">${fmt(value)}</span>
+        <div class="mt-0.5 flex items-center justify-between gap-1.5 text-[9px] leading-none">
+          <span class="font-bold text-text3">${percentage}%</span>
+          <span class="truncate font-semibold text-text1">${fmt(value)}</span>
         </div>
       </div>
     `;
@@ -360,13 +338,16 @@ function updateInicio() {
   const resta = resumenActual.saldo;
   const pct = ingresos > 0 ? (gastos / ingresos) * 100 : 0;
   const items = active();
+  const overdueItems = items.filter(gasto => gastoPaymentStatus(gasto).key === 'vencido');
+  const overdueTotal = overdueItems.reduce((sum, gasto) => sum + Number(gasto.monto || 0), 0);
+  const remainingPct = ingresos > 0 ? Math.max((resta / ingresos) * 100, 0) : 0;
   const periodoAnterior = periodoRelativo(-1);
   const arrastreAnterior = resumenDelPeriodo(periodoAnterior.month, periodoAnterior.year);
 
   const inicioSub = document.getElementById('inicio-sub');
   if (!inicioSub) return;
 
-  inicioSub.textContent = `Tu resumen de ${MS[runtime.curM]} ${runtime.curY}`;
+  inicioSub.textContent = `– ${MS[runtime.curM]} ${runtime.curY}`;
   const sueldoCardSub = document.getElementById('sueldo-card-sub');
   if (sueldoCardSub) sueldoCardSub.textContent = `Monto fijo de ${MS[runtime.curM]} ${runtime.curY}`;
   const sueldoDisplay = document.getElementById('sueldo-display');
@@ -374,22 +355,27 @@ function updateInicio() {
   document.getElementById('cextra').textContent = fmt(extras);
   document.getElementById('cextrasub').textContent = `${extrasDelMes().length} ingreso(s) extra este mes`;
   document.getElementById('cing').textContent = fmt(ingresos);
-  document.getElementById('cg').textContent = fmt(gastos);
-  document.getElementById('cgsub').textContent = `${items.length} gastos activos`;
+  document.getElementById('month-expenses-total').textContent = fmt(gastos);
+  document.getElementById('month-expenses-count').textContent = `${items.length} gasto${items.length === 1 ? '' : 's'}`;
+  document.getElementById('month-expenses-overdue').textContent = fmt(overdueTotal);
+  document.getElementById('month-expenses-overdue').title = `${overdueItems.length} gasto${overdueItems.length === 1 ? '' : 's'} vencido${overdueItems.length === 1 ? '' : 's'}`;
+  document.getElementById('remaining-percent').textContent = resta >= 0
+    ? `${remainingPct.toFixed(0)}% de tus ingresos`
+    : 'Superaste tus ingresos';
   document.getElementById('cr').textContent = fmt(Math.abs(resta));
 
   const rcard = document.getElementById('rcard');
   const crValue = document.getElementById('cr');
   if (resta >= 0) {
-    crValue.className = 'font-heading text-[34px] font-bold leading-none text-bluetx';
-    document.getElementById('ricon-wrap').textContent = 'Disponible';
+    crValue.className = 'whitespace-nowrap font-heading text-[25px] font-bold leading-none text-bluetx';
+    document.getElementById('ricon-wrap').textContent = 'Te queda este mes';
     document.getElementById('crsub').textContent = 'disponible';
-    rcard.className = 'mb-6 rounded-[22px] border border-[#d8e4fb] bg-gradient-to-br from-bluebg via-white to-white px-6 py-5 shadow-soft ring-1 ring-[#dde8fb]';
+    rcard.className = 'h-full rounded-app border border-[#d8e4fb] bg-gradient-to-br from-bluebg via-white to-white px-4 py-3 shadow-soft ring-1 ring-[#dde8fb]';
   } else {
-    crValue.className = 'font-heading text-[34px] font-bold leading-none text-red1';
-    document.getElementById('ricon-wrap').textContent = 'Alerta';
+    crValue.className = 'whitespace-nowrap font-heading text-[25px] font-bold leading-none text-red1';
+    document.getElementById('ricon-wrap').textContent = 'Exceso este mes';
     document.getElementById('crsub').textContent = 'te pasaste';
-    rcard.className = 'mb-6 rounded-[22px] border border-[#f4d6d6] bg-gradient-to-br from-redbg via-white to-white px-6 py-5 shadow-soft ring-1 ring-[#f8e1e1]';
+    rcard.className = 'h-full rounded-app border border-[#f4d6d6] bg-gradient-to-br from-redbg via-white to-white px-4 py-3 shadow-soft ring-1 ring-[#f8e1e1]';
   }
 
   const progressFill = document.getElementById('pfill');
@@ -397,10 +383,6 @@ function updateInicio() {
   progressFill.className = `h-full rounded-full transition-all duration-500 ${pct >= 100 ? 'bg-red1' : pct >= 80 ? 'bg-[#e8b84b]' : 'bg-green1'}`;
 
   document.getElementById('ppct').textContent = `${pct.toFixed(0)}%`;
-  document.getElementById('pleft').innerHTML = `<span class="text-text2">Gastado</span> <span class="font-semibold text-red1">${fmt(gastos)}</span>`;
-  document.getElementById('pright').innerHTML = resta >= 0
-    ? `<span class="text-bluetx">Disponible</span> <span class="font-semibold text-bluetx">${fmt(resta)}</span>`
-    : `<span class="text-red1">Exceso</span> <span class="font-semibold text-red1">${fmt(Math.abs(resta))}</span>`;
 
   const carryPrevLabel = document.getElementById('carry-prev-label');
   const carryPrevSub = document.getElementById('carry-prev-sub');
@@ -414,7 +396,7 @@ function updateInicio() {
     carryPrevSub.textContent = saldoAnteriorPositivo
       ? `${periodoAnterior.year} ${MS[periodoAnterior.month]} - saldo final del mes pasado`
       : `${periodoAnterior.year} ${MS[periodoAnterior.month]} - cierre en negativo del mes pasado`;
-    carryPrevAmount.className = `font-heading text-[20px] font-bold ${saldoAnteriorPositivo ? 'text-bluetx' : 'text-red1'}`;
+    carryPrevAmount.className = `shrink-0 whitespace-nowrap font-heading text-[17px] font-bold ${saldoAnteriorPositivo ? 'text-bluetx' : 'text-red1'}`;
     carryPrevAmount.textContent = fmt(saldoAnterior);
   }
 

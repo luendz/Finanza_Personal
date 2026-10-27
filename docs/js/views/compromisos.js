@@ -28,6 +28,14 @@ const GASTOS_STATUS_ORDER = {
   pendiente: 1,
   pagado: 2,
 };
+const GASTOS_STATUS_FILTERS = new Set(['all', 'pagado', 'pendiente', 'vencido']);
+
+function ensureGastosStatusFilter() {
+  if (!GASTOS_STATUS_FILTERS.has(uiState.gastosStatusFilter)) {
+    uiState.gastosStatusFilter = 'all';
+  }
+  return uiState.gastosStatusFilter;
+}
 
 function ensureGastosSortState() {
   if (!uiState.gastosSort || typeof uiState.gastosSort !== 'object') {
@@ -138,40 +146,21 @@ function renderGastosPaymentSummary(items) {
   const summary = document.getElementById('gastos-payment-summary');
   if (!summary) return;
 
-  const totals = items.reduce((acc, gasto) => {
-    acc[gastoPaymentStatus(gasto).key] += Number(gasto.monto || 0);
+  const counts = items.reduce((acc, gasto) => {
+    acc[gastoPaymentStatus(gasto).key] += 1;
     return acc;
   }, { pagado: 0, pendiente: 0, vencido: 0 });
-  const totalGastos = totals.pagado + totals.pendiente + totals.vencido;
-  const totalPorPagar = totals.pendiente + totals.vencido;
+  const activeFilter = ensureGastosStatusFilter();
+  const chipClass = (key, activeClass, idleClass) => activeFilter === key
+    ? `border-transparent ${activeClass} text-white shadow-sm`
+    : `border-transparent ${idleClass}`;
 
   summary.innerHTML = `
-    <div class="col-span-2 rounded-[14px] border border-[#d8e1ec] bg-[#f7f9fc] px-4 py-3 xl:col-span-1">
-      <div class="text-[11px] font-bold uppercase tracking-[0.06em] text-text3">Total este mes</div>
-      <div class="mt-1.5 font-heading text-[20px] font-bold text-text1">${fmt(totalGastos)}</div>
-      <div class="mt-0.5 text-[10px] font-semibold text-text3">Todos los estados</div>
-    </div>
-    <div class="rounded-[14px] border border-[#cfe7dc] bg-[#f3fbf7] px-4 py-3">
-      <div class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.06em] text-greentx">
-        <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-[11px] shadow-sm" aria-hidden="true">✓</span>
-        Pagado
-      </div>
-      <div class="mt-1.5 font-heading text-[20px] font-bold text-green1">${fmt(totals.pagado)}</div>
-      <div class="mt-0.5 text-[10px] font-semibold text-[#56806d]">Confirmado</div>
-    </div>
-    <div class="rounded-[14px] border border-[#d8e1ec] bg-white px-4 py-3">
-      <div class="text-[11px] font-bold uppercase tracking-[0.06em] text-text2">Por pagar</div>
-      <div class="mt-1.5 font-heading text-[20px] font-bold text-text1">${fmt(totalPorPagar)}</div>
-      <div class="mt-2 grid gap-1.5">
-        <div class="flex items-center justify-between gap-2 rounded-[8px] border border-[#f0c1c8] bg-[#fff0f2] px-2 py-1">
-          <span class="text-[9px] font-bold uppercase tracking-[0.04em] text-redtx">Vencido</span>
-          <span class="whitespace-nowrap text-[10px] font-bold text-red1">${fmt(totals.vencido)}</span>
-        </div>
-        <div class="flex items-center justify-between gap-2 rounded-[8px] border border-[#c8dafb] bg-[#f2f6ff] px-2 py-1">
-          <span class="whitespace-nowrap text-[9px] font-bold uppercase tracking-[0.04em] text-bluetx">En fecha</span>
-          <span class="whitespace-nowrap text-[10px] font-bold text-blue1">${fmt(totals.pendiente)}</span>
-        </div>
-      </div>
+    <div class="flex flex-wrap items-center gap-2" aria-label="Filtrar gastos por estado">
+      <button type="button" class="rounded-full border px-3 py-1.5 text-[10px] font-bold transition ${chipClass('all', 'bg-text1', 'bg-appbg text-text1 hover:bg-appbg2')}" aria-pressed="${activeFilter === 'all'}" onclick="setGastosStatusFilter('all')">Todos · ${items.length}</button>
+      <button type="button" class="rounded-full border px-3 py-1.5 text-[10px] font-bold transition ${chipClass('pagado', 'bg-green1', 'bg-greenbg text-greentx hover:bg-[#dff5e8]')}" aria-pressed="${activeFilter === 'pagado'}" onclick="setGastosStatusFilter('pagado')">Pagado · ${counts.pagado}</button>
+      <button type="button" class="rounded-full border px-3 py-1.5 text-[10px] font-bold transition ${chipClass('pendiente', 'bg-blue1', 'bg-bluebg text-bluetx hover:bg-[#e1ebff]')}" aria-pressed="${activeFilter === 'pendiente'}" onclick="setGastosStatusFilter('pendiente')">En fecha · ${counts.pendiente}</button>
+      <button type="button" class="rounded-full border px-3 py-1.5 text-[10px] font-bold transition ${chipClass('vencido', 'bg-red1', 'bg-redbg text-red1 hover:bg-[#ffe2e5]')}" aria-pressed="${activeFilter === 'vencido'}" onclick="setGastosStatusFilter('vencido')">Vencido · ${counts.vencido}</button>
     </div>
   `;
 }
@@ -208,6 +197,7 @@ function toggleQ() {
 function renderGastos() {
   fillCategorySelectors();
   const filter = document.getElementById('fcat')?.value || '';
+  const statusFilter = ensureGastosStatusFilter();
   const search = String(document.getElementById('fsearch')?.value || '')
     .trim()
     .toLocaleLowerCase('es')
@@ -217,7 +207,7 @@ function renderGastos() {
   const footerTotal = document.getElementById('gastos-total-footer');
   if (!list) return;
 
-  const items = sortGastosItems(active().filter(gasto => {
+  const filteredItems = active().filter(gasto => {
     if (filter && gasto.cat !== filter) return false;
     if (!search) return true;
 
@@ -228,14 +218,17 @@ function renderGastos() {
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '');
     return searchableText.includes(search);
-  }));
+  });
+  renderGastosPaymentSummary(filteredItems);
+  const items = sortGastosItems(filteredItems.filter(gasto => (
+    statusFilter === 'all' || gastoPaymentStatus(gasto).key === statusFilter
+  )));
   const itemsTotal = items.reduce((sum, gasto) => sum + gasto.monto, 0);
-  renderGastosPaymentSummary(items);
   syncGastosSortHeader();
   if (footerTotal) footerTotal.textContent = fmt(itemsTotal);
 
   if (!items.length) {
-    const emptyCopy = search || filter
+    const emptyCopy = search || filter || statusFilter !== 'all'
       ? 'No hay gastos que coincidan con la búsqueda o el filtro.'
       : 'No hay gastos para este mes.';
     list.innerHTML = `<div class="p-4 text-sm text-text2">${emptyCopy}</div>`;
@@ -298,7 +291,7 @@ function renderGastos() {
             <button class="${mobileActionBtnBase} text-text3 hover:border-red1 hover:bg-redbg hover:text-red1" onclick="delG(${gasto.id})" title="Eliminar gasto" aria-label="Eliminar gasto">&times;</button>
           </div>
         </div>
-        <div class="hidden gap-2 md:grid md:grid-cols-[minmax(0,1.9fr)_58px_60px_96px_96px_88px_92px] md:items-center">
+        <div class="hidden gap-2 md:grid md:grid-cols-[minmax(0,1.9fr)_58px_60px_96px_96px_92px_116px] md:items-center">
           <div class="min-w-0">
             <div class="truncate text-[14px] font-semibold ${isPaid ? 'text-text2 line-through' : 'text-text1'}" title="${gasto.desc}">${gasto.desc}</div>
           </div>
@@ -315,7 +308,7 @@ function renderGastos() {
             <span class="inline-flex h-5 items-center rounded-full border px-2 text-[10px] font-bold leading-none ${statusClass}" title="${statusDetail}">${status.label}</span>
           </div>
           <div class="whitespace-nowrap font-heading text-[15px] font-bold md:text-right ${amountClass}">${fmt(gasto.monto)}</div>
-          <div class="flex shrink-0 items-center gap-1 md:justify-end">
+          <div class="flex shrink-0 items-center gap-1 border-l border-borderc pl-3 md:justify-center">
             <button class="inline-flex h-7 w-7 items-center justify-center rounded-md border-0 bg-transparent text-[16px] leading-none transition ${toggleBtnClass}" onclick="${toggleHandler}" title="${toggleLabel}" aria-label="${toggleLabel}">&#10003;</button>
             <button class="inline-flex h-7 w-7 items-center justify-center rounded-md border-0 bg-transparent text-[16px] leading-none text-text3 transition hover:bg-bluebg hover:text-accent" onclick="editG(${gasto.id})" title="Editar gasto" aria-label="Editar gasto">&#9998;</button>
             <button class="inline-flex h-7 w-7 items-center justify-center rounded-md border-0 bg-transparent text-[20px] leading-none text-text3 transition hover:bg-redbg hover:text-red1" onclick="delG(${gasto.id})" title="Eliminar gasto" aria-label="Eliminar gasto">&times;</button>
@@ -324,6 +317,12 @@ function renderGastos() {
       </div>
     `;
   }).join('');
+}
+
+function setGastosStatusFilter(key) {
+  if (!GASTOS_STATUS_FILTERS.has(key)) return;
+  uiState.gastosStatusFilter = key;
+  renderGastos();
 }
 
 function setGastosSort(key) {
@@ -1167,6 +1166,7 @@ Object.assign(window, {
   saveG,
   savePrestamo,
   setGastosSort,
+  setGastosStatusFilter,
   toggleCarryItem,
   toggleGastoPago,
   toggleQ,

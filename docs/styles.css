@@ -1,12 +1,12 @@
 :root {
   --accent: #2563eb;
   --accent-strong: #1d4ed8;
-  --ink: #122033;
-  --muted: #526178;
-  --line: #dce5f0;
-  --surface: rgba(255, 255, 255, 0.92);
-  --shadow-card: 0 10px 32px rgba(23, 43, 77, 0.07);
-  --shadow-card-hover: 0 18px 42px rgba(23, 43, 77, 0.12);
+  --ink: #142033;
+  --muted: #475569;
+  --line: #d6e0ec;
+  --surface: rgba(255, 255, 255, 0.97);
+  --shadow-card: 0 10px 30px rgba(23, 43, 77, 0.08);
+  --shadow-card-hover: 0 16px 38px rgba(23, 43, 77, 0.12);
 }
 
 * {
@@ -21,14 +21,21 @@ html {
 body {
   min-height: 100vh;
   background:
-    linear-gradient(180deg, rgba(244, 247, 251, 0.8) 0%, rgba(244, 247, 251, 0.91) 78%, rgba(244, 247, 251, 0.96) 100%),
-    radial-gradient(circle at 8% -10%, rgba(37, 99, 235, 0.12), transparent 34rem),
-    radial-gradient(circle at 96% 22%, rgba(22, 139, 99, 0.07), transparent 28rem),
-    url('img/fondo2.avif') center 12% / cover no-repeat,
-    #f4f7fb;
+    linear-gradient(180deg, rgba(232, 240, 249, 0.32) 0%, rgba(238, 243, 249, 0.44) 72%, rgba(243, 246, 250, 0.56) 100%),
+    radial-gradient(circle at 8% -10%, rgba(37, 99, 235, 0.08), transparent 34rem),
+    radial-gradient(circle at 96% 22%, rgba(21, 128, 95, 0.045), transparent 28rem),
+    url('img/fondo4.avif') center 12% / cover no-repeat,
+    #f3f6fa;
   background-attachment: fixed;
+  color: var(--ink);
+  font-weight: 500;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+.font-heading {
+  letter-spacing: -0.015em;
 }
 
 ::selection {
@@ -87,7 +94,9 @@ textarea:focus-visible,
 
 .app-header {
   background:
-    linear-gradient(110deg, rgba(235, 243, 255, 0.96) 0%, rgba(255, 255, 255, 0.97) 46%, rgba(226, 238, 255, 0.94) 100%) !important;
+    radial-gradient(circle at 10% -160%, rgba(21, 128, 95, 0.34), transparent 38%),
+    radial-gradient(circle at 86% 190%, rgba(37, 99, 235, 0.3), transparent 42%),
+    linear-gradient(112deg, rgba(207, 231, 222, 0.98) 0%, rgba(246, 250, 255, 0.99) 38%, rgba(221, 233, 250, 0.99) 72%, rgba(196, 216, 244, 0.98) 100%) !important;
   border-color: rgba(204, 216, 231, 0.82) !important;
   box-shadow: 0 8px 30px rgba(23, 43, 77, 0.09);
   backdrop-filter: blur(18px) saturate(150%);
@@ -179,22 +188,42 @@ textarea:focus-visible,
 }
 
 #main-nav {
-  gap: 0.2rem;
-  padding: 0.22rem;
-  border: 1px solid #e4ebf4;
-  border-radius: 14px;
-  background: rgba(244, 247, 251, 0.92);
+  gap: 1.1rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .nav-tab {
+  position: relative;
   border: 0 !important;
-  border-radius: 10px;
+  border-radius: 0;
+  background: transparent !important;
 }
 
 .nav-tab.active {
   color: var(--accent);
-  background: #fff;
-  box-shadow: 0 3px 10px rgba(23, 43, 77, 0.09), inset 0 0 0 1px rgba(204, 216, 231, 0.68);
+  background: transparent;
+  box-shadow: none;
+}
+
+.nav-tab::after {
+  position: absolute;
+  right: 0.85rem;
+  bottom: 0;
+  left: 0.85rem;
+  height: 2px;
+  border-radius: 999px;
+  background: transparent;
+  content: '';
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  transform: scaleX(0.45);
+}
+
+.nav-tab.active::after {
+  background: var(--accent);
+  transform: scaleX(1);
 }
 
 .nav-icon {
@@ -203,8 +232,8 @@ textarea:focus-visible,
   height: 19px;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
-  background: rgba(135, 148, 168, 0.1);
+  border-radius: 0;
+  background: transparent;
   font-family: 'DM Sans', sans-serif;
   font-size: 0.74rem;
   font-weight: 800;
@@ -212,16 +241,16 @@ textarea:focus-visible,
 }
 
 .nav-tab.active .nav-icon {
-  background: rgba(37, 99, 235, 0.1);
+  background: transparent;
 }
 
 .dashboard-hero {
   position: relative;
   z-index: 10;
   isolation: isolate;
-  border-color: rgba(196, 211, 231, 0.9) !important;
+  border-color: transparent !important;
   background:
-    linear-gradient(118deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.94) 58%, rgba(232, 241, 255, 0.92) 100%) !important;
+    linear-gradient(118deg, rgba(248, 251, 255, 0.99) 0%, rgba(251, 253, 255, 0.98) 58%, rgba(232, 241, 255, 0.96) 100%) !important;
   box-shadow: 0 18px 46px rgba(23, 43, 77, 0.08) !important;
 }
 
@@ -251,55 +280,95 @@ textarea:focus-visible,
 .expenses-panel,
 .metric-card,
 #rcard {
-  box-shadow: var(--shadow-card) !important;
+  box-shadow: none !important;
+}
+
+.dashboard-hero,
+.category-distribution-card {
+  box-shadow: none !important;
 }
 
 .budget-progress {
-  border-color: rgba(204, 216, 231, 0.9) !important;
-  background: rgba(255, 255, 255, 0.88) !important;
-  backdrop-filter: blur(10px);
+  border-color: transparent !important;
+  background: rgba(255, 255, 255, 0.97) !important;
+  backdrop-filter: blur(6px);
 }
 
 .expenses-panel {
-  border-color: rgba(196, 211, 231, 0.92) !important;
+  border-color: transparent !important;
+  background: linear-gradient(135deg, rgba(228, 239, 255, 0.98) 0%, rgba(244, 248, 255, 0.98) 44%, rgba(255, 255, 255, 0.98) 100%) !important;
 }
 
 .metric-card {
   position: relative;
   overflow: hidden;
   min-height: 142px;
-  border-color: rgba(204, 216, 231, 0.86) !important;
-  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: transparent !important;
+  background: rgba(255, 255, 255, 0.975) !important;
+}
+
+.metric-card > div:nth-child(2) > div,
+#rcard > div:nth-child(3) > div {
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.metric-card [class*='uppercase']:not([class*='text-red']),
+#rcard [class*='uppercase'] {
+  color: #5f6f84 !important;
+  letter-spacing: 0.055em !important;
 }
 
 .metric-card::before {
-  position: absolute;
-  top: 0;
-  right: 1.15rem;
-  left: 1.15rem;
-  height: 3px;
-  border-radius: 0 0 999px 999px;
-  background: #2563eb;
-  opacity: 0.72;
-  content: '';
+  display: none;
 }
 
 .metric-card--extra::before {
-  background: #7c5ce7;
+  background: #2563eb;
+}
+
+.metric-card--positive {
+  background: linear-gradient(135deg, rgba(229, 247, 238, 0.98) 0%, rgba(246, 252, 249, 0.98) 48%, rgba(255, 255, 255, 0.98) 100%) !important;
 }
 
 .metric-card--positive::before {
-  background: #168b63;
+  background: #15805f;
+}
+
+.metric-card--expense {
+  background: linear-gradient(135deg, rgba(255, 235, 239, 0.98) 0%, rgba(255, 248, 249, 0.98) 48%, rgba(255, 255, 255, 0.98) 100%) !important;
 }
 
 .metric-card--expense::before {
-  background: #d84d5f;
+  background: #d94a5d;
+}
+
+#rcard {
+  border-color: transparent !important;
+  background: linear-gradient(135deg, rgba(231, 240, 255, 0.98) 0%, rgba(246, 249, 255, 0.98) 48%, rgba(255, 255, 255, 0.98) 100%) !important;
+}
+
+.category-distribution-card {
+  border-color: transparent !important;
+}
+
+#inicio-gastos-principal > div {
+  background-color: rgba(248, 251, 255, 0.74) !important;
+}
+
+#glist {
+  background: rgba(255, 255, 255, 0.72) !important;
+}
+
+#glist > div {
+  background-color: rgba(255, 255, 255, 0.7);
 }
 
 .metric-card:hover,
 #rcard:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-card-hover) !important;
+  box-shadow: none !important;
 }
 
 .shadow-soft {
@@ -614,15 +683,15 @@ textarea:hover {
   #main-nav .nav-tab {
     height: 40px;
     border-bottom-width: 0;
-    border-radius: 9999px;
-    background: #f4f7fb;
+    border-radius: 0;
+    background: transparent;
     padding: 0 0.9rem;
     scroll-snap-align: start;
   }
 
   #main-nav .nav-tab.active {
-    background: #edf4ff;
-    box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.16);
+    background: transparent;
+    box-shadow: none;
   }
 
   .dashboard-hero,
