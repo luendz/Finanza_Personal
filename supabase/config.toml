@@ -1,0 +1,11 @@
+project_id = "yrufxaubdztblkdfkpvw"
+
+# Esta funcion atiende dos tipos de llamada:
+# - usuarios autenticados que envian una prueba desde la aplicacion
+# - el cron de Supabase autenticado con x-reminder-secret
+#
+# La verificacion de cada flujo se hace dentro de la funcion. Si verify_jwt
+# queda activo, el gateway bloquea el cron antes de que el secreto se valide.
+[functions.resend-email]
+verify_jwt = false
+
