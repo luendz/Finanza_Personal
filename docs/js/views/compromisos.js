@@ -208,18 +208,37 @@ function toggleQ() {
 function renderGastos() {
   fillCategorySelectors();
   const filter = document.getElementById('fcat')?.value || '';
+  const search = String(document.getElementById('fsearch')?.value || '')
+    .trim()
+    .toLocaleLowerCase('es')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
   const list = document.getElementById('glist');
   const footerTotal = document.getElementById('gastos-total-footer');
   if (!list) return;
 
-  const items = sortGastosItems(active().filter(gasto => !filter || gasto.cat === filter));
+  const items = sortGastosItems(active().filter(gasto => {
+    if (filter && gasto.cat !== filter) return false;
+    if (!search) return true;
+
+    const status = gastoPaymentStatus(gasto);
+    const searchableText = [gasto.desc, gasto.cat, gasto.tipo, status.label]
+      .join(' ')
+      .toLocaleLowerCase('es')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+    return searchableText.includes(search);
+  }));
   const itemsTotal = items.reduce((sum, gasto) => sum + gasto.monto, 0);
   renderGastosPaymentSummary(items);
   syncGastosSortHeader();
   if (footerTotal) footerTotal.textContent = fmt(itemsTotal);
 
   if (!items.length) {
-    list.innerHTML = '<div class="p-4 text-sm text-text2">No hay gastos para este mes.</div>';
+    const emptyCopy = search || filter
+      ? 'No hay gastos que coincidan con la búsqueda o el filtro.'
+      : 'No hay gastos para este mes.';
+    list.innerHTML = `<div class="p-4 text-sm text-text2">${emptyCopy}</div>`;
     return;
   }
 
@@ -536,6 +555,7 @@ function getCarryTarget() {
 }
 
 function openCarryModal() {
+  closeGastosActionsMenu();
   uiState.carrySelection = new Set();
   const target = getDefaultCarryTarget();
   fillMonthOptions('carry-target-month');
@@ -1109,6 +1129,19 @@ async function removeAbono(prestamoId, historialId) {
 app.actions.renderCompromisosResumen = renderCompromisosResumen;
 app.actions.renderGastos = renderGastos;
 app.actions.renderPrestamos = renderPrestamos;
+
+function closeGastosActionsMenu() {
+  document.getElementById('gastos-actions-menu')?.removeAttribute('open');
+}
+
+document.addEventListener('click', (event) => {
+  const menu = document.getElementById('gastos-actions-menu');
+  if (menu?.open && !menu.contains(event.target)) closeGastosActionsMenu();
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') closeGastosActionsMenu();
+});
 
 Object.assign(window, {
   carrySelectedExpenses,

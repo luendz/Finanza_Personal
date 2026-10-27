@@ -21,8 +21,10 @@ html {
 body {
   min-height: 100vh;
   background:
+    linear-gradient(180deg, rgba(244, 247, 251, 0.8) 0%, rgba(244, 247, 251, 0.91) 78%, rgba(244, 247, 251, 0.96) 100%),
     radial-gradient(circle at 8% -10%, rgba(37, 99, 235, 0.12), transparent 34rem),
     radial-gradient(circle at 96% 22%, rgba(22, 139, 99, 0.07), transparent 28rem),
+    url('img/fondo2.avif') center 12% / cover no-repeat,
     #f4f7fb;
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
@@ -49,6 +51,24 @@ button:disabled {
   cursor: not-allowed;
 }
 
+.excel-actions > summary::-webkit-details-marker {
+  display: none;
+}
+
+.excel-actions > summary::marker {
+  content: '';
+}
+
+.excel-actions[open] > summary {
+  border-color: rgba(37, 99, 235, 0.55);
+  background: #eff5ff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+.excel-actions[open] .excel-actions-chevron {
+  transform: rotate(180deg);
+}
+
 button,
 input,
 select,
@@ -66,10 +86,49 @@ textarea:focus-visible,
 }
 
 .app-header {
-  background: rgba(255, 255, 255, 0.86) !important;
+  background:
+    linear-gradient(110deg, rgba(235, 243, 255, 0.96) 0%, rgba(255, 255, 255, 0.97) 46%, rgba(226, 238, 255, 0.94) 100%) !important;
   border-color: rgba(204, 216, 231, 0.82) !important;
-  box-shadow: 0 8px 30px rgba(23, 43, 77, 0.06);
+  box-shadow: 0 8px 30px rgba(23, 43, 77, 0.09);
   backdrop-filter: blur(18px) saturate(150%);
+}
+
+.header-shell {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+
+.header-brand-slot {
+  grid-row: 1;
+  grid-column: 1;
+}
+
+#main-nav {
+  grid-row: 1;
+  grid-column: 2;
+  justify-self: center;
+}
+
+#header-auth-actions {
+  grid-row: 1;
+  grid-column: 3;
+  justify-self: end;
+}
+
+.account-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.account-menu > summary::marker {
+  content: '';
+}
+
+.account-menu[open] > summary {
+  border-color: rgba(37, 99, 235, 0.55);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+.account-menu[open] .account-menu-chevron {
+  transform: rotate(180deg);
 }
 
 .app-brand {
@@ -85,16 +144,16 @@ textarea:focus-visible,
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  border-radius: 12px;
-  color: #fff;
-  background: linear-gradient(145deg, #2f73f0 0%, #1e4fc7 100%);
-  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
-.brand-mark svg {
-  width: 21px;
-  height: 21px;
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .brand-copy {
@@ -158,6 +217,7 @@ textarea:focus-visible,
 
 .dashboard-hero {
   position: relative;
+  z-index: 10;
   isolation: isolate;
   border-color: rgba(196, 211, 231, 0.9) !important;
   background:
@@ -168,12 +228,12 @@ textarea:focus-visible,
 .dashboard-hero::before {
   position: absolute;
   z-index: -1;
-  top: -95px;
-  right: -85px;
+  top: 0;
+  right: 0;
   width: 260px;
-  height: 260px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(37, 99, 235, 0.16), rgba(37, 99, 235, 0));
+  height: 100%;
+  border-radius: 0 22px 22px 0;
+  background: radial-gradient(circle at 100% 0%, rgba(37, 99, 235, 0.16), rgba(37, 99, 235, 0) 72%);
   content: '';
 }
 
@@ -290,13 +350,23 @@ textarea:hover {
   border: 1px solid rgba(220, 229, 240, 0.9);
 }
 
+#overlay-auth {
+  background-color: rgba(10, 25, 51, 0.78) !important;
+  background-image:
+    linear-gradient(145deg, rgba(12, 35, 78, 0.72), rgba(6, 18, 39, 0.86)),
+    url('img/fondo.avif');
+  background-position: center 42%;
+  background-size: cover;
+}
+
 .auth-visual {
   position: relative;
   isolation: isolate;
   overflow: hidden;
   background:
-    radial-gradient(circle at 92% 12%, rgba(255, 255, 255, 0.2), transparent 12rem),
-    linear-gradient(155deg, #286bea 0%, #1946aa 68%, #12347e 100%);
+    radial-gradient(circle at 92% 12%, rgba(55, 132, 255, 0.3), transparent 12rem),
+    linear-gradient(155deg, rgba(32, 94, 210, 0.68) 0%, rgba(11, 36, 88, 0.9) 74%, rgba(5, 19, 47, 0.96) 100%),
+    url('img/fondo.avif') center 42% / cover no-repeat;
 }
 
 .auth-visual::before,
@@ -320,6 +390,16 @@ textarea:hover {
   bottom: 110px;
   width: 160px;
   height: 160px;
+}
+
+.auth-main-image {
+  display: block;
+  width: 176px;
+  height: 176px;
+  margin: 18px auto 0;
+  object-fit: contain;
+  filter: drop-shadow(0 20px 26px rgba(7, 25, 74, 0.34));
+  transform: rotate(-2deg);
 }
 
 .auth-check {
@@ -493,6 +573,20 @@ textarea:hover {
     box-shadow: 0 6px 24px rgba(23, 43, 77, 0.08);
   }
 
+  .header-shell {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .header-brand-slot {
+    grid-row: 1;
+    grid-column: 1;
+  }
+
+  #header-auth-actions {
+    grid-row: 1;
+    grid-column: 2;
+  }
+
   .brand-mark {
     width: 32px;
     height: 32px;
@@ -504,7 +598,12 @@ textarea:hover {
   }
 
   #main-nav {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    justify-self: stretch;
     gap: 0.5rem;
+    width: 100%;
+    justify-content: flex-start;
     padding-bottom: 0.15rem;
     border: 0;
     border-radius: 0;

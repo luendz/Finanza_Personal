@@ -11,44 +11,89 @@
   <script src="tailwind-config.js?v=2"></script>
   <script>window.__INITIAL_AUTH_URL__ = window.location.href;</script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="icon" type="image/png" href="img/mis_finanzas.png?v=1">
+  <link rel="apple-touch-icon" href="img/mis_finanzas.png?v=1">
+  <link rel="stylesheet" href="styles.css?v=12">
 </head>
 <body class="bg-appbg text-text1 font-sans text-sm leading-6">
 
-<header class="app-header sticky top-0 z-50 flex h-[64px] items-center border-b border-borderc bg-white px-6 max-md:h-auto max-md:flex-wrap max-md:gap-y-2 max-md:px-3 max-md:py-2">
-  <div class="app-brand mr-8 whitespace-nowrap max-md:mr-0">
-    <span class="brand-mark" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M4.75 8.25h14.5v9.5a2 2 0 0 1-2 2H6.75a2 2 0 0 1-2-2v-9.5Z" stroke="currentColor" stroke-width="1.8"/><path d="M7 8.25V6.7a2.45 2.45 0 0 1 2.45-2.45h7.8a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="1.8"/><path d="M15.25 13.75h4v-3h-4a1.5 1.5 0 0 0 0 3Z" fill="currentColor"/></svg>
-    </span>
-    <span class="brand-copy"><strong>Mis Finanzas</strong><small>Control personal</small></span>
+<header class="app-header sticky top-0 z-50 border-b border-borderc bg-white">
+  <div class="header-shell relative mx-auto grid w-full max-w-[1440px] items-center gap-4 px-6 py-2 max-md:gap-y-2 max-md:px-3">
+    <div class="header-brand-slot flex min-h-[42px] items-center justify-start">
+      <div class="app-brand whitespace-nowrap">
+        <span class="brand-mark" aria-hidden="true">
+          <img src="img/mis_finanzas.png" alt="">
+        </span>
+        <span class="brand-copy"><strong>Mis Finanzas</strong><small>Control personal</small></span>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2" id="header-auth-actions">
+      <button id="auth-register" onclick="openAuthModal('register')" class="hidden rounded-full border border-borderc bg-white px-4 py-2 font-heading text-[12px] font-bold text-text2 shadow-soft transition hover:border-accent hover:text-accent max-md:px-3">Registrarme</button>
+      <button id="auth-login" onclick="openAuthModal('login')" class="hidden rounded-full border border-accent bg-accent px-4 py-2 font-heading text-[12px] font-bold text-white shadow-soft transition hover:-translate-y-0.5 hover:brightness-95 max-md:px-3">Ingresar</button>
+
+      <details id="auth-account-menu" class="account-menu relative hidden">
+        <summary class="flex min-h-[34px] list-none items-center gap-2 rounded-full border border-[#d8e4fb] bg-white/90 py-1 pl-1 pr-2.5 shadow-soft transition hover:border-accent">
+          <span id="auth-avatar" class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-accent to-[#1748b7] font-heading text-[10px] font-bold text-white">U</span>
+          <span class="hidden min-w-0 flex-col text-left sm:flex">
+            <small class="text-[8px] font-bold uppercase leading-none tracking-[0.08em] text-text3">Mi cuenta</small>
+            <span id="auth-account-label" class="mt-0.5 max-w-[150px] truncate text-[10px] font-bold leading-none text-text1">Usuario</span>
+          </span>
+          <svg class="account-menu-chevron h-3 w-3 text-text3 transition-transform" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m6 8 4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </summary>
+        <div class="absolute right-0 top-full z-[60] mt-2 w-[260px] overflow-hidden rounded-[18px] border border-[#dbe5f3] bg-white p-2 shadow-modal">
+          <div class="rounded-[13px] bg-appbg px-3 py-2.5">
+            <div class="text-[9px] font-bold uppercase tracking-[0.08em] text-text3">Sesión activa</div>
+            <span id="auth-status" class="mt-1 block truncate text-[11px] font-bold text-greentx"></span>
+          </div>
+          <button id="auth-logout" onclick="signOutUser()" class="mt-1 hidden w-full items-center gap-2 rounded-[12px] px-3 py-2.5 text-left font-heading text-[12px] font-bold text-text2 transition hover:bg-redbg hover:text-red1">
+            <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-appbg text-[15px]" aria-hidden="true">↪</span>
+            Cerrar sesión
+          </button>
+        </div>
+      </details>
+    </div>
+
+    <nav class="flex max-w-full justify-center overflow-x-auto" id="main-nav">
+      <button class="nav-tab active flex h-[40px] items-center gap-2 whitespace-nowrap border-b-2 border-transparent px-4 font-heading text-[12px] font-bold text-text3 transition hover:text-text2 max-md:px-3 max-md:text-[11px]" onclick="goTo('inicio',this)"><span class="nav-icon" aria-hidden="true">⌂</span>Inicio</button>
+      <button class="nav-tab flex h-[40px] items-center gap-2 whitespace-nowrap border-b-2 border-transparent px-4 font-heading text-[12px] font-bold text-text3 transition hover:text-text2 max-md:px-3 max-md:text-[11px]" onclick="goTo('compromisos',this)"><span class="nav-icon" aria-hidden="true">✓</span>Compromisos</button>
+      <button class="nav-tab flex h-[40px] items-center gap-2 whitespace-nowrap border-b-2 border-transparent px-4 font-heading text-[12px] font-bold text-text3 transition hover:text-text2 max-md:px-3 max-md:text-[11px]" onclick="goTo('anotaciones',this)"><span class="nav-icon" aria-hidden="true">✎</span>Anotaciones</button>
+      <button class="nav-tab flex h-[40px] items-center gap-2 whitespace-nowrap border-b-2 border-transparent px-4 font-heading text-[12px] font-bold text-text3 transition hover:text-text2 max-md:px-3 max-md:text-[11px]" onclick="goTo('cats',this)"><span class="nav-icon" aria-hidden="true">#</span>Categorías</button>
+    </nav>
   </div>
-  <nav class="flex overflow-x-auto max-md:order-3 max-md:w-full" id="main-nav">
-    <button class="nav-tab active flex h-[44px] items-center gap-2 whitespace-nowrap border-b-2 border-transparent px-4 font-heading text-[13px] font-bold text-text3 transition hover:text-text2 max-md:px-3 max-md:text-[11px]" onclick="goTo('inicio',this)"><span class="nav-icon" aria-hidden="true">⌂</span>Inicio</button>
-    <button class="nav-tab flex h-[44px] items-center gap-2 whitespace-nowrap border-b-2 border-transparent px-4 font-heading text-[13px] font-bold text-text3 transition hover:text-text2 max-md:px-3 max-md:text-[11px]" onclick="goTo('compromisos',this)"><span class="nav-icon" aria-hidden="true">✓</span>Compromisos</button>
-    <button class="nav-tab flex h-[44px] items-center gap-2 whitespace-nowrap border-b-2 border-transparent px-4 font-heading text-[13px] font-bold text-text3 transition hover:text-text2 max-md:px-3 max-md:text-[11px]" onclick="goTo('anotaciones',this)"><span class="nav-icon" aria-hidden="true">✎</span>Anotaciones</button>
-    <button class="nav-tab flex h-[44px] items-center gap-2 whitespace-nowrap border-b-2 border-transparent px-4 font-heading text-[13px] font-bold text-text3 transition hover:text-text2 max-md:px-3 max-md:text-[11px]" onclick="goTo('cats',this)"><span class="nav-icon" aria-hidden="true">#</span>Categorías</button>
-  </nav>
-  <div class="ml-auto flex items-center gap-2 max-md:ml-auto max-md:flex-wrap max-md:justify-end">
-  <button id="auth-register" onclick="openAuthModal('register')" class="rounded-smapp border border-borderc bg-white px-4 py-1.5 font-heading text-[13px] font-bold text-text2 transition hover:border-accent hover:text-accent hidden max-md:px-3 max-md:text-[12px]">Registrarme</button>
-  <button id="auth-login" onclick="openAuthModal('login')" class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95 hidden max-md:px-3 max-md:text-[12px]">Ingresar</button>
-  <button id="auth-logout" onclick="signOutUser()" class="rounded-smapp border border-borderc bg-white px-4 py-1.5 font-heading text-[13px] font-bold text-text2 transition hover:border-red1 hover:text-red1 hidden max-md:px-3 max-md:text-[12px]">Salir</button>
-  <span id="auth-status" class="hidden whitespace-nowrap rounded-full bg-bluebg px-3 py-1 text-[11px] font-bold text-bluetx shadow-soft max-md:max-w-[180px] max-md:truncate"></span>
-</div>
 </header>
 
 <section id="page-inicio" class="page active mx-auto block max-w-[1280px] animate-up px-6 py-7 max-md:px-3 max-md:py-5">
-  <div class="dashboard-hero mb-5 overflow-hidden rounded-[22px] border border-[#dbe5f3] bg-gradient-to-r from-white via-white to-bluebg/80 px-5 py-4 shadow-soft max-md:px-4 max-md:py-4">
+  <div class="dashboard-hero mb-5 overflow-visible rounded-[22px] border border-[#dbe5f3] bg-gradient-to-r from-white via-white to-bluebg/80 px-5 py-4 shadow-soft max-md:px-4 max-md:py-4">
     <div class="flex flex-wrap items-start justify-between gap-3 max-md:flex-col">
       <div>
-        <div class="dashboard-eyebrow">Centro de control</div>
         <div class="font-heading text-[24px] font-bold tracking-[-0.035em] text-text1 max-md:text-[20px]">Panel mensual</div>
         <div class="text-[12px] text-text2" id="inicio-sub">Tu resumen del mes</div>
       </div>
-      <div class="flex flex-wrap items-center gap-2 max-md:grid max-md:w-full max-md:grid-cols-1">
+      <div class="flex flex-wrap items-center justify-end gap-2 max-md:w-full">
         <input type="file" id="excel-import" accept=".xlsx,.xls" class="hidden" onchange="handleExcelImport(event)">
-        <button class="rounded-full border border-accent/15 bg-white px-3 py-1.5 font-heading text-[11px] font-bold text-accent shadow-soft transition hover:-translate-y-0.5 hover:border-accent hover:bg-bluebg max-md:w-full max-md:py-2" onclick="triggerExcelImport()">Subir Excel</button>
-        <button class="rounded-full border border-borderc bg-white px-3 py-1.5 font-heading text-[11px] font-bold text-text2 shadow-soft transition hover:-translate-y-0.5 hover:border-accent hover:text-accent max-md:w-full max-md:py-2" onclick="openEmailRemindersModal()">Alertas correo</button>
-        <button class="rounded-full border border-accent bg-accent px-3 py-1.5 font-heading text-[11px] font-bold text-white shadow-soft transition hover:-translate-y-0.5 hover:brightness-95 max-md:w-full max-md:py-2" onclick="openExportModal()">Descargar Excel</button>
+        <details id="excel-actions-menu" class="excel-actions relative z-20">
+          <summary class="inline-flex min-h-[38px] list-none items-center gap-2 rounded-full border border-accent/15 bg-white px-3.5 py-2 font-heading text-[11px] font-bold text-accent shadow-soft transition hover:-translate-y-0.5 hover:border-accent hover:bg-bluebg" aria-label="Abrir opciones de Excel">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 3.75h9.5L19 8.25v12H5v-16.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14.5 3.75v4.5H19M8 12l3 4m0-4-3 4m5-4h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Excel
+            <svg class="excel-actions-chevron h-3.5 w-3.5 transition-transform" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m6 8 4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </summary>
+          <div class="absolute right-0 top-full mt-2 w-[220px] overflow-hidden rounded-[16px] border border-[#dbe5f3] bg-white p-1.5 shadow-modal">
+            <button class="flex w-full items-start gap-3 rounded-[12px] px-3 py-2.5 text-left transition hover:bg-bluebg" onclick="triggerExcelImport()">
+              <span class="mt-0.5 inline-flex h-8 w-8 flex-none items-center justify-center rounded-[10px] bg-bluebg text-accent" aria-hidden="true">↑</span>
+              <span><strong class="block font-heading text-[12px] text-text1">Importar archivo</strong><small class="mt-0.5 block text-[10px] leading-4 text-text3">Carga gastos desde Excel</small></span>
+            </button>
+            <button class="flex w-full items-start gap-3 rounded-[12px] px-3 py-2.5 text-left transition hover:bg-bluebg" onclick="openExportModal()">
+              <span class="mt-0.5 inline-flex h-8 w-8 flex-none items-center justify-center rounded-[10px] bg-[#eef9f4] text-green1" aria-hidden="true">↓</span>
+              <span><strong class="block font-heading text-[12px] text-text1">Exportar archivo</strong><small class="mt-0.5 block text-[10px] leading-4 text-text3">Descarga resumen y detalle</small></span>
+            </button>
+          </div>
+        </details>
+        <button id="email-reminder-trigger" class="inline-flex min-h-[38px] items-center gap-2 rounded-full border border-borderc bg-white px-3.5 py-2 font-heading text-[11px] font-bold text-text2 shadow-soft transition hover:-translate-y-0.5 hover:border-accent hover:text-accent" onclick="openEmailRemindersModal()" aria-label="Configurar alertas por correo">
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 8.5h18C21 16 18 16 18 9Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9.5 20a3 3 0 0 0 5 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          Alertas
+          <span id="email-reminder-chip" class="inline-flex items-center rounded-full border border-borderc bg-appbg px-2 py-0.5 text-[10px] font-bold text-text3">Inactivo</span>
+        </button>
       </div>
     </div>
 
@@ -61,17 +106,6 @@
       </div>
       <span class="ml-1 text-[11px] font-bold uppercase tracking-[0.07em] text-text3 max-md:ml-0 max-md:w-full">Mes:</span>
       <div id="mbtns1" class="flex flex-wrap gap-1.5 max-md:w-full"></div>
-    </div>
-
-    <div id="email-reminder-banner" class="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-[#dbe5f3] bg-white/85 px-4 py-3 shadow-soft max-md:px-3.5">
-      <div class="min-w-0">
-        <div class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Alertas por correo</div>
-        <div id="email-reminder-summary" class="mt-1 text-[12px] leading-5 text-text2">Actívalas para recibir un solo correo al día con vencidos y próximos pagos.</div>
-      </div>
-      <div class="flex items-center gap-2 max-md:w-full max-md:justify-between">
-        <span id="email-reminder-chip" class="inline-flex items-center rounded-full border border-borderc bg-white px-3 py-1 text-[11px] font-bold text-text2">Inactivo</span>
-        <button class="rounded-full border border-borderc bg-white px-3 py-1.5 font-heading text-[11px] font-bold text-text2 transition hover:border-accent hover:text-accent" onclick="openEmailRemindersModal()">Configurar</button>
-      </div>
     </div>
   </div>
 
@@ -92,15 +126,33 @@
   <div class="grid grid-cols-1 gap-5 md:grid-cols-12 md:items-start">
     <aside class="min-w-0 md:col-span-7">
       <div id="inicio-gastos-principal" class="expenses-panel overflow-hidden rounded-[24px] border border-[#dbe5f3] bg-gradient-to-b from-white to-[#fbfdff] shadow-soft">
-        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[#dbe5f3] bg-white px-5 py-4 max-md:px-4 max-md:py-4">
-          <div class="min-w-0">
-            <div class="font-heading text-[18px] font-bold text-text1 max-md:text-[17px]">Lista principal de gastos</div>
-            <div class="text-[13px] text-text2 max-md:mt-1" id="inicio-preview-caption">Tus movimientos más relevantes del mes.</div>
+        <div class="border-b border-[#dbe5f3] bg-white px-5 py-4 max-md:px-4 max-md:py-4">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="font-heading text-[18px] font-bold text-text1 max-md:text-[17px]">Lista principal de gastos</div>
+              <div class="text-[13px] text-text2 max-md:mt-1" id="inicio-preview-caption">Tus movimientos más relevantes del mes.</div>
+            </div>
+            <button class="shrink-0 rounded-smapp border border-accent bg-accent px-4 py-2 font-heading text-[13px] font-bold text-white transition hover:-translate-y-0.5 hover:brightness-95 max-md:min-h-[40px] max-md:px-3" onclick="openModal()">+ Agregar</button>
           </div>
-          <div class="flex flex-wrap items-center gap-2 max-md:grid max-md:w-full max-md:grid-cols-2">
-            <select class="rounded-smapp border border-borderc bg-white px-2.5 py-1.5 font-heading text-xs font-bold text-text2 outline-none focus:border-accent max-md:col-span-2 max-md:h-[40px] max-md:text-[12px]" id="fcat" onchange="renderGastos()"><option value="">Todas las categorias</option></select>
-            <button class="rounded-smapp border border-borderc bg-white px-3 py-1.5 font-heading text-[12px] font-bold text-text2 transition hover:border-accent hover:text-accent max-md:min-h-[40px]" onclick="openCarryModal()">Pasar mes</button>
-            <button class="rounded-smapp border border-accent bg-accent px-4 py-1.5 font-heading text-[13px] font-bold text-white transition hover:brightness-95 max-md:min-h-[40px]" onclick="openModal()">+ Agregar</button>
+          <div class="mt-3 flex flex-wrap items-center gap-2">
+            <label class="relative min-w-[200px] flex-1 max-md:w-full max-md:flex-none">
+              <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text3" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8"/><path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <input id="fsearch" type="search" placeholder="Buscar gasto..." aria-label="Buscar gasto" oninput="renderGastos()" class="h-[40px] w-full rounded-smapp border border-borderc bg-appbg pl-9 pr-3 text-[12px] font-semibold text-text1 outline-none transition placeholder:font-normal placeholder:text-text3 focus:border-accent focus:bg-white focus:ring-4 focus:ring-accent/5">
+            </label>
+            <select class="h-[40px] min-w-[170px] rounded-smapp border border-borderc bg-white px-3 font-heading text-[11px] font-bold text-text2 outline-none focus:border-accent max-md:min-w-0 max-md:flex-1 max-md:text-[12px]" id="fcat" onchange="renderGastos()"><option value="">Todas las categorías</option></select>
+            <details id="gastos-actions-menu" class="excel-actions relative z-20">
+              <summary class="inline-flex h-[40px] list-none items-center gap-2 rounded-smapp border border-borderc bg-white px-3 font-heading text-[11px] font-bold text-text2 transition hover:border-accent hover:text-accent" aria-label="Abrir acciones de la lista">
+                <span class="text-[18px] leading-none" aria-hidden="true">⋯</span>
+                Acciones
+                <svg class="excel-actions-chevron h-3.5 w-3.5 transition-transform" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m6 8 4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </summary>
+              <div class="absolute right-0 top-full z-30 mt-2 w-[230px] rounded-[14px] border border-[#dbe5f3] bg-white p-1.5 shadow-modal">
+                <button class="flex w-full items-start gap-3 rounded-[10px] px-3 py-2.5 text-left transition hover:bg-bluebg" onclick="openCarryModal()">
+                  <span class="mt-0.5 inline-flex h-8 w-8 flex-none items-center justify-center rounded-[10px] bg-bluebg text-accent" aria-hidden="true">→</span>
+                  <span><strong class="block font-heading text-[12px] text-text1">Pasar a otro mes</strong><small class="mt-0.5 block text-[10px] leading-4 text-text3">Copia los gastos seleccionados</small></span>
+                </button>
+              </div>
+            </details>
           </div>
         </div>
         <div class="border-b border-[#dbe5f3] bg-white">
@@ -186,7 +238,7 @@
 
         <div class="metric-card metric-card--expense flex flex-col rounded-app border border-[#f1d3d3] bg-[#fff5f5] px-5 py-4 shadow-soft max-md:px-4 max-md:py-3.5">
           <div class="text-[11px] font-bold uppercase tracking-[0.08em] text-text3">Gastos activos</div>
-          <div id="cg" class="mt-2 font-heading text-[30px] font-bold leading-none text-red1">S/ 0.00</div>
+          <div id="cg" class="mt-2 whitespace-nowrap font-heading text-[26px] font-bold leading-none tracking-[-0.025em] text-red1 max-lg:text-[23px]">S/ 0.00</div>
           <div id="cgsub" class="mt-2 text-[13px] text-text2">0 gastos activos</div>
           <div class="mt-4 rounded-[14px] border border-[#f1d3d3] bg-white/75 px-3 py-3 sm:mt-auto">
             <div class="text-[10px] font-bold uppercase tracking-[0.07em] text-redtx">Impacto del mes</div>
@@ -451,13 +503,14 @@
         <div>
           <div class="inline-flex items-center gap-2.5">
             <span class="inline-flex h-10 w-10 items-center justify-center rounded-[13px] bg-white/15 ring-1 ring-white/20">
-              <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.75 8.25h14.5v9.5a2 2 0 0 1-2 2H6.75a2 2 0 0 1-2-2v-9.5Z" stroke="currentColor" stroke-width="1.8"/><path d="M7 8.25V6.7a2.45 2.45 0 0 1 2.45-2.45h7.8a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="1.8"/><path d="M15.25 13.75h4v-3h-4a1.5 1.5 0 0 0 0 3Z" fill="currentColor"/></svg>
+              <img class="h-9 w-9 object-contain" src="img/mis_finanzas.png" alt="">
             </span>
             <span class="font-heading text-[15px] font-bold">Mis Finanzas</span>
           </div>
           <div id="auth-mode-kicker" class="mt-12 text-[10px] font-bold uppercase tracking-[0.16em] text-white/65">Acceso seguro</div>
           <div class="mt-3 font-heading text-[28px] font-bold leading-[1.18] tracking-[-0.04em]">Tus finanzas,<br>siempre contigo.</div>
           <p class="mt-4 text-[12px] leading-6 text-white/72">Sincroniza tus movimientos y continúa desde cualquier dispositivo.</p>
+          <img class="auth-main-image" src="img/mis_finanzas.png" alt="Billetera con monedas y gráfico financiero">
         </div>
         <div class="space-y-3 text-[11px] text-white/78">
           <div class="flex items-center gap-2.5"><span class="auth-check">✓</span><span>Datos asociados únicamente a tu cuenta</span></div>
@@ -747,7 +800,7 @@
 
     <div class="rounded-[16px] border border-[#dbe5f3] bg-appbg/70 px-4 py-3">
       <div class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Hojas incluidas</div>
-      <div class="mt-2 text-[12px] leading-5 text-text2">Resumen, Gastos, Ingresos extra, Anotaciones, Préstamos y Abonos.</div>
+      <div class="mt-2 text-[12px] leading-5 text-text2">Resumen, Gastos, Ingresos extra, Anotaciones, Préstamos, Abonos y una hoja compatible con la carga.</div>
     </div>
 
     <div class="mt-5 flex justify-end gap-2">
@@ -847,7 +900,7 @@
   </div>
 </div>
 
-<script type="module" src="main.js?v=11"></script>
+<script type="module" src="main.js?v=15"></script>
 
 </body>
 </html>

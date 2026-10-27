@@ -81,6 +81,11 @@ function setAuthMessage(message, type = 'info') {
 
   el.textContent = message;
   el.classList.remove('hidden', 'bg-redbg', 'text-red1', 'bg-greenbg', 'text-greentx', 'bg-bluebg', 'text-bluetx');
+  const isAccountStatus = Boolean(el.closest('#auth-account-menu'));
+  if (isAccountStatus) {
+    el.classList.add(type === 'error' ? 'text-red1' : type === 'success' ? 'text-greentx' : 'text-bluetx');
+    return;
+  }
   if (type === 'error') {
     el.classList.add('bg-redbg', 'text-red1');
   } else if (type === 'success') {
@@ -212,20 +217,36 @@ function updateAuthUI() {
   const register = document.getElementById('auth-register');
   const login = document.getElementById('auth-login');
   const logout = document.getElementById('auth-logout');
-  if (!register || !login || !logout) return;
+  const accountMenu = document.getElementById('auth-account-menu');
+  const accountLabel = document.getElementById('auth-account-label');
+  const avatar = document.getElementById('auth-avatar');
+  if (!register || !login || !logout || !accountMenu) return;
 
   if (runtime.currentUser) {
+    const accountIdentity = runtime.currentUser.email || runtime.currentUser.id || 'Usuario';
+    const accountName = accountIdentity.includes('@') ? accountIdentity.split('@')[0] : accountIdentity;
     register.classList.add('hidden');
     login.classList.add('hidden');
+    accountMenu.classList.remove('hidden');
     logout.classList.remove('hidden');
-    setAuthMessage(`Conectado: ${runtime.currentUser.email || runtime.currentUser.id}`, 'success');
+    logout.classList.add('flex');
+    if (accountLabel) accountLabel.textContent = accountName;
+    if (avatar) avatar.textContent = accountName.charAt(0).toLocaleUpperCase('es');
+    setAuthMessage(accountIdentity, 'success');
     return;
   }
 
   register.classList.remove('hidden');
   login.classList.remove('hidden');
+  accountMenu.classList.add('hidden');
+  accountMenu.removeAttribute('open');
   logout.classList.add('hidden');
+  logout.classList.remove('flex');
   setAuthMessage('');
+}
+
+function closeAuthAccountMenu() {
+  document.getElementById('auth-account-menu')?.removeAttribute('open');
 }
 
 function setModeButtonState(activeButton, inactiveButton) {
@@ -593,6 +614,15 @@ export async function initAuth() {
 }
 
 app.actions.initAuth = initAuth;
+
+document.addEventListener('click', (event) => {
+  const menu = document.getElementById('auth-account-menu');
+  if (menu?.open && !menu.contains(event.target)) closeAuthAccountMenu();
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') closeAuthAccountMenu();
+});
 
 Object.assign(window, {
   closeAuthModal,

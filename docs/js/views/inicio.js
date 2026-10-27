@@ -271,14 +271,17 @@ function getReminderFormValues() {
 }
 
 function renderEmailReminderSummary() {
-  const summary = document.getElementById('email-reminder-summary');
   const chip = document.getElementById('email-reminder-chip');
-  if (!summary || !chip) return;
+  const trigger = document.getElementById('email-reminder-trigger');
+  if (!chip) return;
 
   if (!runtime.currentUser) {
-    summary.textContent = 'Inicia sesión para activar un correo diario con tus gastos vencidos y próximos pagos.';
-    chip.className = 'inline-flex items-center rounded-full border border-borderc bg-white px-3 py-1 text-[11px] font-bold text-text2';
+    chip.className = 'inline-flex items-center rounded-full border border-borderc bg-appbg px-2 py-0.5 text-[10px] font-bold text-text3';
     chip.textContent = 'Sin sesión';
+    if (trigger) {
+      trigger.title = 'Inicia sesión para configurar las alertas por correo';
+      trigger.setAttribute('aria-label', trigger.title);
+    }
     return;
   }
 
@@ -288,15 +291,21 @@ function renderEmailReminderSummary() {
     : 'vencidos del día';
 
   if (settings.activo) {
-    summary.textContent = `${settings.emailDestino || runtime.currentUser.email} · ${daysCopy} · todos los días a las ${formatReminderHour(settings.horaEnvio)} (${settings.timezone}).`;
-    chip.className = 'inline-flex items-center rounded-full border border-[#d8ead8] bg-[#f5fbf5] px-3 py-1 text-[11px] font-bold text-green1';
+    chip.className = 'inline-flex items-center rounded-full border border-[#d8ead8] bg-[#f5fbf5] px-2 py-0.5 text-[10px] font-bold text-green1';
     chip.textContent = 'Activo';
+    if (trigger) {
+      trigger.title = `${settings.emailDestino || runtime.currentUser.email} · ${daysCopy} · ${formatReminderHour(settings.horaEnvio)} (${settings.timezone})`;
+      trigger.setAttribute('aria-label', `Alertas activas. ${trigger.title}. Abrir configuración`);
+    }
     return;
   }
 
-  summary.textContent = 'Desactivadas por ahora. Cuando las actives, enviaremos un solo correo al día para no gastar de más.';
-  chip.className = 'inline-flex items-center rounded-full border border-borderc bg-white px-3 py-1 text-[11px] font-bold text-text2';
+  chip.className = 'inline-flex items-center rounded-full border border-borderc bg-appbg px-2 py-0.5 text-[10px] font-bold text-text3';
   chip.textContent = 'Inactivo';
+  if (trigger) {
+    trigger.title = 'Alertas desactivadas. Abrir configuración';
+    trigger.setAttribute('aria-label', trigger.title);
+  }
 }
 
 function renderEmailReminderModalStatus(settings) {
@@ -495,7 +504,12 @@ function closeSueldoModal() {
   hideOverlay('overlay-sueldo');
 }
 
+function closeExcelActionsMenu() {
+  document.getElementById('excel-actions-menu')?.removeAttribute('open');
+}
+
 function openEmailRemindersModal() {
+  closeExcelActionsMenu();
   const currentUser = requireCurrentUser();
   if (!currentUser) {
     window.openAuthModal?.('login');
@@ -525,6 +539,7 @@ function syncExportModalCopy() {
 }
 
 function openExportModal() {
+  closeExcelActionsMenu();
   syncExportModalCopy();
   showOverlay('overlay-export');
 }
@@ -809,7 +824,155 @@ async function delExtra(id) {
 }
 
 function triggerExcelImport() {
+  closeExcelActionsMenu();
   document.getElementById('excel-import').click();
+}
+
+function normalizeExcelHeader(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/(^_|_$)/g, '');
+}
+
+function getExcelCellValue(cell) {
+  const value = cell?.value;
+  if (value === null || value === undefined) return '';
+  if (value instanceof Date) return value;
+  if (typeof value !== 'object') return value;
+  if (value.result !== undefined && value.result !== null) return value.result;
+  if (value.text !== undefined) return value.text;
+  if (Array.isArray(value.richText)) return value.richText.map(part => part.text || '').join('');
+  return String(value);
+}
+
+function parseExcelNumber(value) {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+  const normalized = String(value || '').trim().replace(/\s/g, '').replace(/S\/?/gi, '');
+  if (!normalized) return 0;
+
+  const commaIndex = normalized.lastIndexOf(',');
+  const dotIndex = normalized.lastIndexOf('.');
+  let numericText = normalized;
+  if (commaIndex > dotIndex) {
+    numericText = normalized.replace(/\./g, '').replace(',', '.');
+  } else {
+    numericText = normalized.replace(/,/g, '');
+  }
+
+  const parsed = Number(numericText.replace(/[^0-9.-]/g, ''));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function parseExcelPeriod(value) {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return { month: value.getMonth(), year: value.getFullYear() };
+  }
+
+  const text = String(value || '').trim();
+  if (!text) return null;
+  const isoMatch = text.match(/^(\d{4})[-/](\d{1,2})/);
+  if (isoMatch) {
+    return { month: Math.min(11, Math.max(0, Number(isoMatch[2]) - 1)), year: Number(isoMatch[1]) };
+  }
+
+  const numericMatch = text.match(/^(\d{1,2})[-/](\d{4})$/);
+  if (numericMatch) {
+    return { month: Math.min(11, Math.max(0, Number(numericMatch[1]) - 1)), year: Number(numericMatch[2]) };
+  }
+
+  const normalized = normalizeExcelHeader(text);
+  const monthIndex = MS.findIndex(month => normalized.includes(normalizeExcelHeader(month)));
+  const yearMatch = text.match(/\b(19|20)\d{2}\b/);
+  if (monthIndex >= 0 && yearMatch) {
+    return { month: monthIndex, year: Number(yearMatch[0]) };
+  }
+  return null;
+}
+
+function parseExcelBoolean(value) {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value === 1;
+  return ['si', 'sí', 'true', '1', 'pagado'].includes(String(value || '').trim().toLowerCase());
+}
+
+function getDateKeyFromExcelValue(value) {
+  const parts = parseDateParts(value);
+  if (!parts) return null;
+  return `${parts.year}-${String(parts.month + 1).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`;
+}
+
+const IMPORT_HEADER_ALIASES = {
+  descripcion: ['descripcion', 'detalle', 'concepto'],
+  categoria: ['categoria'],
+  diaPago: ['dia_pago', 'dia_de_pago', 'dia'],
+  tipo: ['tipo'],
+  monto: ['monto', 'importe', 'valor'],
+  mes: ['mes'],
+  anio: ['anio', 'ano'],
+  periodo: ['periodo', 'mes_periodo'],
+  totalCuotas: ['total_cuotas', 'cuotas'],
+  cuotaActual: ['cuota_actual'],
+  cuota: ['cuota'],
+  pagado: ['pagado'],
+  fechaPagado: ['fecha_pagado', 'fecha_de_pago'],
+  origenMes: ['origen_mes'],
+  origenAnio: ['origen_anio', 'origen_ano'],
+};
+
+function findExcelImportSource(workbook) {
+  const preferredNames = ['carga de gastos', 'carga gastos', 'gastos'];
+  const orderedSheets = workbook.worksheets.slice().sort((left, right) => {
+    const leftIndex = preferredNames.indexOf(normalizeExcelHeader(left.name).replace(/_/g, ' '));
+    const rightIndex = preferredNames.indexOf(normalizeExcelHeader(right.name).replace(/_/g, ' '));
+    const leftScore = leftIndex < 0 ? 99 : leftIndex;
+    const rightScore = rightIndex < 0 ? 99 : rightIndex;
+    return leftScore - rightScore;
+  });
+
+  for (const sheet of orderedSheets) {
+    const maxHeaderRow = Math.min(sheet.rowCount || 1, 20);
+    for (let rowNumber = 1; rowNumber <= maxHeaderRow; rowNumber += 1) {
+      const row = sheet.getRow(rowNumber);
+      const headers = {};
+      row.eachCell((cell, columnNumber) => {
+        const normalized = normalizeExcelHeader(getExcelCellValue(cell));
+        if (normalized) headers[normalized] = columnNumber;
+      });
+
+      const hasDescription = IMPORT_HEADER_ALIASES.descripcion.some(alias => headers[alias]);
+      const hasAmount = IMPORT_HEADER_ALIASES.monto.some(alias => headers[alias]);
+      if (hasDescription && hasAmount) {
+        return { sheet, headerRowNumber: rowNumber, headers };
+      }
+    }
+  }
+  return null;
+}
+
+function getImportColumn(headers, aliases) {
+  const matchedAlias = aliases.find(alias => headers[alias]);
+  return matchedAlias ? headers[matchedAlias] : 0;
+}
+
+function readImportValue(row, headers, aliases) {
+  const columnNumber = getImportColumn(headers, aliases);
+  return columnNumber ? getExcelCellValue(row.getCell(columnNumber)) : '';
+}
+
+function importExpenseKey(item) {
+  return [
+    String(item.descripcion || '').trim().toLowerCase(),
+    String(item.categoria || '').trim().toLowerCase(),
+    Number(item.dia_pago || 0),
+    Number(item.monto || 0).toFixed(2),
+    Number(item.mes),
+    Number(item.anio),
+    String(item.tipo || 'unico'),
+  ].join('|');
 }
 
 async function handleExcelImport(event) {
@@ -823,45 +986,113 @@ async function handleExcelImport(event) {
     await runWithLoading('Importando Excel...', async () => {
       const workbook = new window.ExcelJS.Workbook();
       await workbook.xlsx.load(await file.arrayBuffer());
-      const sheet = workbook.worksheets[0];
-      const headers = sheet.getRow(1).values.map(value => String(value || '').trim().toLowerCase());
-      const rows = [];
+      const source = findExcelImportSource(workbook);
+      if (!source) {
+        alert('No encontramos una hoja de gastos válida. Usa un Excel exportado desde la aplicación o incluye las columnas Descripcion y Monto.');
+        return;
+      }
 
-      sheet.eachRow((row, rowNumber) => {
-        if (rowNumber === 1) return;
-        const values = row.values;
+      const { sheet, headerRowNumber, headers } = source;
+      const rows = [];
+      let invalidRows = 0;
+      const rawMonthValues = [];
+
+      for (let rowNumber = headerRowNumber + 1; rowNumber <= sheet.rowCount; rowNumber += 1) {
+        const row = sheet.getRow(rowNumber);
+        const rawMonth = readImportValue(row, headers, IMPORT_HEADER_ALIASES.mes);
+        if (rawMonth !== '' && Number.isFinite(Number(rawMonth))) rawMonthValues.push(Number(rawMonth));
+      }
+      const usesLegacyZeroBasedMonths = rawMonthValues.some(value => value === 0);
+
+      for (let rowNumber = headerRowNumber + 1; rowNumber <= sheet.rowCount; rowNumber += 1) {
+        const row = sheet.getRow(rowNumber);
+        const description = String(readImportValue(row, headers, IMPORT_HEADER_ALIASES.descripcion) || '').trim();
+        const amount = parseExcelNumber(readImportValue(row, headers, IMPORT_HEADER_ALIASES.monto));
+        if (!description && !amount) continue;
+
+        const rawMonth = readImportValue(row, headers, IMPORT_HEADER_ALIASES.mes);
+        const rawYear = readImportValue(row, headers, IMPORT_HEADER_ALIASES.anio);
+        const period = parseExcelPeriod(readImportValue(row, headers, IMPORT_HEADER_ALIASES.periodo));
+        const numericMonth = Number(rawMonth);
+        const month = Number.isFinite(numericMonth) && rawMonth !== ''
+          ? (usesLegacyZeroBasedMonths ? numericMonth : numericMonth - 1)
+          : (period?.month ?? runtime.curM);
+        const year = parseInt(rawYear, 10) || period?.year || runtime.curY;
+        const rawQuota = String(readImportValue(row, headers, IMPORT_HEADER_ALIASES.cuota) || '');
+        const quotaMatch = rawQuota.match(/(\d+)\s*(?:de|\/|-)\s*(\d+)/i);
+        const rawType = String(readImportValue(row, headers, IMPORT_HEADER_ALIASES.tipo) || 'unico').trim().toLowerCase();
+        const type = rawType.includes('cuota') ? 'cuotas' : 'unico';
+        const totalInstallments = parseInt(readImportValue(row, headers, IMPORT_HEADER_ALIASES.totalCuotas), 10)
+          || Number(quotaMatch?.[2] || 0);
+        const currentInstallment = parseInt(readImportValue(row, headers, IMPORT_HEADER_ALIASES.cuotaActual), 10)
+          || Number(quotaMatch?.[1] || 1);
+        const rawOriginMonth = readImportValue(row, headers, IMPORT_HEADER_ALIASES.origenMes);
+        const originMonthNumber = Number(rawOriginMonth);
+        const originMonth = Number.isFinite(originMonthNumber) && rawOriginMonth !== ''
+          ? (usesLegacyZeroBasedMonths ? originMonthNumber : originMonthNumber - 1)
+          : month;
+
         const item = {
-          descripcion: values[headers.indexOf('descripcion') + 1] || '',
-          categoria: values[headers.indexOf('categoria') + 1] || '',
-          dia_pago: parseInt(values[headers.indexOf('dia_pago') + 1], 10) || 15,
-          tipo: values[headers.indexOf('tipo') + 1] || 'unico',
-          monto: parseFloat(values[headers.indexOf('monto') + 1]) || 0,
-          mes: parseInt(values[headers.indexOf('mes') + 1], 10) || runtime.curM,
-          anio: parseInt(values[headers.indexOf('anio') + 1], 10) || runtime.curY,
-          total_cuotas: parseInt(values[headers.indexOf('total_cuotas') + 1], 10) || 0,
-          cuota_actual: parseInt(values[headers.indexOf('cuota_actual') + 1], 10) || 1,
+          descripcion: description,
+          categoria: String(readImportValue(row, headers, IMPORT_HEADER_ALIASES.categoria) || 'Sin categoría').trim() || 'Sin categoría',
+          dia_pago: Math.min(31, Math.max(1, parseInt(readImportValue(row, headers, IMPORT_HEADER_ALIASES.diaPago), 10) || 15)),
+          tipo: type,
+          monto: amount,
+          mes: Math.min(11, Math.max(0, month)),
+          anio: year,
+          origen_mes: Math.min(11, Math.max(0, originMonth)),
+          origen_anio: parseInt(readImportValue(row, headers, IMPORT_HEADER_ALIASES.origenAnio), 10) || year,
+          total_cuotas: type === 'cuotas' ? Math.max(1, totalInstallments) : 0,
+          cuota_actual: type === 'cuotas' ? Math.max(1, currentInstallment) : 1,
+          pagado: parseExcelBoolean(readImportValue(row, headers, IMPORT_HEADER_ALIASES.pagado)),
+          fecha_pagado: getDateKeyFromExcelValue(readImportValue(row, headers, IMPORT_HEADER_ALIASES.fechaPagado)),
         };
-        if (item.descripcion && item.monto > 0) rows.push(item);
-      });
+        if (!item.descripcion || item.monto <= 0 || !Number.isInteger(item.anio) || item.anio < 2000 || item.anio > 2100) {
+          invalidRows += 1;
+          continue;
+        }
+        rows.push(item);
+      }
 
       if (!rows.length) {
         alert('No se encontraron datos validos en el archivo.');
         return;
       }
 
-      const payloads = rows.map(item => ({
+      const existingKeys = new Set(state.gastos.map(gasto => importExpenseKey({
+        descripcion: gasto.desc,
+        categoria: gasto.cat,
+        dia_pago: gasto.dia,
+        monto: gasto.monto,
+        mes: gasto.mes,
+        anio: gasto.anio,
+        tipo: gasto.tipo,
+      })));
+      const acceptedKeys = new Set();
+      const uniqueRows = rows.filter(item => {
+        const key = importExpenseKey(item);
+        if (existingKeys.has(key) || acceptedKeys.has(key)) return false;
+        acceptedKeys.add(key);
+        return true;
+      });
+      const duplicateRows = rows.length - uniqueRows.length;
+
+      if (!uniqueRows.length) {
+        alert(`No hay gastos nuevos para cargar. Se omitieron ${duplicateRows} duplicado(s).`);
+        return;
+      }
+
+      const importMessage = [
+        `Se cargarán ${uniqueRows.length} gasto(s) desde la hoja “${sheet.name}”.`,
+        duplicateRows ? `${duplicateRows} duplicado(s) serán omitidos.` : '',
+        invalidRows ? `${invalidRows} fila(s) inválida(s) serán omitidas.` : '',
+        '¿Deseas continuar?',
+      ].filter(Boolean).join('\n');
+      if (!confirm(importMessage)) return;
+
+      const payloads = uniqueRows.map(item => ({
         user_id: currentUser.id,
-        descripcion: item.descripcion,
-        categoria: item.categoria,
-        dia_pago: item.dia_pago,
-        tipo: item.tipo,
-        monto: item.monto,
-        mes: item.mes,
-        anio: item.anio,
-        origen_mes: item.mes,
-        origen_anio: item.anio,
-        cuota_actual: item.cuota_actual,
-        total_cuotas: item.total_cuotas,
+        ...item,
       }));
 
       const { error } = await app.supabaseClient.from('gastos').insert(payloads);
@@ -871,8 +1102,11 @@ async function handleExcelImport(event) {
       }
 
       await app.actions.refreshAppData?.();
-      toast('Excel importado');
+      toast(`${uniqueRows.length} gasto(s) importado(s)${duplicateRows ? ` · ${duplicateRows} duplicado(s) omitido(s)` : ''}`);
     });
+  } catch (error) {
+    console.error(error);
+    alert(error.message || 'No se pudo importar el Excel.');
   } finally {
     event.target.value = '';
   }
@@ -912,6 +1146,9 @@ function getExportFileName(scope) {
 
 function parseDateParts(dateStr) {
   if (!dateStr) return null;
+  if (dateStr instanceof Date && !Number.isNaN(dateStr.getTime())) {
+    return { year: dateStr.getFullYear(), month: dateStr.getMonth(), day: dateStr.getDate() };
+  }
   const normalized = String(dateStr).trim().split('T')[0].split(' ')[0];
   const [year, month, day] = normalized.split('-').map(Number);
   if (!year || !month || !day) return null;
@@ -1004,7 +1241,7 @@ function getScopedAbonos(scope) {
 function getExportDateCell(dateStr) {
   const parts = parseDateParts(dateStr);
   if (!parts) return '';
-  return `${parts.year}-${String(parts.month + 1).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`;
+  return new Date(parts.year, parts.month, parts.day);
 }
 
 function getAllSummaryYears() {
@@ -1021,167 +1258,321 @@ function getAllSummaryYears() {
     .sort((left, right) => left - right);
 }
 
-function addWorksheet(workbook, name, columns, rows, options = {}) {
-  const sheet = workbook.addWorksheet(name);
-  sheet.columns = columns.map(({ header, key, width }) => ({ header, key, width }));
+const EXCEL_COLORS = Object.freeze({
+  navy: 'FF263A5B',
+  blue: 'FF2F6FED',
+  blueSoft: 'FFEAF1FF',
+  green: 'FF178A62',
+  greenSoft: 'FFE8F6F0',
+  red: 'FFD94F5C',
+  redSoft: 'FFFFECEE',
+  amber: 'FFB97812',
+  amberSoft: 'FFFFF4D9',
+  border: 'FFD9E3F0',
+  muted: 'FF64748B',
+  white: 'FFFFFFFF',
+  text: 'FF1F2F46',
+});
 
-  const safeRows = rows.length
-    ? rows
-    : [columns.reduce((acc, column, index) => {
-      acc[column.key] = index === 0 ? 'Sin registros para el alcance seleccionado.' : '';
-      return acc;
-    }, {})];
+const EXCEL_CURRENCY_FORMAT = '"S/" #,##0.00;[Red]-"S/" #,##0.00;"-"';
 
-  safeRows.forEach(row => sheet.addRow(row));
+function exportPeriodDate(month, year) {
+  return new Date(Number(year), Number(month), 1);
+}
 
-  const headerRow = sheet.getRow(1);
-  headerRow.font = { bold: true, color: { argb: 'FF2B3C58' } };
-  headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEFF5FF' } };
-  headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
-  headerRow.height = 22;
+function makeExcelTableName(name) {
+  const safeName = String(name || 'Datos').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]/g, '');
+  return `Tabla${safeName || 'Datos'}`;
+}
 
-  headerRow.eachCell(cell => {
+function applyExcelTitle(sheet, title, subtitle, lastColumn) {
+  sheet.mergeCells(1, 1, 1, lastColumn);
+  sheet.getCell(1, 1).value = title;
+  sheet.getCell(1, 1).font = { name: 'Arial', size: 16, bold: true, color: { argb: EXCEL_COLORS.navy } };
+  sheet.getCell(1, 1).alignment = { vertical: 'middle', horizontal: 'left' };
+  sheet.getRow(1).height = 28;
+
+  sheet.mergeCells(2, 1, 2, lastColumn);
+  sheet.getCell(2, 1).value = subtitle;
+  sheet.getCell(2, 1).font = { name: 'Arial', size: 10, italic: true, color: { argb: EXCEL_COLORS.muted } };
+  sheet.getRow(2).height = 20;
+}
+
+function styleExcelHeader(row) {
+  row.height = 24;
+  row.eachCell(cell => {
+    cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: EXCEL_COLORS.white } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.navy } };
+    cell.alignment = { vertical: 'middle', horizontal: 'center' };
     cell.border = {
-      top: { style: 'thin', color: { argb: 'FFD8E4F3' } },
-      bottom: { style: 'thin', color: { argb: 'FFD8E4F3' } },
+      bottom: { style: 'thin', color: { argb: EXCEL_COLORS.border } },
+      right: { style: 'thin', color: { argb: 'FFFFFFFF' } },
     };
   });
+}
 
-  sheet.views = [{ state: 'frozen', ySplit: 1 }];
-  if (columns.length > 1) {
-    sheet.autoFilter = {
-      from: { row: 1, column: 1 },
-      to: { row: 1, column: columns.length },
-    };
+function addWorksheet(workbook, name, columns, rows, options = {}) {
+  const sheet = workbook.addWorksheet(name, { properties: { tabColor: { argb: options.tabColor || EXCEL_COLORS.blue } } });
+  const subtitle = options.subtitle || `${getExportScopeLabel(options.scope || getSelectedExportScope())} · Generado el ${new Date().toLocaleDateString('es-PE')}`;
+  applyExcelTitle(sheet, options.title || name, subtitle, columns.length);
+
+  columns.forEach((column, index) => {
+    sheet.getColumn(index + 1).width = column.width;
+  });
+
+  const headerRowNumber = 4;
+  const currencyKeys = new Set(options.currencyKeys || []);
+  const dateKeys = new Set(options.dateKeys || []);
+  const periodKeys = new Set(options.periodKeys || []);
+  const statusKey = options.statusKey || 'estado';
+  const hasTotals = rows.length > 0 && currencyKeys.size > 0 && options.showTotals !== false;
+
+  if (rows.length) {
+    const tableColumns = columns.map((column, index) => {
+      const tableColumn = { name: column.header, filterButton: true };
+      if (hasTotals && index === 0) tableColumn.totalsRowLabel = 'Total';
+      if (hasTotals && currencyKeys.has(column.key)) tableColumn.totalsRowFunction = 'sum';
+      return tableColumn;
+    });
+
+    sheet.addTable({
+      name: options.tableName || makeExcelTableName(name),
+      ref: `A${headerRowNumber}`,
+      headerRow: true,
+      totalsRow: hasTotals,
+      style: { theme: 'TableStyleMedium2', showRowStripes: true },
+      columns: tableColumns,
+      rows: rows.map(row => columns.map(column => row[column.key] ?? '')),
+    });
+  } else {
+    sheet.getRow(headerRowNumber).values = columns.map(column => column.header);
+    sheet.getCell(headerRowNumber + 1, 1).value = 'Sin registros para el alcance seleccionado.';
+    sheet.mergeCells(headerRowNumber + 1, 1, headerRowNumber + 1, columns.length);
+    sheet.getCell(headerRowNumber + 1, 1).font = { name: 'Arial', size: 10, italic: true, color: { argb: EXCEL_COLORS.muted } };
+    sheet.getCell(headerRowNumber + 1, 1).alignment = { vertical: 'middle', horizontal: 'left' };
   }
 
-  sheet.eachRow((row, rowNumber) => {
-    if (rowNumber === 1) return;
+  styleExcelHeader(sheet.getRow(headerRowNumber));
+  const lastDataRow = headerRowNumber + rows.length;
+  const lastStyledRow = Math.max(headerRowNumber + 1, lastDataRow + (hasTotals ? 1 : 0));
+
+  for (let rowNumber = headerRowNumber + 1; rowNumber <= lastStyledRow; rowNumber += 1) {
+    const row = sheet.getRow(rowNumber);
+    row.height = rowNumber === lastStyledRow && hasTotals ? 23 : 21;
+    row.font = { name: 'Arial', size: 10, color: { argb: EXCEL_COLORS.text }, bold: rowNumber === lastStyledRow && hasTotals };
     row.alignment = { vertical: 'middle' };
-    row.eachCell(cell => {
-      cell.border = {
-        bottom: { style: 'thin', color: { argb: 'FFF0F3F8' } },
-      };
-    });
+  }
+
+  columns.forEach((column, index) => {
+    const excelColumn = sheet.getColumn(index + 1);
+    if (currencyKeys.has(column.key)) excelColumn.numFmt = EXCEL_CURRENCY_FORMAT;
+    if (dateKeys.has(column.key)) excelColumn.numFmt = 'dd/mm/yyyy';
+    if (periodKeys.has(column.key)) excelColumn.numFmt = 'mmm yyyy';
   });
 
-  (options.currencyKeys || []).forEach(key => {
-    sheet.getColumn(key).numFmt = '"S/" #,##0.00';
-  });
+  const statusColumnIndex = columns.findIndex(column => column.key === statusKey) + 1;
+  if (statusColumnIndex > 0) {
+    for (let rowNumber = headerRowNumber + 1; rowNumber <= lastDataRow; rowNumber += 1) {
+      const cell = sheet.getCell(rowNumber, statusColumnIndex);
+      const status = String(cell.value || '').toLowerCase();
+      if (status === 'pagado') {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.greenSoft } };
+        cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: EXCEL_COLORS.green } };
+      } else if (status === 'vencido') {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.redSoft } };
+        cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: EXCEL_COLORS.red } };
+      } else if (status === 'pendiente' || status === 'parcial') {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.amberSoft } };
+        cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: EXCEL_COLORS.amber } };
+      }
+    }
+  }
 
+  sheet.views = [{ state: 'frozen', ySplit: headerRowNumber, showGridLines: false }];
+  sheet.pageSetup = { orientation: columns.length > 7 ? 'landscape' : 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0 };
+  if (!rows.length) {
+    sheet.autoFilter = { from: { row: headerRowNumber, column: 1 }, to: { row: headerRowNumber, column: columns.length } };
+  }
   return sheet;
 }
 
-function addSummaryWorksheet(workbook, scope) {
-  if (scope === 'month') {
-    const current = resumenDelPeriodo(runtime.curM, runtime.curY);
-    const previous = periodoRelativo(-1);
-    const previousSummary = resumenDelPeriodo(previous.month, previous.year);
-    const gastos = gastosActivosDelPeriodo(runtime.curM, runtime.curY);
-    const byCategory = {};
+function setSummaryKpis(sheet, labels, values, colors) {
+  labels.forEach((label, index) => {
+    const labelCell = sheet.getCell(4, index + 1);
+    const valueCell = sheet.getCell(5, index + 1);
+    labelCell.value = label;
+    labelCell.font = { name: 'Arial', size: 9, bold: true, color: { argb: EXCEL_COLORS.muted } };
+    labelCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    valueCell.value = values[index];
+    valueCell.numFmt = EXCEL_CURRENCY_FORMAT;
+    valueCell.font = { name: 'Arial', size: 13, bold: true, color: { argb: colors[index].text } };
+    valueCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors[index].fill } };
+    valueCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    valueCell.border = { bottom: { style: 'thin', color: { argb: EXCEL_COLORS.border } } };
+  });
+  sheet.getRow(4).height = 20;
+  sheet.getRow(5).height = 32;
+}
 
-    gastos.forEach(gasto => {
-      byCategory[gasto.cat] = (byCategory[gasto.cat] || 0) + Number(gasto.monto || 0);
-    });
-
-    const topCategory = Object.entries(byCategory).sort((left, right) => right[1] - left[1])[0];
-    const rows = [
-      { indicador: 'Alcance', valor: 'Mes actual del panel' },
-      { indicador: 'Periodo', valor: `${MS[runtime.curM]} ${runtime.curY}` },
-      { indicador: 'Sueldo base', valor: fmt(current.sueldoBase) },
-      { indicador: 'Ingresos extra', valor: fmt(current.extras) },
-      { indicador: 'Ingresos del periodo', valor: fmt(current.ingresos) },
-      { indicador: 'Gastos activos del periodo', valor: fmt(current.gastos) },
-      { indicador: 'Disponible estimado', valor: fmtSigned(current.saldo) },
-      { indicador: 'Arrastre del mes pasado', valor: fmtSigned(previousSummary.saldo) },
-      { indicador: 'Gastos visibles', valor: `${gastos.length}` },
-      { indicador: 'Categoria principal', valor: topCategory ? `${topCategory[0]} · ${fmt(topCategory[1])}` : 'Sin gastos registrados' },
-    ];
-
-    addWorksheet(workbook, 'Resumen', [
-      { header: 'Indicador', key: 'indicador', width: 28 },
-      { header: 'Valor', key: 'valor', width: 34 },
-    ], rows);
-    return;
+function writeSummaryTable(sheet, startRow, startColumn, headers, rows, widths = []) {
+  headers.forEach((header, index) => {
+    const cell = sheet.getCell(startRow, startColumn + index);
+    cell.value = header;
+  });
+  const headerRow = sheet.getRow(startRow);
+  for (let column = startColumn; column < startColumn + headers.length; column += 1) {
+    const cell = headerRow.getCell(column);
+    cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: EXCEL_COLORS.white } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.navy } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
   }
+  headerRow.height = 23;
 
-  if (scope === 'year') {
-    const rows = MS.map((monthName, index) => {
-      const summary = resumenDelPeriodo(index, runtime.curY);
-      return {
-        periodo: `${monthName} ${runtime.curY}`,
-        sueldo: summary.sueldoBase,
-        extras: summary.extras,
-        ingresos: summary.ingresos,
-        gastos: summary.gastos,
-        saldo: summary.saldo,
-      };
+  rows.forEach((values, rowIndex) => {
+    values.forEach((value, columnIndex) => {
+      const cell = sheet.getCell(startRow + rowIndex + 1, startColumn + columnIndex);
+      cell.value = value;
+      cell.font = { name: 'Arial', size: 10, color: { argb: EXCEL_COLORS.text } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: rowIndex % 2 ? 'FFF7F9FC' : EXCEL_COLORS.white } };
+      cell.border = { bottom: { style: 'thin', color: { argb: EXCEL_COLORS.border } } };
+      cell.alignment = { vertical: 'middle' };
     });
-
-    const totals = rows.reduce((acc, row) => ({
-      sueldo: acc.sueldo + row.sueldo,
-      extras: acc.extras + row.extras,
-      ingresos: acc.ingresos + row.ingresos,
-      gastos: acc.gastos + row.gastos,
-      saldo: acc.saldo + row.saldo,
-    }), { sueldo: 0, extras: 0, ingresos: 0, gastos: 0, saldo: 0 });
-
-    rows.push({
-      periodo: `Total ${runtime.curY}`,
-      ...totals,
-    });
-
-    addWorksheet(workbook, 'Resumen', [
-      { header: 'Periodo', key: 'periodo', width: 20 },
-      { header: 'Sueldo', key: 'sueldo', width: 14 },
-      { header: 'Extras', key: 'extras', width: 14 },
-      { header: 'Ingresos', key: 'ingresos', width: 16 },
-      { header: 'Gastos', key: 'gastos', width: 16 },
-      { header: 'Saldo', key: 'saldo', width: 16 },
-    ], rows, {
-      currencyKeys: ['sueldo', 'extras', 'ingresos', 'gastos', 'saldo'],
-    });
-    return;
-  }
-
-  const rows = getAllSummaryYears().map(year => {
-    const totals = Array.from({ length: 12 }, (_, month) => resumenDelPeriodo(month, year)).reduce((acc, summary) => ({
-      sueldo: acc.sueldo + summary.sueldoBase,
-      extras: acc.extras + summary.extras,
-      ingresos: acc.ingresos + summary.ingresos,
-      gastos: acc.gastos + summary.gastos,
-      saldo: acc.saldo + summary.saldo,
-    }), { sueldo: 0, extras: 0, ingresos: 0, gastos: 0, saldo: 0 });
-
-    return {
-      periodo: String(year),
-      ...totals,
-    };
   });
 
-  const grandTotals = rows.reduce((acc, row) => ({
+  widths.forEach((width, index) => {
+    sheet.getColumn(startColumn + index).width = Math.max(sheet.getColumn(startColumn + index).width || 0, width);
+  });
+}
+
+function setExcelRangeNumberFormat(sheet, startRow, endRow, startColumn, endColumn, format) {
+  for (let row = startRow; row <= endRow; row += 1) {
+    for (let column = startColumn; column <= endColumn; column += 1) {
+      sheet.getCell(row, column).numFmt = format;
+    }
+  }
+}
+
+function periodTotals(rows) {
+  return rows.reduce((acc, row) => ({
     sueldo: acc.sueldo + row.sueldo,
     extras: acc.extras + row.extras,
     ingresos: acc.ingresos + row.ingresos,
     gastos: acc.gastos + row.gastos,
     saldo: acc.saldo + row.saldo,
   }), { sueldo: 0, extras: 0, ingresos: 0, gastos: 0, saldo: 0 });
+}
 
-  rows.push({
-    periodo: 'Total general',
-    ...grandTotals,
-  });
+function addSummaryWorksheet(workbook, scope) {
+  const sheet = workbook.addWorksheet('Resumen', { properties: { tabColor: { argb: EXCEL_COLORS.navy } } });
+  sheet.views = [{ state: 'frozen', ySplit: scope === 'month' ? 8 : 7, showGridLines: false }];
+  for (let column = 1; column <= 6; column += 1) sheet.getColumn(column).width = 18;
+  applyExcelTitle(sheet, 'Resumen financiero', `${getExportScopeLabel(scope)} · Generado el ${new Date().toLocaleDateString('es-PE')}`, 6);
 
-  addWorksheet(workbook, 'Resumen', [
-    { header: 'Año', key: 'periodo', width: 16 },
-    { header: 'Sueldo', key: 'sueldo', width: 14 },
-    { header: 'Extras', key: 'extras', width: 14 },
-    { header: 'Ingresos', key: 'ingresos', width: 16 },
-    { header: 'Gastos', key: 'gastos', width: 16 },
-    { header: 'Saldo', key: 'saldo', width: 16 },
-  ], rows, {
-    currencyKeys: ['sueldo', 'extras', 'ingresos', 'gastos', 'saldo'],
-  });
+  if (scope === 'month') {
+    const current = resumenDelPeriodo(runtime.curM, runtime.curY);
+    const previous = periodoRelativo(-1);
+    const previousSummary = resumenDelPeriodo(previous.month, previous.year);
+    const gastos = gastosActivosDelPeriodo(runtime.curM, runtime.curY);
+    const statusTotals = gastos.reduce((acc, gasto) => {
+      const status = gastoPaymentStatus(gasto).key;
+      acc[status] += Number(gasto.monto || 0);
+      return acc;
+    }, { pagado: 0, pendiente: 0, vencido: 0 });
+
+    setSummaryKpis(
+      sheet,
+      ['Ingresos', 'Gastos', 'Saldo', 'Pagado', 'Por pagar', 'Vencido'],
+      [current.ingresos, current.gastos, current.saldo, statusTotals.pagado, statusTotals.pendiente + statusTotals.vencido, statusTotals.vencido],
+      [
+        { text: EXCEL_COLORS.green, fill: EXCEL_COLORS.greenSoft },
+        { text: EXCEL_COLORS.red, fill: EXCEL_COLORS.redSoft },
+        { text: current.saldo < 0 ? EXCEL_COLORS.red : EXCEL_COLORS.blue, fill: current.saldo < 0 ? EXCEL_COLORS.redSoft : EXCEL_COLORS.blueSoft },
+        { text: EXCEL_COLORS.green, fill: EXCEL_COLORS.greenSoft },
+        { text: EXCEL_COLORS.amber, fill: EXCEL_COLORS.amberSoft },
+        { text: EXCEL_COLORS.red, fill: EXCEL_COLORS.redSoft },
+      ],
+    );
+
+    sheet.getCell('A8').value = 'Comparación mensual';
+    sheet.getCell('A8').font = { name: 'Arial', size: 12, bold: true, color: { argb: EXCEL_COLORS.navy } };
+    writeSummaryTable(sheet, 9, 1, ['Indicador', `${MS[runtime.curM]} ${runtime.curY}`, `${MS[previous.month]} ${previous.year}`, 'Variación'], [
+      ['Ingresos', current.ingresos, previousSummary.ingresos, { formula: 'B10-C10' }],
+      ['Gastos', current.gastos, previousSummary.gastos, { formula: 'B11-C11' }],
+      ['Saldo', current.saldo, previousSummary.saldo, { formula: 'B12-C12' }],
+    ], [22, 18, 18, 18]);
+    setExcelRangeNumberFormat(sheet, 10, 12, 2, 4, EXCEL_CURRENCY_FORMAT);
+
+    const categories = Object.entries(gastos.reduce((acc, gasto) => {
+      const category = gasto.cat || 'Sin categoría';
+      acc[category] = (acc[category] || 0) + Number(gasto.monto || 0);
+      return acc;
+    }, {})).sort((left, right) => right[1] - left[1]);
+
+    sheet.getCell('A15').value = 'Gastos por categoría';
+    sheet.getCell('A15').font = { name: 'Arial', size: 12, bold: true, color: { argb: EXCEL_COLORS.navy } };
+    const categoryRows = categories.length
+      ? categories.slice(0, 10).map(([category, amount]) => [category, amount, current.gastos ? amount / current.gastos : 0])
+      : [['Sin gastos registrados', 0, 0]];
+    writeSummaryTable(sheet, 16, 1, ['Categoría', 'Monto', '% del total'], categoryRows, [24, 18, 14]);
+    setExcelRangeNumberFormat(sheet, 17, 16 + categoryRows.length, 2, 2, EXCEL_CURRENCY_FORMAT);
+    setExcelRangeNumberFormat(sheet, 17, 16 + categoryRows.length, 3, 3, '0.0%');
+
+    sheet.getCell('E15').value = 'Estado de los gastos';
+    sheet.getCell('E15').font = { name: 'Arial', size: 12, bold: true, color: { argb: EXCEL_COLORS.navy } };
+    writeSummaryTable(sheet, 16, 5, ['Estado', 'Monto'], [
+      ['Pagado', statusTotals.pagado],
+      ['Pendiente', statusTotals.pendiente],
+      ['Vencido', statusTotals.vencido],
+    ], [18, 18]);
+    setExcelRangeNumberFormat(sheet, 17, 19, 6, 6, EXCEL_CURRENCY_FORMAT);
+  } else {
+    const rows = scope === 'year'
+      ? MS.map((monthName, month) => {
+        const summary = resumenDelPeriodo(month, runtime.curY);
+        return {
+          periodo: exportPeriodDate(month, runtime.curY),
+          sueldo: summary.sueldoBase,
+          extras: summary.extras,
+          ingresos: summary.ingresos,
+          gastos: summary.gastos,
+          saldo: summary.saldo,
+        };
+      })
+      : getAllSummaryYears().map(year => {
+        const totals = periodTotals(Array.from({ length: 12 }, (_, month) => {
+          const summary = resumenDelPeriodo(month, year);
+          return { sueldo: summary.sueldoBase, extras: summary.extras, ingresos: summary.ingresos, gastos: summary.gastos, saldo: summary.saldo };
+        }));
+        return { periodo: year, ...totals };
+      });
+    const totals = periodTotals(rows);
+
+    setSummaryKpis(
+      sheet,
+      ['Ingresos', 'Gastos', 'Saldo', 'Sueldo base', 'Ingresos extra', 'Periodos'],
+      [totals.ingresos, totals.gastos, totals.saldo, totals.sueldo, totals.extras, rows.length],
+      [
+        { text: EXCEL_COLORS.green, fill: EXCEL_COLORS.greenSoft },
+        { text: EXCEL_COLORS.red, fill: EXCEL_COLORS.redSoft },
+        { text: totals.saldo < 0 ? EXCEL_COLORS.red : EXCEL_COLORS.blue, fill: totals.saldo < 0 ? EXCEL_COLORS.redSoft : EXCEL_COLORS.blueSoft },
+        { text: EXCEL_COLORS.blue, fill: EXCEL_COLORS.blueSoft },
+        { text: EXCEL_COLORS.green, fill: EXCEL_COLORS.greenSoft },
+        { text: EXCEL_COLORS.navy, fill: 'FFF1F5F9' },
+      ],
+    );
+    sheet.getCell('F5').numFmt = '#,##0';
+
+    const tableRows = rows.map(row => [row.periodo, row.sueldo, row.extras, row.ingresos, row.gastos, row.saldo]);
+    tableRows.push([scope === 'year' ? `Total ${runtime.curY}` : 'Total general', totals.sueldo, totals.extras, totals.ingresos, totals.gastos, totals.saldo]);
+    writeSummaryTable(sheet, 8, 1, [scope === 'year' ? 'Periodo' : 'Año', 'Sueldo', 'Extras', 'Ingresos', 'Gastos', 'Saldo'], tableRows, [18, 16, 16, 16, 16, 16]);
+    const lastRow = 8 + tableRows.length;
+    setExcelRangeNumberFormat(sheet, 9, lastRow, 2, 6, EXCEL_CURRENCY_FORMAT);
+    if (scope === 'year') setExcelRangeNumberFormat(sheet, 9, lastRow - 1, 1, 1, 'mmm yyyy');
+    sheet.getRow(lastRow).font = { name: 'Arial', size: 10, bold: true, color: { argb: EXCEL_COLORS.navy } };
+  }
+
+  sheet.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 1 };
+  return sheet;
 }
 
 async function exportExcel() {
@@ -1189,6 +1580,8 @@ async function exportExcel() {
   const workbook = new window.ExcelJS.Workbook();
   workbook.creator = 'Mis Finanzas';
   workbook.created = new Date();
+  workbook.modified = new Date();
+  workbook.calcProperties.fullCalcOnLoad = true;
 
   const gastosRows = getScopedGastos(scope).map(gasto => ({
     descripcion: gasto.desc,
@@ -1196,17 +1589,17 @@ async function exportExcel() {
     tipo: gasto.tipo,
     dia: Number(gasto.dia || 0),
     monto: Number(gasto.monto || 0),
-    periodo: `${MS[gasto.mes]} ${gasto.anio}`,
-    origen: `${MS[gasto.origenMes ?? gasto.mes]} ${gasto.origenAnio ?? gasto.anio}`,
+    periodo: exportPeriodDate(gasto.mes, gasto.anio),
+    origen: exportPeriodDate(gasto.origenMes ?? gasto.mes, gasto.origenAnio ?? gasto.anio),
     estado: gastoPaymentStatus(gasto).label,
-    fechaPagado: gasto.fechaPagado || '',
+    fechaPagado: getExportDateCell(gasto.fechaPagado),
     cuota: gasto.tipo === 'cuotas' ? `${gasto.cuotaAct || 1} de ${gasto.cuotas || 0}` : '',
   }));
 
   const ingresosRows = getScopedIngresos(scope).map(item => ({
     descripcion: item.desc,
     monto: Number(item.monto || 0),
-    periodo: `${MS[item.mes]} ${item.anio}`,
+    periodo: exportPeriodDate(item.mes, item.anio),
   }));
 
   const anotacionesRows = getScopedAnotaciones(scope).map(note => ({
@@ -1215,7 +1608,7 @@ async function exportExcel() {
     tipo: note.tipo,
     dia: Number(note.dia || 0),
     monto: Number(note.monto || 0),
-    creado: `${MS[note.creadoMes]} ${note.creadoAnio}`,
+    creado: exportPeriodDate(note.creadoMes, note.creadoAnio),
     cuota: note.tipo === 'cuotas' ? `${note.cuotaAct || 1} de ${note.cuotas || 0}` : '',
   }));
 
@@ -1230,8 +1623,8 @@ async function exportExcel() {
       abonado: Number(prestamo.montoPagado || 0),
       saldo,
       creado: getExportDateCell(prestamo.createdAt),
-      fecha: prestamo.fecha || '',
-      vencimiento: prestamo.vencimiento || '',
+      fecha: getExportDateCell(prestamo.fecha),
+      vencimiento: getExportDateCell(prestamo.vencimiento),
       estado,
       notas: prestamo.notas || '',
     };
@@ -1240,11 +1633,27 @@ async function exportExcel() {
   const abonosRows = getScopedAbonos(scope).map(item => ({
     prestamo: item.prestamoPersona,
     tipoPrestamo: item.prestamoTipo === 'por_cobrar' ? 'Por cobrar' : 'Por pagar',
-    fecha: item.fecha || '',
-    mesAplicado: MS[item.mes] || '',
+    fecha: getExportDateCell(item.fecha),
+    mesAplicado: exportPeriodDate(item.mes, parseDateParts(item.fecha)?.year || runtime.curY),
     monto: Number(item.monto || 0),
     impacto: item.impacto || 'ninguno',
     nota: item.nota || '',
+  }));
+
+  const cargaGastosRows = getScopedGastos(scope).map(gasto => ({
+    descripcion: gasto.desc,
+    categoria: gasto.cat,
+    diaPago: Number(gasto.dia || 1),
+    tipo: gasto.tipo,
+    monto: Number(gasto.monto || 0),
+    mes: Number(gasto.mes) + 1,
+    anio: Number(gasto.anio),
+    totalCuotas: Number(gasto.cuotas || 0),
+    cuotaActual: Number(gasto.cuotaAct || 1),
+    pagado: Boolean(gasto.pagado),
+    fechaPagado: getExportDateCell(gasto.fechaPagado),
+    origenMes: Number(gasto.origenMes ?? gasto.mes) + 1,
+    origenAnio: Number(gasto.origenAnio ?? gasto.anio),
   }));
 
   try {
@@ -1262,13 +1671,27 @@ async function exportExcel() {
         { header: 'Estado', key: 'estado', width: 14 },
         { header: 'Fecha pagado', key: 'fechaPagado', width: 16 },
         { header: 'Cuota', key: 'cuota', width: 14 },
-      ], gastosRows, { currencyKeys: ['monto'] });
+      ], gastosRows, {
+        scope,
+        title: 'Detalle de gastos',
+        currencyKeys: ['monto'],
+        dateKeys: ['fechaPagado'],
+        periodKeys: ['periodo', 'origen'],
+        statusKey: 'estado',
+        tabColor: EXCEL_COLORS.red,
+      });
 
       addWorksheet(workbook, 'Ingresos extra', [
         { header: 'Descripcion', key: 'descripcion', width: 28 },
         { header: 'Monto', key: 'monto', width: 14 },
         { header: 'Periodo', key: 'periodo', width: 16 },
-      ], ingresosRows, { currencyKeys: ['monto'] });
+      ], ingresosRows, {
+        scope,
+        title: 'Ingresos extra',
+        currencyKeys: ['monto'],
+        periodKeys: ['periodo'],
+        tabColor: EXCEL_COLORS.green,
+      });
 
       addWorksheet(workbook, 'Anotaciones', [
         { header: 'Descripcion', key: 'descripcion', width: 28 },
@@ -1278,7 +1701,13 @@ async function exportExcel() {
         { header: 'Monto', key: 'monto', width: 14 },
         { header: 'Creado en', key: 'creado', width: 16 },
         { header: 'Cuota', key: 'cuota', width: 14 },
-      ], anotacionesRows, { currencyKeys: ['monto'] });
+      ], anotacionesRows, {
+        scope,
+        title: 'Anotaciones y recordatorios',
+        currencyKeys: ['monto'],
+        periodKeys: ['creado'],
+        tabColor: EXCEL_COLORS.amber,
+      });
 
       addWorksheet(workbook, 'Prestamos', [
         { header: 'Tipo', key: 'tipo', width: 14 },
@@ -1292,7 +1721,14 @@ async function exportExcel() {
         { header: 'Vencimiento', key: 'vencimiento', width: 14 },
         { header: 'Estado', key: 'estado', width: 12 },
         { header: 'Notas', key: 'notas', width: 26 },
-      ], prestamosRows, { currencyKeys: ['montoTotal', 'abonado', 'saldo'] });
+      ], prestamosRows, {
+        scope,
+        title: 'Préstamos por cobrar y por pagar',
+        currencyKeys: ['montoTotal', 'abonado', 'saldo'],
+        dateKeys: ['creado', 'fecha', 'vencimiento'],
+        statusKey: 'estado',
+        tabColor: EXCEL_COLORS.blue,
+      });
 
       addWorksheet(workbook, 'Abonos', [
         { header: 'Prestamo', key: 'prestamo', width: 18 },
@@ -1302,7 +1738,39 @@ async function exportExcel() {
         { header: 'Monto', key: 'monto', width: 14 },
         { header: 'Impacto', key: 'impacto', width: 12 },
         { header: 'Nota', key: 'nota', width: 26 },
-      ], abonosRows, { currencyKeys: ['monto'] });
+      ], abonosRows, {
+        scope,
+        title: 'Historial de abonos',
+        currencyKeys: ['monto'],
+        dateKeys: ['fecha'],
+        periodKeys: ['mesAplicado'],
+        showTotals: true,
+        tabColor: EXCEL_COLORS.green,
+      });
+
+      addWorksheet(workbook, 'Carga de gastos', [
+        { header: 'descripcion', key: 'descripcion', width: 28 },
+        { header: 'categoria', key: 'categoria', width: 18 },
+        { header: 'dia_pago', key: 'diaPago', width: 12 },
+        { header: 'tipo', key: 'tipo', width: 12 },
+        { header: 'monto', key: 'monto', width: 15 },
+        { header: 'mes', key: 'mes', width: 10 },
+        { header: 'anio', key: 'anio', width: 10 },
+        { header: 'total_cuotas', key: 'totalCuotas', width: 14 },
+        { header: 'cuota_actual', key: 'cuotaActual', width: 14 },
+        { header: 'pagado', key: 'pagado', width: 11 },
+        { header: 'fecha_pagado', key: 'fechaPagado', width: 16 },
+        { header: 'origen_mes', key: 'origenMes', width: 12 },
+        { header: 'origen_anio', key: 'origenAnio', width: 12 },
+      ], cargaGastosRows, {
+        scope,
+        title: 'Carga de gastos',
+        subtitle: 'Hoja compatible con la opción Importar Excel. El mes usa valores del 1 al 12.',
+        currencyKeys: ['monto'],
+        dateKeys: ['fechaPagado'],
+        showTotals: false,
+        tabColor: EXCEL_COLORS.muted,
+      });
 
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -1318,6 +1786,15 @@ async function exportExcel() {
 }
 
 app.actions.updateInicio = updateInicio;
+
+document.addEventListener('click', (event) => {
+  const menu = document.getElementById('excel-actions-menu');
+  if (menu?.open && !menu.contains(event.target)) closeExcelActionsMenu();
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') closeExcelActionsMenu();
+});
 
 Object.assign(window, {
   closeEmailRemindersModal,
