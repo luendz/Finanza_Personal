@@ -3,7 +3,7 @@
         extend: {
           fontFamily: {
             sans: ['DM Sans', 'sans-serif'],
-            heading: ['Manrope', 'sans-serif']
+            heading: ['Cormorant Garamond', 'Georgia', 'serif']
           },
           colors: {
             appbg: '#f3f6fa',

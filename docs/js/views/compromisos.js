@@ -291,7 +291,7 @@ function renderGastos() {
             <button class="${mobileActionBtnBase} text-text3 hover:border-red1 hover:bg-redbg hover:text-red1" onclick="delG(${gasto.id})" title="Eliminar gasto" aria-label="Eliminar gasto">&times;</button>
           </div>
         </div>
-        <div class="hidden gap-2 md:grid md:grid-cols-[minmax(0,1.9fr)_58px_60px_96px_96px_92px_116px] md:items-center">
+        <div class="hidden gap-2 md:grid md:grid-cols-[minmax(0,1.9fr)_58px_60px_96px_96px_100px_128px] md:items-center">
           <div class="min-w-0">
             <div class="truncate text-[14px] font-semibold ${isPaid ? 'text-text2 line-through' : 'text-text1'}" title="${gasto.desc}">${gasto.desc}</div>
           </div>
@@ -307,8 +307,8 @@ function renderGastos() {
           <div class="min-w-0">
             <span class="inline-flex h-5 items-center rounded-full border px-2 text-[10px] font-bold leading-none ${statusClass}" title="${statusDetail}">${status.label}</span>
           </div>
-          <div class="whitespace-nowrap font-heading text-[15px] font-bold md:text-right ${amountClass}">${fmt(gasto.monto)}</div>
-          <div class="flex shrink-0 items-center gap-1 border-l border-borderc pl-3 md:justify-center">
+          <div class="whitespace-nowrap font-heading text-[15px] font-bold md:text-left ${amountClass}">${fmt(gasto.monto)}</div>
+          <div class="ml-3 flex shrink-0 items-center gap-1 border-l border-borderc pl-4 md:justify-center">
             <button class="inline-flex h-7 w-7 items-center justify-center rounded-md border-0 bg-transparent text-[16px] leading-none transition ${toggleBtnClass}" onclick="${toggleHandler}" title="${toggleLabel}" aria-label="${toggleLabel}">&#10003;</button>
             <button class="inline-flex h-7 w-7 items-center justify-center rounded-md border-0 bg-transparent text-[16px] leading-none text-text3 transition hover:bg-bluebg hover:text-accent" onclick="editG(${gasto.id})" title="Editar gasto" aria-label="Editar gasto">&#9998;</button>
             <button class="inline-flex h-7 w-7 items-center justify-center rounded-md border-0 bg-transparent text-[20px] leading-none text-text3 transition hover:bg-redbg hover:text-red1" onclick="delG(${gasto.id})" title="Eliminar gasto" aria-label="Eliminar gasto">&times;</button>

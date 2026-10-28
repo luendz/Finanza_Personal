@@ -8,12 +8,22 @@
   <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="tailwind-config.js?v=3"></script>
+  <script src="tailwind-config.js?v=4"></script>
   <script>window.__INITIAL_AUTH_URL__ = window.location.href;</script>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <script>
+    (() => {
+      try {
+        document.documentElement.dataset.theme = localStorage.getItem('finanzas-theme') === 'dark' ? 'dark' : 'light';
+      } catch (_error) {
+        document.documentElement.dataset.theme = 'light';
+      }
+    })();
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="img/mis_finanzas.png?v=1">
   <link rel="apple-touch-icon" href="img/mis_finanzas.png?v=1">
   <link rel="stylesheet" href="styles.css?v=26">
+  <link rel="stylesheet" href="editorial-theme.css?v=6">
 </head>
 <body class="bg-appbg text-text1 font-sans text-sm leading-6">
 
@@ -29,6 +39,10 @@
     </div>
 
     <div class="flex items-center gap-2" id="header-auth-actions">
+      <button id="theme-toggle" type="button" class="theme-toggle" onclick="toggleTheme()" aria-pressed="false" aria-label="Cambiar a tema oscuro" title="Usar tema oscuro">
+        <span id="theme-toggle-icon" class="theme-toggle-icon" aria-hidden="true">◐</span>
+        <span id="theme-toggle-label">Oscuro</span>
+      </button>
       <button id="auth-register" onclick="openAuthModal('register')" class="hidden rounded-full border border-borderc bg-white px-4 py-2 font-heading text-[12px] font-bold text-text2 shadow-soft transition hover:border-accent hover:text-accent max-md:px-3">Registrarme</button>
       <button id="auth-login" onclick="openAuthModal('login')" class="hidden rounded-full border border-accent bg-accent px-4 py-2 font-heading text-[12px] font-bold text-white shadow-soft transition hover:-translate-y-0.5 hover:brightness-95 max-md:px-3">Ingresar</button>
 
@@ -225,7 +239,7 @@
           </div>
         </div>
         <div class="border-b border-[#dbe5f3] bg-white">
-          <div id="gastos-sort-header" class="hidden items-center gap-2 border-b border-[#dbe5f3] bg-[#f8fbff] px-5 py-2 text-[11px] font-bold uppercase tracking-[0.06em] text-text3 md:grid md:grid-cols-[minmax(0,1.9fr)_58px_60px_96px_96px_92px_116px]">
+          <div id="gastos-sort-header" class="hidden items-center gap-2 border-b border-[#dbe5f3] bg-[#f8fbff] px-5 py-2 text-[11px] font-bold uppercase tracking-[0.06em] text-text3 md:grid md:grid-cols-[minmax(0,1.9fr)_58px_60px_96px_96px_100px_128px]">
             <button type="button" class="flex min-w-0 items-center gap-1 text-left transition hover:text-accent" data-gastos-sort="desc" data-gastos-sort-label="gasto" onclick="setGastosSort('desc')">
               <span class="truncate">Gasto</span>
               <span class="text-[10px]" data-gastos-sort-indicator="desc">--</span>
@@ -246,11 +260,11 @@
               <span>Estado</span>
               <span class="text-[10px]" data-gastos-sort-indicator="status">--</span>
             </button>
-            <button type="button" class="ml-auto flex items-center justify-end gap-1 text-right transition hover:text-accent" data-gastos-sort="monto" data-gastos-sort-label="monto" onclick="setGastosSort('monto')">
+            <button type="button" class="flex items-center gap-1 text-left transition hover:text-accent" data-gastos-sort="monto" data-gastos-sort-label="monto" onclick="setGastosSort('monto')">
               <span>Monto</span>
               <span class="text-[10px]" data-gastos-sort-indicator="monto">--</span>
             </button>
-            <span class="border-l border-[#d6e0ec] pl-3 text-center">Acciones</span>
+            <span class="ml-3 border-l border-[#d6e0ec] pl-4 text-center">Acciones</span>
           </div>
           <div id="glist" class="max-h-[860px] overflow-y-auto bg-white"></div>
           <div class="border-t border-[#dbe5f3] bg-appbg px-5 py-4 max-md:px-4">
@@ -273,12 +287,12 @@
 
     <div class="category-distribution-card mt-4 rounded-app border border-borderc bg-card px-4 py-3.5 shadow-soft">
       <div class="font-heading text-[13px] font-bold">Distribución por categoría</div>
-      <div class="mt-2 grid grid-cols-[112px_minmax(0,1fr)] items-center gap-3 max-sm:grid-cols-1">
-        <div class="relative mx-auto flex h-[112px] w-[112px] items-center justify-center">
-          <canvas id="donut" width="220" height="220" class="h-[112px] w-[112px]"></canvas>
+      <div class="mt-2 grid grid-cols-[168px_minmax(0,1fr)] items-center gap-4 max-sm:grid-cols-1">
+        <div class="relative mx-auto flex h-[168px] w-[168px] items-center justify-center">
+          <canvas id="donut" width="336" height="336" class="h-[168px] w-[168px]"></canvas>
           <div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-            <div class="text-[8px] font-bold uppercase tracking-[0.06em] text-text3">Gasto total</div>
-            <div class="mt-0.5 font-heading text-[14px] font-bold text-text1" id="donut-total">S/ 0</div>
+            <div class="text-[9px] font-bold uppercase tracking-[0.06em] text-text3">Gasto total</div>
+            <div class="mt-0.5 font-heading text-[16px] font-bold text-text1" id="donut-total">S/ 0</div>
           </div>
         </div>
         <div id="dlegend" class="grid min-w-0 grid-cols-2 gap-1.5 md:grid-cols-3 lg:grid-cols-5"></div>
@@ -902,7 +916,7 @@
   </div>
 </div>
 
-<script type="module" src="main.js?v=25"></script>
+<script type="module" src="main.js?v=28"></script>
 
 </body>
 </html>

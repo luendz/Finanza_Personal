@@ -142,10 +142,12 @@ function drawDonut(sorted, total) {
   const centerY = height / 2;
   const radius = Math.min(width, height) / 2 - 15;
   const innerRadius = radius * 0.55;
+  const labelRadius = innerRadius + ((radius - innerRadius) * 0.52);
 
   ctx.clearRect(0, 0, width, height);
 
   let start = -Math.PI / 2;
+  const segments = [];
   if (!sorted.length || total <= 0) {
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
@@ -154,20 +156,58 @@ function drawDonut(sorted, total) {
   } else {
     sorted.forEach(([cat, value]) => {
       const slice = (value / total) * Math.PI * 2;
+      const percentage = Math.round((value / total) * 100);
       ctx.beginPath();
       ctx.moveTo(centerX, centerY);
       ctx.arc(centerX, centerY, radius, start, start + slice);
       ctx.closePath();
-      ctx.fillStyle = cs(cat).bar;
+      const color = cs(cat).bar;
+      ctx.fillStyle = color;
       ctx.fill();
+      segments.push({
+        color,
+        percentage,
+        angle: start + (slice / 2),
+      });
       start += slice;
     });
   }
 
+  ctx.save();
+  ctx.globalCompositeOperation = 'destination-out';
   ctx.beginPath();
   ctx.arc(centerX, centerY, innerRadius, 0, Math.PI * 2);
-  ctx.fillStyle = '#ffffff';
   ctx.fill();
+  ctx.restore();
+
+  segments.forEach(({ color, percentage, angle }) => {
+    if (percentage < 5) return;
+
+    const normalized = String(color).replace('#', '');
+    const expanded = normalized.length === 3
+      ? normalized.split('').map(char => char + char).join('')
+      : normalized;
+    const red = parseInt(expanded.slice(0, 2), 16);
+    const green = parseInt(expanded.slice(2, 4), 16);
+    const blue = parseInt(expanded.slice(4, 6), 16);
+    const luminance = Number.isFinite(red + green + blue)
+      ? ((red * 0.299) + (green * 0.587) + (blue * 0.114)) / 255
+      : 0;
+
+    ctx.save();
+    ctx.font = '700 21px "DM Sans", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = luminance > 0.64 ? '#102a36' : '#ffffff';
+    ctx.shadowColor = luminance > 0.64 ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)';
+    ctx.shadowBlur = 3;
+    ctx.fillText(
+      `${percentage}%`,
+      centerX + (Math.cos(angle) * labelRadius),
+      centerY + (Math.sin(angle) * labelRadius),
+    );
+    ctx.restore();
+  });
 
   const centerTotal = document.getElementById('donut-total');
   if (centerTotal) centerTotal.textContent = fmt(total);
