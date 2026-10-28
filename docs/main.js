@@ -1,7 +1,7 @@
 import './js/theme.js?v=1';
 import './js/core.js';
 import './js/data.js';
-import './js/views/inicio.js?v=20';
+import './js/views/inicio.js?v=21';
 import './js/views/compromisos.js?v=14';
 import './js/views/anotaciones.js';
 import './js/views/categorias.js';

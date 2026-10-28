@@ -378,8 +378,10 @@ function updateInicio() {
   const resta = resumenActual.saldo;
   const pct = ingresos > 0 ? (gastos / ingresos) * 100 : 0;
   const items = active();
-  const overdueItems = items.filter(gasto => gastoPaymentStatus(gasto).key === 'vencido');
-  const overdueTotal = overdueItems.reduce((sum, gasto) => sum + Number(gasto.monto || 0), 0);
+  const paidItems = items.filter(gasto => gastoPaymentStatus(gasto).key === 'pagado');
+  const pendingItems = items.filter(gasto => gastoPaymentStatus(gasto).key !== 'pagado');
+  const paidTotal = paidItems.reduce((sum, gasto) => sum + Number(gasto.monto || 0), 0);
+  const pendingTotal = pendingItems.reduce((sum, gasto) => sum + Number(gasto.monto || 0), 0);
   const remainingPct = ingresos > 0 ? Math.max((resta / ingresos) * 100, 0) : 0;
   const periodoAnterior = periodoRelativo(-1);
   const arrastreAnterior = resumenDelPeriodo(periodoAnterior.month, periodoAnterior.year);
@@ -396,9 +398,10 @@ function updateInicio() {
   document.getElementById('cextrasub').textContent = `${extrasDelMes().length} ingreso(s) extra este mes`;
   document.getElementById('cing').textContent = fmt(ingresos);
   document.getElementById('month-expenses-total').textContent = fmt(gastos);
-  document.getElementById('month-expenses-count').textContent = `${items.length} gasto${items.length === 1 ? '' : 's'}`;
-  document.getElementById('month-expenses-overdue').textContent = fmt(overdueTotal);
-  document.getElementById('month-expenses-overdue').title = `${overdueItems.length} gasto${overdueItems.length === 1 ? '' : 's'} vencido${overdueItems.length === 1 ? '' : 's'}`;
+  document.getElementById('month-expenses-paid').textContent = fmt(paidTotal);
+  document.getElementById('month-expenses-paid').title = `${paidItems.length} gasto${paidItems.length === 1 ? '' : 's'} pagado${paidItems.length === 1 ? '' : 's'}`;
+  document.getElementById('month-expenses-pending').textContent = fmt(pendingTotal);
+  document.getElementById('month-expenses-pending').title = `${pendingItems.length} gasto${pendingItems.length === 1 ? '' : 's'} por pagar`;
   document.getElementById('remaining-percent').textContent = resta >= 0
     ? `${remainingPct.toFixed(0)}% de tus ingresos`
     : 'Superaste tus ingresos';
