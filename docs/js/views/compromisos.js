@@ -29,6 +29,26 @@ const GASTOS_STATUS_ORDER = {
   pagado: 2,
 };
 const GASTOS_STATUS_FILTERS = new Set(['all', 'pagado', 'pendiente', 'vencido']);
+const RECURRING_MONTHS = 12;
+
+function getMonthOffset(month, year, offset) {
+  const date = new Date(year, month + offset, 1);
+  return {
+    month: date.getMonth(),
+    year: date.getFullYear(),
+  };
+}
+
+function buildRecurringExpensePayloads(payload) {
+  return Array.from({ length: RECURRING_MONTHS }, (_, offset) => {
+    const period = getMonthOffset(payload.mes, payload.anio, offset);
+    return {
+      ...payload,
+      mes: period.month,
+      anio: period.year,
+    };
+  });
+}
 
 function ensureGastosStatusFilter() {
   if (!GASTOS_STATUS_FILTERS.has(uiState.gastosStatusFilter)) {
@@ -192,6 +212,13 @@ function closeModal() {
 function toggleQ() {
   const tipo = document.getElementById('ftipo').value;
   document.getElementById('qfields').classList.toggle('hidden', tipo !== 'cuotas');
+  const recurringHelp = document.getElementById('recurring-help');
+  if (recurringHelp) {
+    recurringHelp.classList.toggle('hidden', tipo !== 'recurrente');
+    recurringHelp.textContent = runtime.editId === null
+      ? 'Se crearán 12 registros: este mes y los 11 siguientes. Cada mes tendrá su propio estado de pago.'
+      : 'Esta edición aplica únicamente al mes seleccionado; los demás meses de la serie conservarán sus datos.';
+  }
 }
 
 function renderGastos() {
@@ -251,7 +278,11 @@ function renderGastos() {
     const toggleHandler = gasto.tipo === 'cuotas'
       ? (isPaid ? `undoCuota(${gasto.id})` : `registerCuota(${gasto.id})`)
       : `toggleGastoPago(${gasto.id})`;
-    const typeLabel = gasto.tipo === 'cuotas' ? 'Cuotas' : 'Unico';
+    const typeLabel = gasto.tipo === 'cuotas'
+      ? 'Cuotas'
+      : gasto.tipo === 'recurrente'
+        ? 'Recurrente'
+        : 'Único';
     const dayLabel = `Dia ${gasto.dia}`;
     const statusDetail = gasto.tipo === 'cuotas' ? gastoCuotaLabel(gasto) : status.detail;
     const toggleBtnClass = isPaid
@@ -381,7 +412,10 @@ async function saveG() {
     if (isEditing) {
       ({ error } = await app.supabaseClient.from('gastos').update(payload).eq('id', runtime.editId));
     } else {
-      ({ error } = await app.supabaseClient.from('gastos').insert(payload));
+      const payloads = tipo === 'recurrente'
+        ? buildRecurringExpensePayloads(payload)
+        : [payload];
+      ({ error } = await app.supabaseClient.from('gastos').insert(payloads));
     }
     if (error) {
       alert(error.message);
@@ -395,7 +429,11 @@ async function saveG() {
     return;
   }
   closeModal();
-  toast(runtime.editId !== null ? 'Gasto actualizado' : 'Gasto agregado');
+  toast(isEditing
+    ? 'Gasto actualizado'
+    : tipo === 'recurrente'
+      ? 'Gasto recurrente agregado por 12 meses'
+      : 'Gasto agregado');
   runtime.editId = null;
 }
 
@@ -617,6 +655,20 @@ function clearCarrySelection() {
   refreshCarryList();
 }
 
+function recurringOccurrenceExists(gasto, target) {
+  if (gasto.tipo !== 'recurrente') return false;
+  return state.gastos.some(item => (
+    item.id !== gasto.id
+    && item.tipo === 'recurrente'
+    && item.mes === target.month
+    && item.anio === target.year
+    && item.origenMes === gasto.origenMes
+    && item.origenAnio === gasto.origenAnio
+    && item.desc === gasto.desc
+    && item.cat === gasto.cat
+  ));
+}
+
 async function carrySelectedExpenses() {
   const currentUser = requireCurrentUser();
   if (!currentUser) return;
@@ -633,7 +685,14 @@ async function carrySelectedExpenses() {
     return;
   }
 
-  const payloads = selected.map(gasto => ({
+  const expensesToCopy = selected.filter(gasto => !recurringOccurrenceExists(gasto, target));
+  const skippedRecurring = selected.length - expensesToCopy.length;
+  if (!expensesToCopy.length) {
+    alert('Los gastos recurrentes seleccionados ya existen en el mes de destino.');
+    return;
+  }
+
+  const payloads = expensesToCopy.map(gasto => ({
     user_id: currentUser.id,
     descripcion: gasto.desc,
     categoria: gasto.cat,
@@ -664,7 +723,9 @@ async function carrySelectedExpenses() {
   }
 
   closeCarryModal();
-  toast(`Gastos copiados a ${MS[target.month]} ${target.year}`);
+  toast(skippedRecurring
+    ? `Gastos copiados; ${skippedRecurring} recurrente(s) ya existían en el destino`
+    : `Gastos copiados a ${MS[target.month]} ${target.year}`);
 }
 
 function openPrestamoModal() {

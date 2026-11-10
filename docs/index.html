@@ -486,11 +486,13 @@
         <label class="text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Tipo de gasto</label>
         <select id="ftipo" onchange="toggleQ()" class="rounded-smapp border border-borderc bg-appbg px-3 py-2 text-[13px] text-text1 outline-none transition focus:border-accent focus:bg-white">
           <option value="unico">Solo este mes</option>
-          <option value="recurrente">Recurrente (fijo)</option>
+          <option value="recurrente">Recurrente (12 meses)</option>
           <option value="cuotas">En cuotas</option>
         </select>
       </div>
     </div>
+
+    <div id="recurring-help" class="mb-3 hidden rounded-smapp border border-[#d8e4fb] bg-bluebg/60 px-3 py-2.5 text-[11px] leading-5 text-bluetx"></div>
 
     <div id="qfields" class="hidden">
       <div class="mb-2.5 mt-3 border-t border-borderc pt-3 text-[11px] font-bold uppercase tracking-[0.07em] text-text3">Detalles de las cuotas</div>
@@ -919,7 +921,7 @@
   </div>
 </div>
 
-<script type="module" src="main.js?v=30"></script>
+<script type="module" src="main.js?v=31"></script>
 
 </body>
 </html>
