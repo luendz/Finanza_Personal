@@ -608,6 +608,10 @@ export async function initAuth() {
       authState.recoveryError = humanizeAuthError(error);
       openRecoveryFromCallback(null);
     } else {
+      // Keep the logged-out actions available even when Supabase cannot
+      // confirm the session (for example, during a network interruption).
+      runtime.currentUser = null;
+      updateAuthUI();
       setAuthMessage('Error al comprobar la sesión.', 'error');
     }
   }
